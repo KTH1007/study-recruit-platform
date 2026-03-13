@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3307/study_platform
+    username: root
+    password: root  # 로컬 Docker용이라 괜찮음
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+jwt:
+  secret: local-dev-secret-key-not-used-in-prod
+  expiration: 86400000
