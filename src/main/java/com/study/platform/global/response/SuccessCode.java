@@ -1,0 +1,57 @@
+package com.study.platform.global.response;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+
+@Getter
+@RequiredArgsConstructor
+public enum SuccessCode {
+
+    // Common
+    OK(HttpStatus.OK, "요청이 성공적으로 처리되었습니다."),
+    CREATED(HttpStatus.CREATED, "리소스가 성공적으로 생성되었습니다."),
+
+    // User
+    USER_REGISTERED(HttpStatus.CREATED, "회원가입이 완료되었습니다."),
+    USER_LOGIN(HttpStatus.OK, "로그인이 완료되었습니다."),
+    USER_LOGOUT(HttpStatus.OK, "로그아웃이 완료되었습니다."),
+    USER_INFO(HttpStatus.OK, "회원 정보 조회가 완료되었습니다."),
+    TOKEN_REISSUED(HttpStatus.OK, "토큰이 재발급되었습니다."),
+
+    // Post
+    POST_CREATED(HttpStatus.CREATED, "모집글이 등록되었습니다."),
+    POST_UPDATED(HttpStatus.OK, "모집글이 수정되었습니다."),
+    POST_DELETED(HttpStatus.OK, "모집글이 삭제되었습니다."),
+    POST_LIST(HttpStatus.OK, "모집글 목록 조회가 완료되었습니다."),
+    POST_DETAIL(HttpStatus.OK, "모집글 상세 조회가 완료되었습니다."),
+
+    // Application
+    APPLICATION_CREATED(HttpStatus.CREATED, "지원이 완료되었습니다."),
+    APPLICATION_CANCELED(HttpStatus.OK, "지원이 취소되었습니다."),
+    APPLICATION_APPROVED(HttpStatus.OK, "지원이 승인되었습니다."),
+    APPLICATION_REJECTED(HttpStatus.OK, "지원이 거절되었습니다."),
+    APPLICATION_LIST(HttpStatus.OK, "지원 목록 조회가 완료되었습니다."),
+
+    // Comment
+    COMMENT_CREATED(HttpStatus.CREATED, "댓글이 등록되었습니다."),
+    COMMENT_UPDATED(HttpStatus.OK, "댓글이 수정되었습니다."),
+    COMMENT_DELETED(HttpStatus.OK, "댓글이 삭제되었습니다."),
+    COMMENT_LIST(HttpStatus.OK, "댓글 목록 조회가 완료되었습니다."),
+
+    // Notification
+    NOTIFICATION_LIST(HttpStatus.OK, "알림 목록 조회가 완료되었습니다."),
+    NOTIFICATION_READ(HttpStatus.OK, "알림이 읽음 처리되었습니다."),
+    NOTIFICATION_READ_ALL(HttpStatus.OK, "모든 알림이 읽음 처리되었습니다."),
+    UNREAD_COUNT(HttpStatus.OK, "미읽음 알림 수 조회가 완료되었습니다."),
+
+    // Team
+    TEAM_INFO(HttpStatus.OK, "팀 정보 조회가 완료되었습니다."),
+    TEAM_SCHEDULE_CREATED(HttpStatus.CREATED, "팀 일정이 등록되었습니다."),
+    TEAM_SCHEDULE_UPDATED(HttpStatus.OK, "팀 일정이 수정되었습니다."),
+    TEAM_SCHEDULE_DELETED(HttpStatus.OK, "팀 일정이 삭제되었습니다."),
+    TEAM_SCHEDULE_LIST(HttpStatus.OK, "팀 일정 목록 조회가 완료되었습니다.");
+
+    private final HttpStatus httpStatus;
+    private final String message;
+}
