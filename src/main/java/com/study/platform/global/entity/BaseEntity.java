@@ -6,14 +6,17 @@ import lombok.Getter;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 
+import java.util.UUID;
+
 @Getter
 @MappedSuperclass
 public class BaseEntity extends BaseTimeEntity {
 
     @CreatedBy
-    @Column(updatable = false)
-    private Long createdBy;
+    @Column(updatable = false, columnDefinition = "BINARY(16)")
+    private UUID createdBy;
 
     @LastModifiedBy
-    private Long updatedBy;
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID updatedBy;
 }
