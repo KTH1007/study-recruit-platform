@@ -1,0 +1,28 @@
+package com.study.platform.domain.post.model;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.Optional;
+import java.util.UUID;
+
+public interface StudyPostRepository extends JpaRepository<StudyPost, UUID> {
+
+    @Query(value = "SELECT p FROM StudyPost p JOIN FETCH p.author " +
+            "WHERE (:techStack IS NULL OR p.techStack LIKE %:techStack%) " +
+            "AND (:status IS NULL OR p.status = :status)",
+            countQuery = "SELECT COUNT(p) FROM StudyPost p " +
+                    "WHERE (:techStack IS NULL OR p.techStack LIKE %:techStack%) " +
+                    "AND (:status IS NULL OR p.status = :status)")
+    Page<StudyPost> findAllWithFilter(
+            @Param("techStack") String techStack,
+            @Param("status") StudyPostStatus status,
+            Pageable pageable
+    );
+
+    @Query("SELECT p FROM StudyPost p JOIN FETCH p.author WHERE p.id = :postId")
+    Optional<StudyPost> findByIdWithAuthor(@Param("postId") UUID postId);
+}
