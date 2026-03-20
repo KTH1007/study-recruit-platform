@@ -74,5 +74,4 @@ Thumbs.db
 !.env.example
 *.pem
 *.key
-application-secret.yml
-application-local.yaml
+src/main/resources/application-local.yaml

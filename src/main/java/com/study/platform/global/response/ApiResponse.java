@@ -38,4 +38,8 @@ public class ApiResponse<T> {
                 .status(errorCode.getHttpStatus())
                 .body(new ApiResponse<>(false, errorCode.name(), errorCode.getMessage(), null));
     }
+
+    public static ResponseEntity<Void> noContent() {
+        return ResponseEntity.noContent().build();
+    }
 }
