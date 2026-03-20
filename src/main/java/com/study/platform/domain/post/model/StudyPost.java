@@ -3,6 +3,7 @@ package com.study.platform.domain.post.model;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "study_post")
 public class StudyPost extends BaseTimeEntity {
