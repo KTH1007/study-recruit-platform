@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -31,7 +32,7 @@ public class StudyPostController implements StudyPostControllerDoc {
     public ResponseEntity<ApiResponse<Page<StudyPostSummaryResponse>>> findPosts(
             @RequestParam(required = false) String techStack,
             @RequestParam(required = false)StudyPostStatus status,
-            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ApiResponse.success(SuccessCode.OK, studyPostService.findPosts(techStack, status, pageable));
     }
 
@@ -57,11 +58,11 @@ public class StudyPostController implements StudyPostControllerDoc {
     }
 
     @DeleteMapping("/{postId}")
-    public ResponseEntity<ApiResponse<Void>> deletePost(
+    public ResponseEntity<Void> deletePost(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId) {
         studyPostService.deletePost(userId, postId);
-        return ApiResponse.success(SuccessCode.OK);
+        return ApiResponse.noContent();
     }
 
     @PatchMapping("/{postId}/close")

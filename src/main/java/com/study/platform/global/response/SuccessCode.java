@@ -11,6 +11,7 @@ public enum SuccessCode {
     // Common
     OK(HttpStatus.OK, "요청이 성공적으로 처리되었습니다."),
     CREATED(HttpStatus.CREATED, "리소스가 성공적으로 생성되었습니다."),
+    NO_CONTENT(HttpStatus.NO_CONTENT, "성공적으로 삭제되었습니다."),
 
     // User
     USER_REGISTERED(HttpStatus.CREATED, "회원가입이 완료되었습니다."),
