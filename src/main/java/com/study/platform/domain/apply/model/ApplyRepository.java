@@ -19,4 +19,6 @@ public interface ApplyRepository extends JpaRepository<Apply, UUID> {
     Optional<Apply> findByIdWithPostAndApplicant(@Param("applyId") UUID applyId);
 
     Optional<Apply> findByPostIdAndApplicantId(UUID postId, UUID applicantId);
+
+    long countByPostIdAndStatus(UUID postId, ApplyStatus status);
 }

@@ -130,9 +130,7 @@ public class ApplyService {
     }
 
     private boolean isPostFull(StudyPost post) {
-        long approvedCount = applyRepository.findAllByPostIdWithApplicant(post.getId()).stream()
-                .filter(a -> a.getStatus() == ApplyStatus.APPROVED)
-                .count();
+        long approvedCount = applyRepository.countByPostIdAndStatus(post.getId(), ApplyStatus.APPROVED);
         return approvedCount >= post.getMaxMembers();
     }
 }
