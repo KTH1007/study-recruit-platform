@@ -17,19 +17,19 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/posts")
+@RequestMapping("/api")
 public class ApplyController implements ApplyControllerDoc {
 
     private final ApplyService applyService;
 
-    @GetMapping("/{postId}/applies")
+    @GetMapping("/posts/{postId}/applies")
     public ResponseEntity<ApiResponse<List<ApplyResponse>>> findApplies(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId) {
         return ApiResponse.success(SuccessCode.OK, applyService.findApplies(userId, postId));
     }
 
-    @PostMapping("/{postId}/applies")
+    @PostMapping("/posts/{postId}/applies")
     public ResponseEntity<ApiResponse<ApplyResponse>> apply(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId,
@@ -37,7 +37,7 @@ public class ApplyController implements ApplyControllerDoc {
         return ApiResponse.success(SuccessCode.CREATED, applyService.apply(userId, postId, request));
     }
 
-    @DeleteMapping("/{postId}/applies")
+    @DeleteMapping("/posts/{postId}/applies")
     public ResponseEntity<Void> cancel(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId) {
