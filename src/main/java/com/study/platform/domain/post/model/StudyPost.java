@@ -88,4 +88,8 @@ public class StudyPost extends BaseTimeEntity {
     public boolean isAuthor(UUID userId) {
         return this.author.getId().equals(userId);
     }
+
+    public boolean isOpen() {
+        return this.status == StudyPostStatus.OPEN;
+    }
 }
