@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,4 +27,10 @@ public interface StudyPostRepository extends JpaRepository<StudyPost, UUID> {
 
     @Query("SELECT p FROM StudyPost p JOIN FETCH p.author WHERE p.id = :postId")
     Optional<StudyPost> findByIdWithAuthor(@Param("postId") UUID postId);
+
+    @Query("SELECT p FROM StudyPost p WHERE p.status = 'OPEN' AND p.deadline < :now")
+    List<StudyPost> findExpiredPosts(@Param("now")LocalDateTime now);
+
+    @Query("SELECT p FROM StudyPost p JOIN FETCH p.author WHERE p.status = 'OPEN' AND p.deadline BETWEEN :start AND :end")
+    List<StudyPost> findDeadlineReminderPosts(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }
