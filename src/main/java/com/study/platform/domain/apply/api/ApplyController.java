@@ -26,7 +26,7 @@ public class ApplyController implements ApplyControllerDoc {
     public ResponseEntity<ApiResponse<List<ApplyResponse>>> findApplies(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId) {
-        return ApiResponse.success(SuccessCode.OK, applyService.findApplies(userId, postId));
+        return ApiResponse.success(SuccessCode.APPLY_LIST, applyService.findApplies(userId, postId));
     }
 
     @PostMapping("/posts/{postId}/applies")
@@ -34,28 +34,28 @@ public class ApplyController implements ApplyControllerDoc {
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId,
             @Valid @RequestBody ApplyCreateRequest request) {
-        return ApiResponse.success(SuccessCode.CREATED, applyService.apply(userId, postId, request));
+        return ApiResponse.success(SuccessCode.APPLY_CREATED, applyService.apply(userId, postId, request));
     }
 
     @DeleteMapping("/posts/{postId}/applies")
-    public ResponseEntity<Void> cancel(
+    public ResponseEntity<ApiResponse<Void>> cancel(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId) {
         applyService.cancel(userId, postId);
-        return ApiResponse.noContent();
+        return ApiResponse.success(SuccessCode.APPLY_CANCELED, null);
     }
 
     @PatchMapping("/applies/{applyId}/approve")
     public ResponseEntity<ApiResponse<ApplyResponse>> approve(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID applyId) {
-        return ApiResponse.success(SuccessCode.OK, applyService.approve(userId, applyId));
+        return ApiResponse.success(SuccessCode.APPLY_APPROVED, applyService.approve(userId, applyId));
     }
 
     @PatchMapping("/applies/{applyId}/reject")
     public ResponseEntity<ApiResponse<ApplyResponse>> reject(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID applyId) {
-        return ApiResponse.success(SuccessCode.OK, applyService.reject(userId, applyId));
+        return ApiResponse.success(SuccessCode.APPLY_REJECTED, applyService.reject(userId, applyId));
     }
 }

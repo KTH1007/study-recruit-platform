@@ -1,0 +1,14 @@
+package com.study.platform.domain.comment.dto.request;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+@Schema(description = "댓글 수정 요청")
+public record CommentUpdateRequest(
+
+        @Schema(description = "수정할 댓글 내용", example = "내용을 수정")
+        @NotBlank(message = "댓글 내용을 입력해주세요.")
+        @Size(max = 500, message = "댓글은 500자 이하로 입력해주세요.")
+        String content
+) {}

@@ -33,20 +33,20 @@ public class StudyPostController implements StudyPostControllerDoc {
             @RequestParam(required = false) String techStack,
             @RequestParam(required = false)StudyPostStatus status,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ApiResponse.success(SuccessCode.OK, studyPostService.findPosts(techStack, status, pageable));
+        return ApiResponse.success(SuccessCode.POST_LIST, studyPostService.findPosts(techStack, status, pageable));
     }
 
     @GetMapping("/{postId}")
     public ResponseEntity<ApiResponse<StudyPostResponse>> findPost(
             @PathVariable UUID postId) {
-        return ApiResponse.success(SuccessCode.OK, studyPostService.findPost(postId));
+        return ApiResponse.success(SuccessCode.POST_DETAIL, studyPostService.findPost(postId));
     }
 
     @PostMapping
     public ResponseEntity<ApiResponse<StudyPostResponse>> createPost(
             @AuthenticationPrincipal UUID userId,
             @Valid @RequestBody StudyPostCreateRequest request) {
-        return ApiResponse.success(SuccessCode.CREATED, studyPostService.createPost(userId, request));
+        return ApiResponse.success(SuccessCode.POST_CREATED, studyPostService.createPost(userId, request));
     }
 
     @PatchMapping("/{postId}")
@@ -54,21 +54,21 @@ public class StudyPostController implements StudyPostControllerDoc {
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId,
             @Valid @RequestBody StudyPostUpdateRequest request) {
-        return ApiResponse.success(SuccessCode.OK, studyPostService.updatePost(userId, postId, request));
+        return ApiResponse.success(SuccessCode.POST_UPDATED, studyPostService.updatePost(userId, postId, request));
     }
 
     @DeleteMapping("/{postId}")
-    public ResponseEntity<Void> deletePost(
+    public ResponseEntity<ApiResponse<Void>> deletePost(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId) {
         studyPostService.deletePost(userId, postId);
-        return ApiResponse.noContent();
+        return ApiResponse.success(SuccessCode.POST_DELETED, null);
     }
 
     @PatchMapping("/{postId}/close")
     public ResponseEntity<ApiResponse<StudyPostResponse>> closePost(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId) {
-        return ApiResponse.success(SuccessCode.OK, studyPostService.closePost(userId, postId));
+        return ApiResponse.success(SuccessCode.POST_UPDATED, studyPostService.closePost(userId, postId));
     }
 }

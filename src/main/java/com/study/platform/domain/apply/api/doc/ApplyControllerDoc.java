@@ -27,7 +27,7 @@ public interface ApplyControllerDoc {
             @Valid ApplyCreateRequest request);
 
     @Operation(summary = "지원 취소", description = "본인의 지원을 취소합니다.")
-    ResponseEntity<Void> cancel(
+    ResponseEntity<ApiResponse<Void>> cancel(
             @Parameter(hidden = true) UUID userId,
             @Parameter(description = "게시글 ID") UUID postId);
 
