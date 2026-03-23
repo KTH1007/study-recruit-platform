@@ -27,12 +27,12 @@ public enum SuccessCode {
     POST_LIST(HttpStatus.OK, "모집글 목록 조회가 완료되었습니다."),
     POST_DETAIL(HttpStatus.OK, "모집글 상세 조회가 완료되었습니다."),
 
-    // Application
-    APPLICATION_CREATED(HttpStatus.CREATED, "지원이 완료되었습니다."),
-    APPLICATION_CANCELED(HttpStatus.OK, "지원이 취소되었습니다."),
-    APPLICATION_APPROVED(HttpStatus.OK, "지원이 승인되었습니다."),
-    APPLICATION_REJECTED(HttpStatus.OK, "지원이 거절되었습니다."),
-    APPLICATION_LIST(HttpStatus.OK, "지원 목록 조회가 완료되었습니다."),
+    // Apply
+    APPLY_CREATED(HttpStatus.CREATED, "지원이 완료되었습니다."),
+    APPLY_CANCELED(HttpStatus.OK, "지원이 취소되었습니다."),
+    APPLY_APPROVED(HttpStatus.OK, "지원이 승인되었습니다."),
+    APPLY_REJECTED(HttpStatus.OK, "지원이 거절되었습니다."),
+    APPLY_LIST(HttpStatus.OK, "지원 목록 조회가 완료되었습니다."),
 
     // Comment
     COMMENT_CREATED(HttpStatus.CREATED, "댓글이 등록되었습니다."),

@@ -49,7 +49,7 @@ public interface StudyPostControllerDoc {
             @Valid StudyPostUpdateRequest request);
 
     @Operation(summary = "게시글 삭제")
-    ResponseEntity<Void> deletePost(
+    ResponseEntity<ApiResponse<Void>> deletePost(
             @Parameter(hidden = true) UUID userId,
             @Parameter(description = "게시글 ID") UUID postId);
 
