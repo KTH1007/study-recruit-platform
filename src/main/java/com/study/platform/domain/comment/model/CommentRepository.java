@@ -11,8 +11,7 @@ import java.util.UUID;
 
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
-    @Query(value = "SELECT c FROM Comment c " +
-            "JOIN FETCH c.author WHERE c.post.id = :postId ORDER BY c. createdAt ASC",
+    @Query(value = "SELECT c FROM Comment c JOIN FETCH c.author WHERE c.post.id = :postId",
             countQuery = "SELECT COUNT(c) FROM Comment c WHERE c.post.id = :postId")
     Page<Comment> findAllByPostIdWithAuthor(@Param("postId") UUID postId, Pageable pageable);
 

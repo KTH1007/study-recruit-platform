@@ -20,8 +20,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -88,25 +88,23 @@ public class CommentService {
 
     // 댓글 내용에서 @닉네임 파싱 후 해당 유저에게 멘션 알림 발행
     private void publishMentionEvents(String content, User commenter, StudyPost post) {
-        List<String> mentionedNicknames = parseMentions(content);
-        mentionedNicknames.forEach(nickname -> {
-            userRepository.findByNickname(nickname).ifPresent(metionUser -> {
-                if (metionUser.getId().equals(commenter.getId())) {
-                    return;
-                }
-                eventPublisher.publishEvent(new MentionEvent(
-                        post.getId(),
-                        metionUser.getId(),
-                        commenter.getNickname(),
-                        post.getTitle()
-                ));
-            });
+        Set<String> mentionedNicknames = parseMentions(content);
+        userRepository.findAllByNicknameIn(mentionedNicknames).forEach(mentionedUser -> {
+            if (mentionedUser.getId().equals(commenter.getId())) {
+                return;
+            }
+            eventPublisher.publishEvent(new MentionEvent(
+                    post.getId(),
+                    mentionedUser.getId(),
+                    commenter.getNickname(),
+                    post.getTitle()
+            ));
         });
     }
 
-    private List<String> parseMentions(String content) {
+    private Set<String> parseMentions(String content) {
         Matcher matcher = MENTION_PATTERN.matcher(content);
-        List<String> nicknames = new ArrayList<>();
+        Set<String> nicknames = new HashSet<>();
         while (matcher.find()) {
             nicknames.add(matcher.group(1));
         }

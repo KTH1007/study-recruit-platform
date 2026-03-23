@@ -21,7 +21,8 @@ public interface CommentControllerDoc {
     @Operation(summary = "댓글 목록 조회", description = "게시글의 댓글 목록을 페이징으로 조회합니다.")
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (0부터 시작)", example = "0"),
-            @Parameter(name = "size", description = "페이지 크기", example = "20")
+            @Parameter(name = "size", description = "페이지 크기", example = "20"),
+            @Parameter(name = "sort", description = "정렬 기준 (createdAt,asc / createdAt,desc)", example = "createdAt,asc")
     })
     ResponseEntity<ApiResponse<Page<CommentResponse>>> findComments(UUID postId, @Parameter(hidden = true) Pageable pageable);
 

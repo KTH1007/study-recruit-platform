@@ -39,7 +39,7 @@ public class AuthService {
         User user = userRepository.findByKakaoId(payload.sub())
                 .orElseGet(() -> userRepository.save(User.create(
                         payload.sub(),
-                        payload.nickname(),
+                        resolveUniqueNickname(payload.nickname()),
                         payload.email()
                 )));
 
@@ -62,5 +62,17 @@ public class AuthService {
         String key = REFRESH_TOKEN_PREFIX + userId;
         redisTemplate.opsForValue().set(key, refreshToken, REFRESH_TOKEN_TTL);
         return LoginResponse.of(accessToken, refreshToken);
+    }
+
+    // 닉네임 중복 방지
+    private String resolveUniqueNickname(String nickname) {
+        if (userRepository.findByNickname(nickname).isEmpty()) {
+            return nickname;
+        }
+        int suffix = 1;
+        while (userRepository.findByNickname(nickname + "_" + suffix).isPresent()) {
+            suffix++;
+        }
+        return nickname + "_" + suffix;
     }
 }
