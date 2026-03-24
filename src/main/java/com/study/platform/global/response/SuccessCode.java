@@ -44,7 +44,7 @@ public enum SuccessCode {
     NOTIFICATION_LIST(HttpStatus.OK, "알림 목록 조회가 완료되었습니다."),
     NOTIFICATION_READ(HttpStatus.OK, "알림이 읽음 처리되었습니다."),
     NOTIFICATION_READ_ALL(HttpStatus.OK, "모든 알림이 읽음 처리되었습니다."),
-    UNREAD_COUNT(HttpStatus.OK, "미읽음 알림 수 조회가 완료되었습니다."),
+    NOTIFICATION_UNREAD_COUNT(HttpStatus.OK, "미읽음 알림 수 조회가 완료되었습니다."),
 
     // Team
     TEAM_INFO(HttpStatus.OK, "팀 정보 조회가 완료되었습니다."),
