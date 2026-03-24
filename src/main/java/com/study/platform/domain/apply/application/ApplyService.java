@@ -3,6 +3,7 @@ package com.study.platform.domain.apply.application;
 import com.study.platform.domain.apply.dto.request.ApplyCreateRequest;
 import com.study.platform.domain.apply.dto.response.ApplyResponse;
 import com.study.platform.domain.apply.event.ApplyApprovedEvent;
+import com.study.platform.domain.apply.event.ApplyReceivedEvent;
 import com.study.platform.domain.apply.event.ApplyRejectedEvent;
 import com.study.platform.domain.apply.model.Apply;
 import com.study.platform.domain.apply.model.ApplyRepository;
@@ -49,7 +50,14 @@ public class ApplyService {
         User applicant = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         Apply apply = Apply.create(post, applicant, request.message());
-        return ApplyResponse.from(applyRepository.save(apply));
+        applyRepository.save(apply);
+
+        eventPublisher.publishEvent(new ApplyReceivedEvent(
+                post.getId(),
+                post.getAuthor().getId(),
+                post.getTitle()
+        ));
+        return ApplyResponse.from(apply);
     }
 
     @Transactional
