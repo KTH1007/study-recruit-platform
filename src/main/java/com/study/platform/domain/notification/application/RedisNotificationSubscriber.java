@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -28,7 +30,7 @@ public class RedisNotificationSubscriber {
             emitter.send(SseEmitter.event()
                     .name(SSE_EVENT_NAME)
                     .data(response));
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.warn("SSE 전송 실패 : {}", e.getMessage());
         }
     }
