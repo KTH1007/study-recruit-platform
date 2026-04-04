@@ -47,7 +47,11 @@ public enum SuccessCode {
     NOTIFICATION_UNREAD_COUNT(HttpStatus.OK, "미읽음 알림 수 조회가 완료되었습니다."),
 
     // Team
-    TEAM_INFO(HttpStatus.OK, "팀 정보 조회가 완료되었습니다."),
+    TEAM_FOUND(HttpStatus.OK, "팀 정보 조회가 완료되었습니다."),
+    TEAM_MEMBER_LIST(HttpStatus.OK, "팀원 목록 조회가 완료되었습니다."),
+    LEADER_DELEGATED(HttpStatus.OK, "리더 위임이 완료되었습니다."),
+    TEAM_MEMBER_REMOVED(HttpStatus.OK, "팀원이 추방되었습니다."),
+    TEAM_LEFT(HttpStatus.OK, "팀에서 탈퇴하였습니다."),
     TEAM_SCHEDULE_CREATED(HttpStatus.CREATED, "팀 일정이 등록되었습니다."),
     TEAM_SCHEDULE_UPDATED(HttpStatus.OK, "팀 일정이 수정되었습니다."),
     TEAM_SCHEDULE_DELETED(HttpStatus.OK, "팀 일정이 삭제되었습니다."),
