@@ -5,6 +5,7 @@ import com.study.platform.domain.post.dto.request.StudyPostUpdateRequest;
 import com.study.platform.domain.post.dto.response.StudyPostResponse;
 import com.study.platform.domain.post.dto.response.StudyPostSummaryResponse;
 import com.study.platform.domain.post.model.StudyPostStatus;
+import com.study.platform.domain.team.dto.response.StudyTeamResponse;
 import com.study.platform.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -56,5 +57,9 @@ public interface StudyPostControllerDoc {
     @Operation(summary = "모집 마감", description = "방장이 직접 모집을 마감합니다.")
     ResponseEntity<ApiResponse<StudyPostResponse>> closePost(
             @Parameter(hidden = true) UUID userId,
+            @Parameter(description = "게시글 ID") UUID postId);
+
+    @Operation(summary = "게시글 팀 조회", description = "게시글에 연결된 스터디팀을 조회합니다.")
+    ResponseEntity<ApiResponse<StudyTeamResponse>> findTeamByPostId(
             @Parameter(description = "게시글 ID") UUID postId);
 }

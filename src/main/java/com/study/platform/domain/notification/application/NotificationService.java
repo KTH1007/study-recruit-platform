@@ -35,10 +35,10 @@ public class NotificationService {
     private final ObjectMapper objectMapper;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void send(UUID receiverId, NotificationType type, String message, UUID postId) {
+    public void send(UUID receiverId, NotificationType type, String message, UUID targetId) {
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        Notification notification = Notification.create(receiver, type, message, postId);
+        Notification notification = Notification.create(receiver, type, message, targetId);
         notificationRepository.save(notification);
         publishToRedis(NotificationResponse.from(notification));
     }
