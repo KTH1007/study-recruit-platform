@@ -101,6 +101,12 @@ public class StudyTeamService {
         teamMemberRepository.delete(member);
     }
 
+    public StudyTeamResponse findTeamByPostId(UUID postId) {
+        StudyTeam team = studyTeamRepository.findByPostId(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.TEAM_NOT_FOUND));
+        return StudyTeamResponse.from(team);
+    }
+
     private void addMember(ApplyApprovedEvent event) {
         StudyTeam team = studyTeamRepository.findByPostId(event.postId())
                 .orElseThrow(() -> new CustomException(ErrorCode.TEAM_NOT_FOUND));

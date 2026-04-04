@@ -7,6 +7,8 @@ import com.study.platform.domain.post.dto.request.StudyPostUpdateRequest;
 import com.study.platform.domain.post.dto.response.StudyPostResponse;
 import com.study.platform.domain.post.dto.response.StudyPostSummaryResponse;
 import com.study.platform.domain.post.model.StudyPostStatus;
+import com.study.platform.domain.team.application.StudyTeamService;
+import com.study.platform.domain.team.dto.response.StudyTeamResponse;
 import com.study.platform.global.response.ApiResponse;
 import com.study.platform.global.response.SuccessCode;
 import jakarta.validation.Valid;
@@ -27,6 +29,7 @@ import java.util.UUID;
 public class StudyPostController implements StudyPostControllerDoc {
 
     private final StudyPostService studyPostService;
+    private final StudyTeamService studyTeamService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<StudyPostSummaryResponse>>> findPosts(
@@ -70,5 +73,11 @@ public class StudyPostController implements StudyPostControllerDoc {
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId) {
         return ApiResponse.success(SuccessCode.POST_UPDATED, studyPostService.closePost(userId, postId));
+    }
+
+    @GetMapping("/{postId}/team")
+    public ResponseEntity<ApiResponse<StudyTeamResponse>> findTeamByPostId(
+            @PathVariable UUID postId) {
+        return ApiResponse.success(SuccessCode.TEAM_FOUND, studyTeamService.findTeamByPostId(postId));
     }
 }
