@@ -58,8 +58,8 @@ public class StudyTeamService {
         return StudyTeamResponse.from(team);
     }
 
-    public List<TeamMemberResponse> findMembers(UUID temaId) {
-        return teamMemberRepository.findAllByTeamId(temaId).stream()
+    public List<TeamMemberResponse> findMembers(UUID teamId) {
+        return teamMemberRepository.findAllByTeamId(teamId).stream()
                 .map(TeamMemberResponse::from)
                 .toList();
     }

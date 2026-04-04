@@ -1,6 +1,8 @@
 package com.study.platform.domain.team.model;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,5 +12,6 @@ public interface TeamScheduleRepository extends JpaRepository<TeamSchedule, UUID
 
     List<TeamSchedule> findAllByTeamIdOrderByScheduledAtAsc(UUID teamId);
 
-    List<TeamSchedule> findAllByScheduledAtBetween(LocalDateTime start, LocalDateTime end);
+    @Query("SELECT s FROM TeamSchedule s JOIN FETCH s.team WHERE s.scheduledAt BETWEEN :start AND :end")
+    List<TeamSchedule> findAllByScheduledAtBetweenWithTeam(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

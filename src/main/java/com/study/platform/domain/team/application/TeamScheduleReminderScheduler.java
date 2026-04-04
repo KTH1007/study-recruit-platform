@@ -31,7 +31,7 @@ public class TeamScheduleReminderScheduler {
         LocalDateTime start = tomorrow.atStartOfDay();
         LocalDateTime end = tomorrow.atTime(LocalTime.MAX);
 
-        List<TeamSchedule> schedules = teamScheduleRepository.findAllByScheduledAtBetween(start, end);
+        List<TeamSchedule> schedules = teamScheduleRepository.findAllByScheduledAtBetweenWithTeam(start, end);
         log.info("[Scheduler] D-1 일정 리마인더 발송 시작 - 대상 일정 수: {}", schedules.size());
 
         schedules.forEach(schedule -> {

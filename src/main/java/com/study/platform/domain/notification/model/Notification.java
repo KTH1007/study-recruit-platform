@@ -32,27 +32,27 @@ public class Notification extends BaseTimeEntity {
     @Column(nullable = false)
     private String message;
 
-    // 알림 클릭 시 이동할 게시글 ID (null인 경우 시스템 알림)
+    // 알림 클릭 시 이동할 대상 ID (게시글, 일정 등)
     @Column(columnDefinition = "BINARY(16)")
-    private UUID postId;
+    private UUID targetId;
 
     @Column(nullable = false)
     private boolean isRead = false;
 
     @Builder
-    private Notification(User receiver, NotificationType type, String message, UUID postId) {
+    private Notification(User receiver, NotificationType type, String message, UUID targetId) {
         this.receiver = receiver;
         this.type = type;
         this.message = message;
-        this.postId = postId;
+        this.targetId = targetId;
     }
 
-    public static Notification create(User receiver, NotificationType type, String message, UUID postId) {
+    public static Notification create(User receiver, NotificationType type, String message, UUID targetId) {
         return Notification.builder()
                 .receiver(receiver)
                 .type(type)
                 .message(message)
-                .postId(postId)
+                .targetId(targetId)
                 .build();
     }
 

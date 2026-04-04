@@ -24,7 +24,7 @@ public interface StudyTeamControllerDoc {
     ResponseEntity<ApiResponse<Void>> delegateLeader(@Parameter(hidden = true) UUID userId, UUID teamId, UUID targetUserId);
 
     @Operation(summary = "팀원 추방", description = "팀장이 특정 팀원을 추방합니다.")
-    ResponseEntity<ApiResponse<Void>> removeMember(@Parameter(hidden = true) UUID userId, UUID teamId, UUID targerUserId);
+    ResponseEntity<ApiResponse<Void>> removeMember(@Parameter(hidden = true) UUID userId, UUID teamId, UUID targetUserId);
 
     @Operation(summary = "팀 탈퇴", description = "팀을 탈퇴합니다. 마지막 팀원이면 팀이 삭제됩니다.")
     ResponseEntity<ApiResponse<Void>> leaveTeam(@Parameter(hidden = true) UUID userId, UUID teamId);

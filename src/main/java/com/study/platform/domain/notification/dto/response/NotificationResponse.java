@@ -11,7 +11,7 @@ public record NotificationResponse(
         UUID receiverId,
         NotificationType type,
         String message,
-        UUID postId,
+        UUID targetId,
         boolean isRead,
         LocalDateTime createdAt
 ) {
@@ -21,7 +21,7 @@ public record NotificationResponse(
                 notification.getReceiver().getId(),
                 notification.getType(),
                 notification.getMessage(),
-                notification.getPostId(),
+                notification.getTargetId(),
                 notification.isRead(),
                 notification.getCreatedAt()
         );

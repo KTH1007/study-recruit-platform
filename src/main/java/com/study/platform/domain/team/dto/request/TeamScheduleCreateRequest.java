@@ -16,7 +16,7 @@ public record TeamScheduleCreateRequest(
         @Schema(description = "일정 내용", example = "1회차 스터디 미팅 내용")
         String description,
 
-        @Schema(description = "일정 날짜", example = "2026-05-01T114:00:00")
+        @Schema(description = "일정 날짜", example = "2026-05-01T14:00:00")
         @NotNull(message = "일정 날짜는 필수입니다.")
         LocalDateTime scheduledAt
 ) {}
