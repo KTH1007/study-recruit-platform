@@ -14,7 +14,7 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "study_post")
+@Table(name = "study_posts")
 public class StudyPost extends BaseTimeEntity {
 
     @Id

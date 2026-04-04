@@ -11,10 +11,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.study.platform.global.constant.TimeConstants;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.List;
 
 @Slf4j
@@ -26,18 +27,18 @@ public class PostScheduler {
     private final StudyPostRepository studyPostRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul") // 매일 자정
+    @Scheduled(cron = "0 0 0 * * *", zone = TimeConstants.ASIA_SEOUL) // 매일 자정
     @Transactional
     public void closeExpiredPosts() {
-        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime now = LocalDateTime.now(TimeConstants.SEOUL_ZONE);
         List<StudyPost> expiredPosts = studyPostRepository.findExpiredPosts(now, StudyPostStatus.OPEN);
         expiredPosts.forEach(StudyPost::close);
         log.info("[Scheduler] 마감 처리 완료: {}건", expiredPosts.size());
     }
 
-    @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul") // 매일 오전 9시
+    @Scheduled(cron = "0 0 9 * * *", zone = TimeConstants.ASIA_SEOUL) // 매일 오전 9시
     public void sendDeadlineRemainder() {
-        LocalDate tomorrow = LocalDate.now(ZoneId.of("Asia/Seoul")).plusDays(1);
+        LocalDate tomorrow = LocalDate.now(TimeConstants.SEOUL_ZONE).plusDays(1);
         LocalDateTime start = tomorrow.atStartOfDay();
         LocalDateTime end = tomorrow.atTime(LocalTime.MAX);
         List<StudyPost> posts = studyPostRepository.findDeadlineReminderPosts(start, end, StudyPostStatus.OPEN);

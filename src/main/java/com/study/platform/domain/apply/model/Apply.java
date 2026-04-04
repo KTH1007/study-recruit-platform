@@ -16,7 +16,7 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "apply", uniqueConstraints = @UniqueConstraint(columnNames =
+@Table(name = "applies", uniqueConstraints = @UniqueConstraint(columnNames =
         {"post_id", "applicant_id"}))
 public class Apply extends BaseTimeEntity {
 
