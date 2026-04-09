@@ -10,6 +10,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -25,8 +27,8 @@ public class RedisChatSubscriber implements MessageListener {
             messagingTemplate.convertAndSend(
                     WebSocketConstants.CHAT_TOPIC_PREFIX + response.teamId(), response
             );
-        } catch (Exception e) {
-            log.error("Redis 채팅 메시지 처리 실패: {}", e.getMessage());
+        } catch (IOException e) {
+            log.error("Redis 채팅 메시지 처리 실패", e);
         }
     }
 }

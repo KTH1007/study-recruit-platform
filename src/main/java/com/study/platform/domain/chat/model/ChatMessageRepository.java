@@ -11,7 +11,7 @@ import java.util.UUID;
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> {
 
     @Query("SELECT m FROM ChatMessage m " +
-            "JOIN FETCH m.sender WHERE m.team.id = :teamId " +
+            "JOIN FETCH m.sender JOIN FETCH m.team WHERE m.team.id = :teamId " +
             "ORDER BY m.createdAt DESC")
     Slice<ChatMessage> findByTeamIdWithSender(@Param("teamId") UUID teamId, Pageable pageable);
 }

@@ -41,11 +41,8 @@ public class ChatService {
     public void saveAndPublish(UUID userId, UUID teamId, ChatMessageRequest request) {
         validateTeamMember(teamId, userId);
 
-        StudyTeam team = studyTeamRepository.findById(teamId)
-                .orElseThrow(() -> new CustomException(ErrorCode.TEAM_NOT_FOUND));
-
-        User sender = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        StudyTeam team = studyTeamRepository.getReferenceById(teamId);
+        User sender = userRepository.getReferenceById(userId);
 
         ChatMessage message = chatMessageRepository.save(ChatMessage.create(team, sender, request.content()));
         publish(teamId, ChatMessageResponse.from(message));
@@ -62,7 +59,7 @@ public class ChatService {
             String message = objectMapper.writeValueAsString(response);
             stringRedisTemplate.convertAndSend(WebSocketConstants.REDIS_CHAT_CHANNEL_PREFIX + teamId, message);
         } catch (JsonProcessingException e) {
-            log.error("채팅 메시지 직렬화 실패: {}", e.getMessage());
+            log.error("채팅 메시지 직렬화 실패", e);
         }
     }
 
