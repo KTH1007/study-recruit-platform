@@ -47,7 +47,6 @@ public class ApplyService {
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         validatePostOpen(post);
         validateNotAuthor(post, userId);
-        validateNotDuplicate(postId, userId);
 
         User applicant = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -76,22 +75,28 @@ public class ApplyService {
 
     @Transactional
     public ApplyResponse approve(UUID userId, UUID applyId) {
+        // Apply를 락 없이 먼저 조회해서 postId 획득
+        Apply applyInfo = applyRepository.findByIdWithPostAndApplicant(applyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
+
+        // StudyPost 먼저 락
+        StudyPost post = studyPostRepository.findByIdWithAuthorForUpdate(applyInfo.getPost().getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        validateAuthor(post, userId);
+
+        // Apply 락
         Apply apply = applyRepository.findByIdWithPostAndApplicantForUpdate(applyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
-        validateAuthor(apply.getPost(), userId);
         apply.approve();
-
-        StudyPost post = studyPostRepository.findByIdWithAuthorForUpdate(apply.getPost().getId())
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
         if (isPostFull(post)) {
             post.markFull();
         }
 
         eventPublisher.publishEvent(new ApplyApprovedEvent(
-                apply.getPost().getId(),
+                post.getId(),
                 apply.getApplicant().getId(),
-                apply.getPost().getTitle()
+                post.getTitle()
         ));
         return ApplyResponse.from(apply);
     }
@@ -136,12 +141,6 @@ public class ApplyService {
         }
     }
 
-    // 이미 지원한 이력이 있으면 ALREADY_APPLIED 예외 (중복 지원 방지)
-    private void validateNotDuplicate(UUID postId, UUID userId) {
-        if (applyRepository.existsByPostIdAndApplicantId(postId, userId)) {
-            throw new CustomException(ErrorCode.ALREADY_APPLIED);
-        }
-    }
 
     private boolean isPostFull(StudyPost post) {
         long approvedCount = applyRepository.countByPostIdAndStatus(post.getId(), ApplyStatus.APPROVED);
