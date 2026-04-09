@@ -3,7 +3,9 @@ package com.study.platform.global.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.study.platform.domain.chat.infrastructure.RedisChatSubscriber;
 import com.study.platform.domain.notification.application.RedisNotificationSubscriber;
+import com.study.platform.global.constant.WebSocketConstants;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -24,11 +26,15 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory connectionFactory,
-                                                                       MessageListenerAdapter listenerAdapter) {
+    public RedisMessageListenerContainer redisMessageListenerContainer(
+            RedisConnectionFactory connectionFactory,
+            MessageListenerAdapter listenerAdapter,
+            RedisChatSubscriber redisChatSubscriber
+    ) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
         container.addMessageListener(listenerAdapter, new PatternTopic(NOTIFICATION_CHANNEL));
+        container.addMessageListener(redisChatSubscriber, new PatternTopic(WebSocketConstants.REDIS_CHAT_CHANNEL_PREFIX + "*"));
         return container;
     }
 

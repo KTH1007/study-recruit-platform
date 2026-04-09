@@ -1,5 +1,6 @@
 package com.study.platform.global.filter;
 
+import com.study.platform.global.constant.SecurityConstants;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.jwt.JwtProvider;
 import jakarta.servlet.FilterChain;
@@ -20,9 +21,6 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtProvider jwtProvider;
 
@@ -45,9 +43,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String extractToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
-            return bearerToken.substring(BEARER_PREFIX.length());
+        String bearerToken = request.getHeader(SecurityConstants.AUTHORIZATION_HEADER);
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(SecurityConstants.BEARER_PREFIX)) {
+            return bearerToken.substring(SecurityConstants.BEARER_PREFIX.length());
         }
         return null;
     }

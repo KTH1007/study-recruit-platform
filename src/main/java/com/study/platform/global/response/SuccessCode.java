@@ -55,7 +55,10 @@ public enum SuccessCode {
     TEAM_SCHEDULE_CREATED(HttpStatus.CREATED, "팀 일정이 등록되었습니다."),
     TEAM_SCHEDULE_UPDATED(HttpStatus.OK, "팀 일정이 수정되었습니다."),
     TEAM_SCHEDULE_DELETED(HttpStatus.OK, "팀 일정이 삭제되었습니다."),
-    TEAM_SCHEDULE_LIST(HttpStatus.OK, "팀 일정 목록 조회가 완료되었습니다.");
+    TEAM_SCHEDULE_LIST(HttpStatus.OK, "팀 일정 목록 조회가 완료되었습니다."),
+
+    // Chat
+    CHAT_MESSAGE_LIST(HttpStatus.OK, "채팅 내역 조회가 완료되었습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
