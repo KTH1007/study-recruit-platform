@@ -16,6 +16,7 @@ import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,15 +43,20 @@ public class ApplyService {
 
     @Transactional
     public ApplyResponse apply(UUID userId, UUID postId, ApplyCreateRequest request) {
-        StudyPost post = getPostWithAuthor(postId);
+        StudyPost post = studyPostRepository.findByIdWithAuthorForUpdate(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         validatePostOpen(post);
         validateNotAuthor(post, userId);
-        validateNotDuplicate(postId, userId);
 
         User applicant = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         Apply apply = Apply.create(post, applicant, request.message());
-        applyRepository.save(apply);
+
+        try {
+            applyRepository.save(apply);
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException(ErrorCode.ALREADY_APPLIED);
+        }
 
         eventPublisher.publishEvent(new ApplyReceivedEvent(
                 post.getId(),
@@ -69,25 +75,36 @@ public class ApplyService {
 
     @Transactional
     public ApplyResponse approve(UUID userId, UUID applyId) {
-        Apply apply = getApplyWithPostAndApplicant(applyId);
-        validateAuthor(apply.getPost(), userId);
+        // Apply를 락 없이 먼저 조회해서 postId 획득
+        Apply applyInfo = applyRepository.findByIdWithPostAndApplicant(applyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
+
+        // StudyPost 먼저 락
+        StudyPost post = studyPostRepository.findByIdWithAuthorForUpdate(applyInfo.getPost().getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        validateAuthor(post, userId);
+
+        // Apply 락
+        Apply apply = applyRepository.findByIdWithPostAndApplicantForUpdate(applyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
         apply.approve();
 
-        if (isPostFull(apply.getPost())) {
-            apply.getPost().markFull();
+        if (isPostFull(post)) {
+            post.markFull();
         }
 
         eventPublisher.publishEvent(new ApplyApprovedEvent(
-                apply.getPost().getId(),
+                post.getId(),
                 apply.getApplicant().getId(),
-                apply.getPost().getTitle()
+                post.getTitle()
         ));
         return ApplyResponse.from(apply);
     }
 
     @Transactional
     public ApplyResponse reject(UUID userId, UUID applyId) {
-        Apply apply = getApplyWithPostAndApplicant(applyId);
+        Apply apply = applyRepository.findByIdWithPostAndApplicantForUpdate(applyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
         validateAuthor(apply.getPost(), userId);
         apply.reject();
 
@@ -103,12 +120,6 @@ public class ApplyService {
     private StudyPost getPostWithAuthor(UUID postId) {
         return studyPostRepository.findByIdWithAuthor(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-    }
-
-    // applyId로 post, applicant JOIN FETCH하여 지원 조회
-    private Apply getApplyWithPostAndApplicant(UUID applyId) {
-        return applyRepository.findByIdWithPostAndApplicant(applyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
     }
 
     private void validatePostOpen(StudyPost post) {
@@ -130,12 +141,6 @@ public class ApplyService {
         }
     }
 
-    // 이미 지원한 이력이 있으면 ALREADY_APPLIED 예외 (중복 지원 방지)
-    private void validateNotDuplicate(UUID postId, UUID userId) {
-        if (applyRepository.existsByPostIdAndApplicantId(postId, userId)) {
-            throw new CustomException(ErrorCode.ALREADY_APPLIED);
-        }
-    }
 
     private boolean isPostFull(StudyPost post) {
         long approvedCount = applyRepository.countByPostIdAndStatus(post.getId(), ApplyStatus.APPROVED);

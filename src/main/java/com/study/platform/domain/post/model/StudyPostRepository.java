@@ -1,8 +1,10 @@
 package com.study.platform.domain.post.model;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -33,4 +35,8 @@ public interface StudyPostRepository extends JpaRepository<StudyPost, UUID> {
 
     @Query("SELECT p FROM StudyPost p JOIN FETCH p.author WHERE p.status = :status AND p.deadline BETWEEN :start AND :end")
     List<StudyPost> findDeadlineReminderPosts(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("status") StudyPostStatus status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM StudyPost p JOIN FETCH p.author WHERE p.id = :postId")
+    Optional<StudyPost> findByIdWithAuthorForUpdate(@Param("postId") UUID postId);
 }
