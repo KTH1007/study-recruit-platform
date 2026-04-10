@@ -18,7 +18,7 @@ import java.util.UUID;
         name = "study_posts",
         indexes = {
                 @Index(name = "idx_study_post_status_deadline", columnList = "status, deadline"),
-                @Index(name = "idx_study_post_author_id", columnList = "author_id")
+                @Index(name = "idx_study_post_author_created", columnList = "author_id, created_at")
         }
 )
 public class StudyPost extends BaseTimeEntity {

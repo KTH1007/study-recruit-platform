@@ -16,7 +16,7 @@ import java.util.UUID;
 @Table(
         name = "notifications",
         indexes = {
-                @Index(name = "idx_notification_receiver_read", columnList = "receiver_id, is_read"),
+                @Index(name = "idx_notification_receiver_read_created", columnList = "receiver_id, is_read, created_at"),
                 @Index(name = "idx_notification_receiver_created", columnList = "receiver_id, created_at")
         }
 )

@@ -17,7 +17,7 @@ import java.util.UUID;
 @Table(
         name = "comments",
         indexes = {
-                @Index(name = "idx_comment_post_id", columnList = "post_id")
+                @Index(name = "idx_comment_post_created", columnList = "post_id, created_at")
         }
 )
 public class Comment extends BaseTimeEntity {

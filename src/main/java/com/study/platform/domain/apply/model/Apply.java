@@ -20,7 +20,7 @@ import java.util.UUID;
         name = "applies",
         uniqueConstraints = @UniqueConstraint(columnNames = {"post_id", "applicant_id"}),
         indexes = {
-                @Index(name = "idx_apply_post_status", columnList = "post_id, status"),
+                @Index(name = "idx_apply_post_status_created", columnList = "post_id, status, created_at"),
                 @Index(name = "idx_apply_applicant_id", columnList = "applicant_id")
         }
 )
