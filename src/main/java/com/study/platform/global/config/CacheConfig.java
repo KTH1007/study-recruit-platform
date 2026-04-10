@@ -38,6 +38,7 @@ public class CacheConfig implements CachingConfigurer {
                 .entryTtl(Duration.ofMinutes(10));
 
         return RedisCacheManager.builder(connectionFactory)
+                .cacheDefaults(postConfig)
                 .withCacheConfiguration(CacheConstants.POST_CACHE, postConfig)
                 .build();
     }
