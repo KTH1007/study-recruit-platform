@@ -14,7 +14,13 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "study_posts")
+@Table(
+        name = "study_posts",
+        indexes = {
+                @Index(name = "idx_study_post_status_deadline", columnList = "status, deadline"),
+                @Index(name = "idx_study_post_author_id", columnList = "author_id")
+        }
+)
 public class StudyPost extends BaseTimeEntity {
 
     @Id
@@ -46,7 +52,7 @@ public class StudyPost extends BaseTimeEntity {
 
     @Builder
     private StudyPost(User author, String title, String description,
-                     String techStack, int maxMembers, LocalDateTime deadline) {
+                      String techStack, int maxMembers, LocalDateTime deadline) {
         this.author = author;
         this.title = title;
         this.description = description;

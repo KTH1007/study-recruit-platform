@@ -16,8 +16,14 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "applies", uniqueConstraints = @UniqueConstraint(columnNames =
-        {"post_id", "applicant_id"}))
+@Table(
+        name = "applies",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"post_id", "applicant_id"}),
+        indexes = {
+                @Index(name = "idx_apply_post_status", columnList = "post_id, status"),
+                @Index(name = "idx_apply_applicant_id", columnList = "applicant_id")
+        }
+)
 public class Apply extends BaseTimeEntity {
 
     @Id
