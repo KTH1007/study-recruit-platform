@@ -9,9 +9,12 @@ import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.post.model.StudyPostStatus;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.domain.user.model.UserRepository;
+import com.study.platform.global.constant.CacheConstants;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,7 @@ public class StudyPostService {
                 .map(StudyPostSummaryResponse::from);
     }
 
+    @Cacheable(cacheNames = CacheConstants.POST_CACHE, key = "#postId")
     public StudyPostResponse findPost(UUID postId) {
         return StudyPostResponse.from(getPostWithAuthor(postId));
     }
@@ -45,6 +49,7 @@ public class StudyPostService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = CacheConstants.POST_CACHE, key = "#postId")
     public StudyPostResponse updatePost(UUID userId, UUID postId, StudyPostUpdateRequest request) {
         StudyPost post = getPostWithAuthor(postId);
         validateAuthor(post, userId);
@@ -54,6 +59,7 @@ public class StudyPostService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = CacheConstants.POST_CACHE, key = "#postId")
     public void deletePost(UUID userId, UUID postId) {
         StudyPost post = getPostWithAuthor(postId);
         validateAuthor(post, userId);
@@ -61,6 +67,7 @@ public class StudyPostService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = CacheConstants.POST_CACHE, key = "#postId")
     public StudyPostResponse closePost(UUID userId, UUID postId) {
         StudyPost post = getPostWithAuthor(postId);
         validateAuthor(post, userId);
