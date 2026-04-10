@@ -13,7 +13,13 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "notifications")
+@Table(
+        name = "notifications",
+        indexes = {
+                @Index(name = "idx_notification_receiver_read_created", columnList = "receiver_id, is_read, created_at"),
+                @Index(name = "idx_notification_receiver_created", columnList = "receiver_id, created_at")
+        }
+)
 public class Notification extends BaseTimeEntity {
 
     @Id

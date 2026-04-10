@@ -14,7 +14,12 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "comments")
+@Table(
+        name = "comments",
+        indexes = {
+                @Index(name = "idx_comment_post_created", columnList = "post_id, created_at")
+        }
+)
 public class Comment extends BaseTimeEntity {
 
     @Id
