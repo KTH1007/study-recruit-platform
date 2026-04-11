@@ -1,5 +1,6 @@
 package com.study.platform.domain.team.application;
 
+import com.study.platform.domain.notification.application.NotificationKafkaProducer;
 import com.study.platform.domain.notification.application.NotificationService;
 import com.study.platform.domain.notification.model.NotificationType;
 import com.study.platform.domain.team.model.TeamMemberRepository;
@@ -23,7 +24,7 @@ public class TeamScheduleReminderScheduler {
 
     private final TeamScheduleRepository teamScheduleRepository;
     private final TeamMemberRepository teamMemberRepository;
-    private final NotificationService notificationService;
+    private final NotificationKafkaProducer kafkaProducer;
 
     @Scheduled(cron = "0 0 9 * * *", zone = TimeConstants.ASIA_SEOUL)
     public void sendScheduleReminder() {
@@ -37,7 +38,7 @@ public class TeamScheduleReminderScheduler {
         schedules.forEach(schedule -> {
             String message = schedule.getTeam().getName() + " " + NotificationType.SCHEDULE_REMINDER.getDescription();
             teamMemberRepository.findAllByTeamId(schedule.getTeam().getId()).forEach(member ->
-                    notificationService.send(
+                    kafkaProducer.send(
                             member.getUser().getId(),
                             NotificationType.SCHEDULE_REMINDER,
                             message,
