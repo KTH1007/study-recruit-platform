@@ -1,5 +1,6 @@
 package com.study.platform.domain.post.dto.response;
 
+import com.study.platform.domain.post.document.PostDocument;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -43,6 +44,19 @@ public record StudyPostSummaryResponse(
                 post.getDeadline(),
                 post.getStatus(),
                 post.getCreatedAt()
+        );
+    }
+
+    public static StudyPostSummaryResponse fromDocument(PostDocument document) {
+        return new StudyPostSummaryResponse(
+                UUID.fromString(document.getId()),
+                document.getAuthorNickname(),
+                document.getTitle(),
+                document.getTechStack(),
+                document.getMaxMembers(),
+                document.getDeadline(),
+                StudyPostStatus.valueOf(document.getStatus()),
+                document.getCreatedAt()
         );
     }
 }

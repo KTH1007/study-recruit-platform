@@ -1,6 +1,7 @@
 package com.study.platform.domain.post.api;
 
 import com.study.platform.domain.post.api.doc.StudyPostControllerDoc;
+import com.study.platform.domain.post.application.PostSearchService;
 import com.study.platform.domain.post.application.StudyPostService;
 import com.study.platform.domain.post.dto.request.StudyPostCreateRequest;
 import com.study.platform.domain.post.dto.request.StudyPostUpdateRequest;
@@ -30,6 +31,7 @@ public class StudyPostController implements StudyPostControllerDoc {
 
     private final StudyPostService studyPostService;
     private final StudyTeamService studyTeamService;
+    private final PostSearchService postSearchService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<StudyPostSummaryResponse>>> findPosts(
@@ -79,5 +81,16 @@ public class StudyPostController implements StudyPostControllerDoc {
     public ResponseEntity<ApiResponse<StudyTeamResponse>> findTeamByPostId(
             @PathVariable UUID postId) {
         return ApiResponse.success(SuccessCode.TEAM_FOUND, studyTeamService.findTeamByPostId(postId));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<StudyPostSummaryResponse>>> searchPosts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String techStack,
+            @RequestParam(required = false) StudyPostStatus status,
+            @RequestParam(required = false, defaultValue = "0") int maxMembers,
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ApiResponse.success(SuccessCode.POST_LIST,
+                postSearchService.search(keyword, techStack, status, maxMembers, pageable));
     }
 }

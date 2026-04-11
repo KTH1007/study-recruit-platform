@@ -1,0 +1,26 @@
+{
+  "analysis": {
+    "filter": {
+      "synonym_filter": {
+        "type": "synonym",
+        "synonyms": [
+          "스프링, spring",
+          "자바, java",
+          "리액트, react",
+          "타입스크립트, typescript, ts",
+          "파이썬, python",
+          "노드, node, nodejs",
+          "넥스트, nextjs, next.js",
+          "스프링부트, springboot, spring boot"
+        ]
+      }
+    },
+    "analyzer": {
+      "nori_analyzer": {
+        "type": "custom",
+        "tokenizer": "nori_tokenizer",
+        "filter": ["nori_readingform", "lowercase", "synonym_filter"]
+      }
+    }
+  }
+}

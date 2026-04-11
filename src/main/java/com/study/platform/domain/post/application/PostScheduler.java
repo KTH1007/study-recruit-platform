@@ -1,5 +1,6 @@
 package com.study.platform.domain.post.application;
 
+import com.study.platform.domain.post.document.PostDocument;
 import com.study.platform.domain.post.event.PostDeadlineReminderEvent;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
@@ -26,6 +27,7 @@ public class PostScheduler {
 
     private final StudyPostRepository studyPostRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final PostSearchService postSearchService;
 
     @Scheduled(cron = "0 0 0 * * *", zone = TimeConstants.ASIA_SEOUL) // 매일 자정
     @Transactional
@@ -33,6 +35,9 @@ public class PostScheduler {
         LocalDateTime now = LocalDateTime.now(TimeConstants.SEOUL_ZONE);
         List<StudyPost> expiredPosts = studyPostRepository.findExpiredPosts(now, StudyPostStatus.OPEN);
         expiredPosts.forEach(StudyPost::close);
+        postSearchService.indexAll(expiredPosts.stream()
+                .map(PostDocument::from)
+                .toList());
         log.info("[Scheduler] 마감 처리 완료: {}건", expiredPosts.size());
     }
 
