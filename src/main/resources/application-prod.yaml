@@ -28,6 +28,8 @@ spring:
       enable-auto-commit: false
     listener:
       ack-mode: manual
+  elasticsearch:
+    uris: http://${ES_HOST}:9200
   jpa:
     hibernate:
       ddl-auto: validate

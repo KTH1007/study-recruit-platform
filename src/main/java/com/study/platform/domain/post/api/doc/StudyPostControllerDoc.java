@@ -62,4 +62,20 @@ public interface StudyPostControllerDoc {
     @Operation(summary = "게시글 팀 조회", description = "게시글에 연결된 스터디팀을 조회합니다.")
     ResponseEntity<ApiResponse<StudyTeamResponse>> findTeamByPostId(
             @Parameter(description = "게시글 ID") UUID postId);
+
+    @Operation(summary = "게시글 검색", description = "Elasticsearch 기반 복합 조건 검색. 키워드는 nori 형태소 분석기로 처리됩니다.")
+    @Parameters({
+            @Parameter(name = "keyword", description = "검색 키워드 (제목, 내용 대상)"),
+            @Parameter(name = "techStack", description = "기술스택 필터 (예: Java)"),
+            @Parameter(name = "status", description = "모집 상태 필터"),
+            @Parameter(name = "maxMembers", description = "최대 인원 이하 필터 (0이면 미적용)"),
+            @Parameter(name = "page", description = "페이지 번호", example = "0"),
+            @Parameter(name = "size", description = "페이지 크기", example = "10")
+    })
+    ResponseEntity<ApiResponse<Page<StudyPostSummaryResponse>>> searchPosts(
+            @Parameter(hidden = true) String keyword,
+            @Parameter(hidden = true) String techStack,
+            @Parameter(hidden = true) StudyPostStatus status,
+            @Parameter(hidden = true) int maxMembers,
+            @Parameter(hidden = true) Pageable pageable);
 }

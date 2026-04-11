@@ -1,5 +1,6 @@
 package com.study.platform.domain.post.application;
 
+import com.study.platform.domain.post.document.PostDocument;
 import com.study.platform.domain.post.dto.request.StudyPostCreateRequest;
 import com.study.platform.domain.post.dto.request.StudyPostUpdateRequest;
 import com.study.platform.domain.post.dto.response.StudyPostResponse;
@@ -29,6 +30,7 @@ public class StudyPostService {
 
     private final StudyPostRepository studyPostRepository;
     private final UserRepository userRepository;
+    private final PostSearchService postSearchService;
 
     public Page<StudyPostSummaryResponse> findPosts(String techStack, StudyPostStatus status, Pageable pageable) {
         return studyPostRepository.findAllWithFilter(techStack, status, pageable)
@@ -44,7 +46,8 @@ public class StudyPostService {
     public StudyPostResponse createPost(UUID userId, StudyPostCreateRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        StudyPost post = request.toEntity(user);
+        StudyPost post = studyPostRepository.saveAndFlush(request.toEntity(user));
+        postSearchService.index(PostDocument.from(post));
         return StudyPostResponse.from(studyPostRepository.save(post));
     }
 
@@ -55,6 +58,7 @@ public class StudyPostService {
         validateAuthor(post, userId);
         post.update(request.title(), request.description(), request.techStack(),
                 request.maxMembers(), request.deadline());
+        postSearchService.index(PostDocument.from(post));
         return StudyPostResponse.from(post);
     }
 
@@ -63,6 +67,7 @@ public class StudyPostService {
     public void deletePost(UUID userId, UUID postId) {
         StudyPost post = getPostWithAuthor(postId);
         validateAuthor(post, userId);
+        postSearchService.delete(post.getId().toString());
         studyPostRepository.delete(post);
     }
 
@@ -72,6 +77,7 @@ public class StudyPostService {
         StudyPost post = getPostWithAuthor(postId);
         validateAuthor(post, userId);
         post.close();
+        postSearchService.index(PostDocument.from(post));
         return StudyPostResponse.from(post);
     }
 
