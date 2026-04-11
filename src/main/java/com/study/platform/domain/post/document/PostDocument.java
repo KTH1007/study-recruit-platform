@@ -2,11 +2,11 @@ package com.study.platform.domain.post.document;
 
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostStatus;
-import org.springframework.data.annotation.Id;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.*;
 
 import java.time.LocalDateTime;
@@ -38,13 +38,13 @@ public class PostDocument {
     @Field(type = FieldType.Integer)
     private int maxMembers;
 
-    @Field(type = FieldType.Date, format = DateFormat.date_time)
+    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
     private LocalDateTime deadline;
 
     @Field(type = FieldType.Keyword)
     private String authorNickname;
 
-    @Field(type = FieldType.Date, format = DateFormat.date_time)
+    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
     private LocalDateTime createdAt;
 
     @Builder
