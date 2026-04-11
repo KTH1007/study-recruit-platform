@@ -8,6 +8,7 @@ import com.study.platform.domain.post.model.StudyPostStatus;
 import com.study.platform.global.constant.TimeConstants;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -17,6 +18,7 @@ import org.springframework.batch.infrastructure.item.ItemProcessor;
 import org.springframework.batch.infrastructure.item.ItemWriter;
 import org.springframework.batch.infrastructure.item.database.JpaCursorItemReader;
 import org.springframework.batch.infrastructure.item.database.builder.JpaCursorItemReaderBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -50,21 +52,25 @@ public class CloseExpiredPostsJobConfig {
     public Step closeExpiredPostsStep() {
         return new StepBuilder(STEP_NAME, jobRepository)
                 .<StudyPost, StudyPost>chunk(CHUNK_SIZE)
-                .reader(expiredPostReader())
+                .reader(expiredPostReader(null))
                 .processor(closePostProcessor())
                 .writer(closePostWriter())
                 .transactionManager(transactionManager)
                 .build();
     }
 
-    public JpaCursorItemReader<StudyPost> expiredPostReader() {
+    @Bean
+    @StepScope
+    public JpaCursorItemReader<StudyPost> expiredPostReader(
+            @Value("#{jobParameters['runAt']}") LocalDateTime runAt
+    ) {
         return new JpaCursorItemReaderBuilder<StudyPost>()
                 .name(READER_NAME)
                 .entityManagerFactory(entityManagerFactory)
                 .queryString("SELECT p FROM StudyPost p WHERE p.status = :status AND p.deadline < :now")
                 .parameterValues(Map.of(
                         "status", StudyPostStatus.OPEN,
-                        "now", LocalDateTime.now(TimeConstants.SEOUL_ZONE)
+                        "now", runAt
                 ))
                 .build();
     }

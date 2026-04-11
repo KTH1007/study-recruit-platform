@@ -35,7 +35,7 @@ public class PostScheduler {
     private final JobOperator jobOperator;
     private final Job closeExpiredPostsJob;
 
-    @Scheduled(cron = "0 * * * * *", zone = TimeConstants.ASIA_SEOUL) // 매일 자정
+    @Scheduled(cron = "0 0 0 * * *", zone = TimeConstants.ASIA_SEOUL) // 매일 자정
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void closeExpiredPosts() {
         try {
