@@ -12,13 +12,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class MentionHandler implements NotificationHandler<MentionEvent> {
 
-    private final NotificationService notificationService;
+    private final NotificationKafkaProducer kafkaProducer;
 
     @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Override
     public void handle(MentionEvent event) {
         String message = event.commenterNickname() + "님이 댓글에서 회원님을 멘션했습니다.";
-        notificationService.send(event.mentionedUserId(), NotificationType.MENTION, message, event.postId());
+        kafkaProducer.send(event.mentionedUserId(), NotificationType.MENTION, message, event.postId());
     }
 }

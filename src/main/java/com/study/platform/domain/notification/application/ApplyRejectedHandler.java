@@ -12,13 +12,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class ApplyRejectedHandler implements NotificationHandler<ApplyRejectedEvent> {
 
-    private final NotificationService notificationService;
+    private final NotificationKafkaProducer kafkaProducer;
 
     @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Override
     public void handle(ApplyRejectedEvent event) {
         String message = event.postTitle() + " 스터디 지원이 거절되었습니다.";
-        notificationService.send(event.applicantId(), NotificationType.APPLY_REJECTED, message, event.postId());
+        kafkaProducer.send(event.applicantId(), NotificationType.APPLY_REJECTED, message, event.postId());
     }
 }

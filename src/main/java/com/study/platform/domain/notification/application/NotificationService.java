@@ -1,22 +1,15 @@
 package com.study.platform.domain.notification.application;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.study.platform.domain.notification.dto.response.NotificationResponse;
 import com.study.platform.domain.notification.model.Notification;
 import com.study.platform.domain.notification.model.NotificationRepository;
-import com.study.platform.domain.notification.model.NotificationType;
-import com.study.platform.domain.user.model.User;
-import com.study.platform.domain.user.model.UserRepository;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -27,21 +20,18 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class NotificationService {
 
-    private static final String NOTIFICATION_CHANNEL = "notification";
+//    private static final String NOTIFICATION_CHANNEL = "notification";
 
     private final NotificationRepository notificationRepository;
-    private final UserRepository userRepository;
-    private final StringRedisTemplate redisTemplate;
-    private final ObjectMapper objectMapper;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void send(UUID receiverId, NotificationType type, String message, UUID targetId) {
-        User receiver = userRepository.findById(receiverId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        Notification notification = Notification.create(receiver, type, message, targetId);
-        notificationRepository.save(notification);
-        publishToRedis(NotificationResponse.from(notification));
-    }
+//    @Transactional(propagation = Propagation.REQUIRES_NEW)
+//    public void send(UUID receiverId, NotificationType type, String message, UUID targetId) {
+//        User receiver = userRepository.findById(receiverId)
+//                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+//        Notification notification = Notification.create(receiver, type, message, targetId);
+//        notificationRepository.save(notification);
+//        publishToRedis(NotificationResponse.from(notification));
+//    }
 
     public Page<NotificationResponse> findNotifications(UUID userId, Pageable pageable) {
         return notificationRepository.findAllByReceiverId(userId, pageable)
@@ -65,14 +55,14 @@ public class NotificationService {
         notificationRepository.markAllAsRead(userId);
     }
 
-    private void publishToRedis(NotificationResponse response) {
-        try {
-            String payload = objectMapper.writeValueAsString(response);
-            redisTemplate.convertAndSend(NOTIFICATION_CHANNEL, payload);
-        } catch (JsonProcessingException e) {
-            log.warn("알림 Redis 발행 실패 : {}", e.getMessage());
-        }
-    }
+//    private void publishToRedis(NotificationResponse response) {
+//        try {
+//            String payload = objectMapper.writeValueAsString(response);
+//            redisTemplate.convertAndSend(NOTIFICATION_CHANNEL, payload);
+//        } catch (JsonProcessingException e) {
+//            log.warn("알림 Redis 발행 실패 : {}", e.getMessage());
+//        }
+//    }
 
     private void validateReceiver(Notification notification, UUID userId) {
         if (!notification.getReceiver().getId().equals(userId)) {

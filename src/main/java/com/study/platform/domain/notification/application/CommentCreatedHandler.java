@@ -12,13 +12,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class CommentCreatedHandler implements NotificationHandler<CommentCreatedEvent> {
 
-    private final NotificationService notificationService;
+    private final NotificationKafkaProducer kafkaProducer;
 
     @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Override
     public void handle(CommentCreatedEvent event) {
         String message = event.postTitle() + " 게시글에 댓글이 달렸습니다.";
-        notificationService.send(event.authorId(), NotificationType.COMMENT_CREATED, message, event.postId());
+        kafkaProducer.send(event.authorId(), NotificationType.COMMENT_CREATED, message, event.postId());
     }
 }

@@ -1,5 +1,6 @@
 package com.study.platform.domain.team.application;
 
+import com.study.platform.domain.notification.application.NotificationKafkaProducer;
 import com.study.platform.domain.notification.application.NotificationService;
 import com.study.platform.domain.notification.model.NotificationType;
 import com.study.platform.domain.team.dto.request.TeamScheduleCreateRequest;
@@ -23,7 +24,7 @@ public class TeamScheduleService {
     private final TeamScheduleRepository teamScheduleRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final StudyTeamRepository studyTeamRepository;
-    private final NotificationService notificationService;
+    private final NotificationKafkaProducer kafkaProducer;
 
     @Transactional
     public TeamScheduleResponse createSchedule(UUID userId, UUID teamId, TeamScheduleCreateRequest request) {
@@ -61,7 +62,7 @@ public class TeamScheduleService {
     private void notifyAllMembers(UUID teamId, String teamName, UUID scheduledId) {
         String message = teamName + " " + NotificationType.SCHEDULE_CREATED.getDescription();
         teamMemberRepository.findAllByTeamId(teamId).forEach(member ->
-                notificationService.send(
+                kafkaProducer.send(
                         member.getUser().getId(),
                         NotificationType.SCHEDULE_CREATED,
                         message,

@@ -12,13 +12,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class ApplyReceivedHandler implements NotificationHandler<ApplyReceivedEvent> {
 
-    private final NotificationService notificationService;
+    private final NotificationKafkaProducer kafkaProducer;
 
     @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Override
     public void handle(ApplyReceivedEvent event) {
         String message = event.postTitle() + " 게시글에 새로운 지원서가 도착했습니다.";
-        notificationService.send(event.authorId(), NotificationType.APPLY_RECEIVED, message, event.postId());
+        kafkaProducer.send(event.authorId(), NotificationType.APPLY_RECEIVED, message, event.postId());
     }
 }

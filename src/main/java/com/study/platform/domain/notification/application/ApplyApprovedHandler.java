@@ -12,13 +12,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class ApplyApprovedHandler implements NotificationHandler<ApplyApprovedEvent> {
 
-    private final NotificationService notificationService;
+    private final NotificationKafkaProducer kafkaProducer;
 
     @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Override
     public void handle(ApplyApprovedEvent event) {
         String message = event.postTitle() + " 스터디 지원이 승인되었습니다.";
-        notificationService.send(event.applicantId(), NotificationType.APPLY_APPROVED, message, event.postId());
+        kafkaProducer.send(event.applicantId(), NotificationType.APPLY_APPROVED, message, event.postId());
     }
 }
