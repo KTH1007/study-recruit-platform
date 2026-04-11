@@ -28,6 +28,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-kafka'
 	// Elasticsearch
 	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+	// Batch
+	implementation 'org.springframework.boot:spring-boot-starter-batch'
 	implementation 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testAnnotationProcessor 'org.projectlombok:lombok'
