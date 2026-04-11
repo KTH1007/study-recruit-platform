@@ -2,7 +2,7 @@ package com.study.platform.domain.post.document;
 
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostStatus;
-import jakarta.persistence.Id;
+import org.springframework.data.annotation.Id;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -38,13 +38,13 @@ public class PostDocument {
     @Field(type = FieldType.Integer)
     private int maxMembers;
 
-    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+    @Field(type = FieldType.Date, format = DateFormat.date_time)
     private LocalDateTime deadline;
 
     @Field(type = FieldType.Keyword)
     private String authorNickname;
 
-    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+    @Field(type = FieldType.Date, format = DateFormat.date_time)
     private LocalDateTime createdAt;
 
     @Builder

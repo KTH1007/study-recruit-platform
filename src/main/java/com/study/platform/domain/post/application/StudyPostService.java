@@ -48,7 +48,7 @@ public class StudyPostService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         StudyPost post = studyPostRepository.saveAndFlush(request.toEntity(user));
         postSearchService.index(PostDocument.from(post));
-        return StudyPostResponse.from(studyPostRepository.save(post));
+        return StudyPostResponse.from(post);
     }
 
     @Transactional
@@ -67,8 +67,8 @@ public class StudyPostService {
     public void deletePost(UUID userId, UUID postId) {
         StudyPost post = getPostWithAuthor(postId);
         validateAuthor(post, userId);
-        postSearchService.delete(post.getId().toString());
         studyPostRepository.delete(post);
+        postSearchService.delete(post.getId().toString());
     }
 
     @Transactional

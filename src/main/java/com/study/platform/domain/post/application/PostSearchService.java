@@ -70,12 +70,17 @@ public class PostSearchService {
         return NativeQuery.builder()
                 .withQuery(boolQuery.build()._toQuery())
                 .withSort(s -> s.score(sc -> sc.order(SortOrder.Desc)))
+                .withSort(s -> s.field(f -> f.field("createdAt").order(SortOrder.Desc)))
                 .withPageable(pageable)
                 .build();
     }
 
     public void index(PostDocument document) {
         postSearchRepository.save(document);
+    }
+
+    public void indexAll(List<PostDocument> documents) {
+        postSearchRepository.saveAll(documents);
     }
 
     public void delete(String id) {

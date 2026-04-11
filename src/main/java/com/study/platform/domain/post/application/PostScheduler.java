@@ -34,10 +34,10 @@ public class PostScheduler {
     public void closeExpiredPosts() {
         LocalDateTime now = LocalDateTime.now(TimeConstants.SEOUL_ZONE);
         List<StudyPost> expiredPosts = studyPostRepository.findExpiredPosts(now, StudyPostStatus.OPEN);
-        expiredPosts.forEach(post -> {
-            post.close();
-            postSearchService.index(PostDocument.from(post));
-        });
+        expiredPosts.forEach(StudyPost::close);
+        postSearchService.indexAll(expiredPosts.stream()
+                .map(PostDocument::from)
+                .toList());
         log.info("[Scheduler] 마감 처리 완료: {}건", expiredPosts.size());
     }
 
