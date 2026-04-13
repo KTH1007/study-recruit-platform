@@ -25,7 +25,7 @@ public class SwaggerConfig {
                         .version("v1.0.0"))
                 .servers(List.of(
                         new Server().url("http://localhost:8080").description("로컬 서버"),
-                        new Server().url("https://api.study-recruit.duckdns.org").description("배포 서버")
+                        new Server().url("https://study-recruit.duckdns.org").description("배포 서버")
                 ))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()
