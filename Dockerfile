@@ -10,4 +10,4 @@ RUN chmod +x gradlew && ./gradlew bootJar -x test && rm -f build/libs/*-plain.ja
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
-ENTRYPOINT ["java", "-Xms128m", "-Xmx256m", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xms512m", "-Xmx2g", "-jar", "app.jar"]
