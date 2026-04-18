@@ -5,6 +5,7 @@ import com.study.platform.domain.user.dto.request.TokenReissueRequest;
 import com.study.platform.domain.user.dto.response.LoginResponse;
 import com.study.platform.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,5 +23,5 @@ public interface AuthControllerDoc {
     ResponseEntity<ApiResponse<LoginResponse>> reissueToken(@RequestBody TokenReissueRequest request);
 
     @Operation(summary = "로그아웃", description = "Refresh Token을 삭제합니다.")
-    ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal UUID userId);
+    ResponseEntity<ApiResponse<Void>> logout(@Parameter(hidden = true) UUID userId);
 }
