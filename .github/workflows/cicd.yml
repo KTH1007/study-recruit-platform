@@ -47,6 +47,15 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/study-platform:latest
 
+      - name: 설정 파일 업로드
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.prod.yml,nginx/nginx.conf"
+          target: /home/ubuntu/app
+
       - name: EC2 배포
         uses: appleboy/ssh-action@v1
         with:
