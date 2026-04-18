@@ -10,10 +10,10 @@ import com.study.platform.global.response.SuccessCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -32,5 +32,11 @@ public class AuthController implements AuthControllerDoc {
     public ResponseEntity<ApiResponse<LoginResponse>> reissueToken(@Valid @RequestBody TokenReissueRequest request) {
         LoginResponse response = authService.reissueToken(request);
         return ApiResponse.success(SuccessCode.TOKEN_REISSUED, response);
+    }
+
+    @DeleteMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal UUID userId) {
+        authService.logout(userId);
+        return ApiResponse.success(SuccessCode.USER_LOGOUT);
     }
 }

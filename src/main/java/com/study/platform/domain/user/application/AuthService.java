@@ -56,6 +56,10 @@ public class AuthService {
         return generateTokens(userId);
     }
 
+    public void logout(UUID userId) {
+        redisTemplate.delete(REFRESH_TOKEN_PREFIX + userId);
+    }
+
     private LoginResponse generateTokens(UUID userId) {
         String accessToken = jwtProvider.generateAccessToken(userId);
         String refreshToken = jwtProvider.generateRefreshToken(userId);

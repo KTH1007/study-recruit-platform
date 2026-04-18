@@ -7,7 +7,10 @@ import com.study.platform.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import java.util.UUID;
 
 @Tag(name = "Auth", description = "인증 API")
 public interface AuthControllerDoc {
@@ -17,4 +20,7 @@ public interface AuthControllerDoc {
 
     @Operation(summary = "토큰 재발급", description = "리프레시 토큰으로 액세스 토큰을 재발급합니다.")
     ResponseEntity<ApiResponse<LoginResponse>> reissueToken(@RequestBody TokenReissueRequest request);
+
+    @Operation(summary = "로그아웃", description = "Refresh Token을 삭제합니다.")
+    ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal UUID userId);
 }
