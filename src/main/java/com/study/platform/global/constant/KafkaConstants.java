@@ -7,4 +7,7 @@ public class KafkaConstants {
 
     public static final String NOTIFICATION_TOPIC = "notification";
     public static final String NOTIFICATION_GROUP = "notification-group";
+
+    public static final String POST_SYNC_TOPIC = "post-sync";
+    public static final String POST_SYNC_GROUP = "post-sync-group";
 }

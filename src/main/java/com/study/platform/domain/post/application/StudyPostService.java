@@ -1,10 +1,11 @@
 package com.study.platform.domain.post.application;
 
-import com.study.platform.domain.post.document.PostDocument;
 import com.study.platform.domain.post.dto.request.StudyPostCreateRequest;
 import com.study.platform.domain.post.dto.request.StudyPostUpdateRequest;
 import com.study.platform.domain.post.dto.response.StudyPostResponse;
 import com.study.platform.domain.post.dto.response.StudyPostSummaryResponse;
+import com.study.platform.domain.post.event.PostSyncEvent;
+import com.study.platform.domain.post.event.PostSyncOperationType;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.post.model.StudyPostStatus;
@@ -16,6 +17,7 @@ import com.study.platform.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,7 +32,7 @@ public class StudyPostService {
 
     private final StudyPostRepository studyPostRepository;
     private final UserRepository userRepository;
-    private final PostSearchService postSearchService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public Page<StudyPostSummaryResponse> findPosts(String techStack, StudyPostStatus status, Pageable pageable) {
         return studyPostRepository.findAllWithFilter(techStack, status, pageable)
@@ -47,7 +49,7 @@ public class StudyPostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         StudyPost post = studyPostRepository.saveAndFlush(request.toEntity(user));
-        postSearchService.index(PostDocument.from(post));
+        eventPublisher.publishEvent(new PostSyncEvent(post.getId(), PostSyncOperationType.UPSERT));
         return StudyPostResponse.from(post);
     }
 
@@ -58,7 +60,7 @@ public class StudyPostService {
         validateAuthor(post, userId);
         post.update(request.title(), request.description(), request.techStack(),
                 request.maxMembers(), request.deadline());
-        postSearchService.index(PostDocument.from(post));
+        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT));
         return StudyPostResponse.from(post);
     }
 
@@ -68,7 +70,7 @@ public class StudyPostService {
         StudyPost post = getPostWithAuthor(postId);
         validateAuthor(post, userId);
         studyPostRepository.delete(post);
-        postSearchService.delete(post.getId().toString());
+        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.DELETE));
     }
 
     @Transactional
@@ -77,7 +79,7 @@ public class StudyPostService {
         StudyPost post = getPostWithAuthor(postId);
         validateAuthor(post, userId);
         post.close();
-        postSearchService.index(PostDocument.from(post));
+        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT));
         return StudyPostResponse.from(post);
     }
 
