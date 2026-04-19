@@ -16,4 +16,12 @@ public class KafkaConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    public NewTopic postSyncTopic() {
+        return TopicBuilder.name(KafkaConstants.POST_SYNC_TOPIC)
+                .partitions(2)
+                .replicas(1)
+                .build();
+    }
 }
