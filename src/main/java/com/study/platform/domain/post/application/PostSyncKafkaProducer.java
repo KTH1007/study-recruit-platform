@@ -23,7 +23,7 @@ public class PostSyncKafkaProducer {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(PostSyncEvent event) {
         String payload = objectMapper.writeValueAsString(event);
-        kafkaTemplate.send(KafkaConstants.POST_SYNC_TOPIC, payload);
+        kafkaTemplate.send(KafkaConstants.POST_SYNC_TOPIC, event.postId().toString(), payload);
         log.info("ES 동기화 이벤트 발행 - postId: {}, type: {}", event.postId(), event.operationType());
     }
 }
