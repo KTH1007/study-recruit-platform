@@ -16,7 +16,7 @@ public class PostSyncDltConsumer {
 
     @KafkaListener(topics = KafkaConstants.POST_SYNC_DLT_TOPIC, groupId = KafkaConstants.POST_SYNC_DLT_GROUP)
     public void consume(String payload, Acknowledgment ack,
-                        @Header(KafkaHeaders.EXCEPTION_MESSAGE) String exceptionMessage) {
+                        @Header(name = KafkaHeaders.EXCEPTION_MESSAGE, required = false) String exceptionMessage) {
         log.error("DLQ 수신 - payload: {}, 원인: {}", payload, exceptionMessage);
         ack.acknowledge();
     }
