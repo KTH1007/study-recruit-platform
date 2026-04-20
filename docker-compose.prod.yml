@@ -36,6 +36,7 @@ services:
       - redis
       - kafka
       - elasticsearch
+      - logstash
 
   app2:
     image: ${DOCKER_HUB_USERNAME}/study-platform:latest
@@ -58,6 +59,7 @@ services:
       - redis
       - kafka
       - elasticsearch
+      - logstash
 
   mysql:
     image: mysql:8.0
@@ -98,6 +100,26 @@ services:
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
     volumes:
       - es_data:/usr/share/elasticsearch/data
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:9.0.2
+    container_name: study-logstash
+    ports:
+      - "5044:5044"
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.0.2
+    container_name: study-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
 
 volumes:
   mysql_data:
