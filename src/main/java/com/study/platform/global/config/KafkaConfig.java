@@ -2,9 +2,14 @@ package com.study.platform.global.config;
 
 import com.study.platform.global.constant.KafkaConstants;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.common.TopicPartition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.support.ExponentialBackOffWithMaxRetries;
 
 @Configuration
 public class KafkaConfig {
@@ -23,5 +28,25 @@ public class KafkaConfig {
                 .partitions(2)
                 .replicas(1)
                 .build();
+    }
+
+    @Bean
+    public NewTopic postSyncDltTopic() {
+        return TopicBuilder.name(KafkaConstants.POST_SYNC_DLT_TOPIC)
+                .partitions(2)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public DefaultErrorHandler errorHandler(KafkaTemplate<String, String> kafkaTemplate) {
+        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate,
+                (record, ex) -> new TopicPartition(KafkaConstants.POST_SYNC_DLT_TOPIC, record.partition()));
+
+        ExponentialBackOffWithMaxRetries backOff = new ExponentialBackOffWithMaxRetries(3);
+        backOff.setInitialInterval(1_000L);
+        backOff.setMultiplier(2.0);
+
+        return new DefaultErrorHandler(recoverer, backOff);
     }
 }
