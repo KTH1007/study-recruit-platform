@@ -1,9 +1,28 @@
+server:
+  shutdown: graceful
+
 spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
   api-docs:
     path: /api-docs
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      elasticsearch:
+        failure-rate-threshold: 50        # 실패율 50% 초과 시 OPEN
+        wait-duration-in-open-state: 30s  # 30초 후 HALF_OPEN
+        sliding-window-size: 10           # 최근 10번 요청 기준
+        permitted-number-of-calls-in-half-open-state: 3
+      kafka:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        sliding-window-size: 10
+        permitted-number-of-calls-in-half-open-state: 3
