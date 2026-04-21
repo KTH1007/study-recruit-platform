@@ -149,7 +149,7 @@ class StudyTeamControllerTest {
     }
 
     @Test
-    void leaveTeam_리더위임필요_403() throws Exception {
+    void leaveTeam_리더위임필요_400() throws Exception {
         // given
         willThrow(new CustomException(ErrorCode.LEADER_MUST_DELEGATE))
                 .given(studyTeamService).leaveTeam(any(), any());
