@@ -10,14 +10,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 
-/**
- * Kafka 도입으로 대체됨 (NotificationKafkaConsumer)
- * Redis Pub/Sub 방식의 알림 구독자 - 참고용
- */
-
 @Slf4j
+@Component
 @RequiredArgsConstructor
-@Deprecated
 public class RedisNotificationSubscriber {
 
     private static final String SSE_EVENT_NAME = "notification";
