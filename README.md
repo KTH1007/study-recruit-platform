@@ -19,7 +19,7 @@
 | Messaging | Apache Kafka (KRaft) |
 | Search | Elasticsearch 9.0.2 |
 | Cache | Redis 7 |
-| Test | k6 (부하테스트) |
+| Test | JUnit5, MockMvc, Mockito, k6 (부하테스트) |
 
 ### Infra & DevOps
 
@@ -31,6 +31,7 @@
 | CI/CD | GitHub Actions |
 | HTTPS | Let's Encrypt (Certbot) |
 | Domain | DuckDNS |
+| Log | ELK Stack (Logback -> Logstash -> Elasticsearch -> Kibana) |
 
 ---
 
@@ -94,7 +95,7 @@
 
 ### 8. 인프라 / CI/CD
 
-- Nginx 로드밸런싱 (App 2대), Let's Encrypt HTTPS, WSS
+- Nginx 로드밸런싱 (App 2대), Let's Encrypt HTTPS, WSS, gzip 압축
 - GitHub Actions: PR -> 빌드/테스트, develop 머지 -> 자동 배포
 
 ---
@@ -201,7 +202,56 @@ ES 인덱스도 배치 내 벌크 인덱싱으로 일관성 유지.
 
 p(95): 7.29s -> 6.5s 개선 (데이터 증가 시 효과 극대화 예상)
 
-### 8. Redis 캐싱 (게시글 단건 조회)
+### 8. gzip 압축
+
+Spring Boot 내장 압축 설정으로 JSON 응답 크기 감소, 네트워크 전송량 절감.
+
+```yaml
+server:
+  compression:
+    enabled: true
+    mime-types: application/json
+    min-response-size: 1024
+```
+
+### 9. Kafka 비동기 ES 동기화
+
+게시글 저장 시 Elasticsearch 동기 인덱싱 -> API 응답 지연 발생.
+Kafka 이벤트 발행으로 ES 인덱싱을 비동기 분리하여 게시글 저장 API 응답과 ES 동기화 흐름 분리.
+
+```
+게시글 저장 (MySQL) -> Kafka 발행 -> Consumer -> ES 인덱싱
+```
+
+### 10. Kafka DLQ (Dead Letter Queue)
+
+Consumer 처리 실패 시 재시도 3회 후 DLQ 토픽으로 격리.
+정상 처리 흐름을 막지 않고 실패 메시지를 별도 보관 후 수동 재처리 가능.
+
+| 설정 | 값 |
+|------|-----|
+| 재시도 횟수 | 3회 (지수 백오프, 1초 시작 x2배) |
+| DLQ 토픽 | post-sync.DLT, notification.DLT |
+| 처리 방식 | 실패 메시지 격리 후 정상 흐름 유지 |
+
+```
+Consumer 실패 -> 지수 백오프 retry 3회 -> DLT topic (post-sync.DLT / notification.DLT)
+```
+
+### 11. Circuit Breaker + Graceful Shutdown
+
+- **Circuit Breaker (Resilience4j)**: 외부 서비스(Kakao OAuth) 장애 시 빠른 실패 처리, 불필요한 대기 및 스레드 점유 제거
+- **Graceful Shutdown**: 배포 시 처리 중인 요청을 완료한 후 종료 (`server.shutdown=graceful`, `spring.lifecycle.timeout-per-shutdown-phase=30s`)
+
+```yaml
+server:
+  shutdown: graceful
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+```
+
+### 12. Redis 캐싱 (게시글 단건 조회)
 
 | | Before (DB 직접 조회) | After (Redis 캐시) |
 |---|---|---|
@@ -213,7 +263,7 @@ p(95): 7.29s -> 6.5s 개선 (데이터 증가 시 효과 극대화 예상)
 `@Cacheable`로 첫 조회 시 Redis 저장, 이후 DB 미조회. TTL 10분.
 `RedisCacheErrorHandler`로 Redis 장애 시 예외 전파 없이 DB 폴백 처리.
 
-### 9. 배포 서버 성능 (AWS EC2)
+### 13. 배포 서버 성능 (AWS EC2)
 
 목록 조회 vs 단건 조회 (Redis 캐시) 비교 - 10,000 VUs
 
@@ -333,3 +383,26 @@ st    : 5.4%  <- t3 버스터블 CPU 크레딧 소진으로 스로틀링
 
 **결론**: t3.large 버스터블 인스턴스 특성상 지속 부하 시 CPU 크레딧 소진 -> 스로틀링 발생.
 실제 서비스라면 서비스별 인스턴스 분리 + c5 계열(비버스터블) 사용 필요.
+
+---
+
+### 6. SSE 멀티 인스턴스 알림 유실
+
+**문제**: App1에서 발행한 알림이 App2에 연결된 클라이언트에게 전달되지 않음
+
+**원인**: SSE 연결은 각 인스턴스 메모리에 독립 저장 -> Nginx 라운드로빈으로 알림 발행 인스턴스와 SSE 연결 인스턴스가 다를 수 있음
+
+```
+클라이언트 -> App1 (SSE 연결)
+알림 이벤트 -> App2에서 처리 -> App2 메모리에만 발행 -> App1 클라이언트 수신 불가
+```
+
+**해결**: RedisNotificationSubscriber 활성화
+
+모든 인스턴스가 Redis 채널을 구독 -> 어느 인스턴스에서 발행해도 전체 인스턴스로 전파 -> 각 인스턴스가 자신에 연결된 SSE 클라이언트에게 전송
+
+```
+알림 이벤트 -> Redis Pub/Sub 발행 -> App1, App2 모두 수신 -> 각자 SSE 전송
+```
+
+**결과**: 멀티 인스턴스 환경에서 SSE 알림 유실 0
