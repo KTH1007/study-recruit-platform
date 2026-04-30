@@ -21,7 +21,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PessimisticLockingFailureException.class)
     public ResponseEntity<ApiResponse<Void>> handlePessimisticLockingFailureException(PessimisticLockingFailureException e) {
-        log.warn("PessimisticLockingFailureException: {}", e.getMessage());
+        log.warn("PessimisticLockingFailureException: {}", e.getMessage(), e);
         return ApiResponse.fail(ErrorCode.LOCK_CONFLICT);
     }
 
