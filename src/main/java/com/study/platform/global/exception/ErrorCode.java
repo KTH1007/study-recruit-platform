@@ -46,7 +46,10 @@ public enum ErrorCode {
     NOT_TEAM_MEMBER(HttpStatus.FORBIDDEN, "팀원만 접근할 수 있습니다."),
     TEAM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 팀원입니다."),
     LEADER_MUST_DELEGATE(HttpStatus.BAD_REQUEST, "리더 위임 후 탈퇴할 수 있습니다."),
-    TEAM_SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 일정입니다.");
+    TEAM_SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 일정입니다."),
+
+    // Concurrency
+    LOCK_CONFLICT(HttpStatus.CONFLICT, "다른 요청이 처리 중입니다. 잠시 후 다시 시도해주세요.");
 
     private final HttpStatus httpStatus;
     private final String message;

@@ -2,6 +2,7 @@ package com.study.platform.global.exception;
 
 import com.study.platform.global.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -16,6 +17,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException e) {
         log.warn("CustomException: {}", e.getMessage());
         return ApiResponse.fail(e.getErrorCode());
+    }
+
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePessimisticLockingFailureException(PessimisticLockingFailureException e) {
+        log.warn("PessimisticLockingFailureException: {}", e.getMessage(), e);
+        return ApiResponse.fail(ErrorCode.LOCK_CONFLICT);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
