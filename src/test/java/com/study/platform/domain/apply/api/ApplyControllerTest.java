@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -151,5 +152,18 @@ class ApplyControllerTest {
                         .header("Authorization", "Bearer fake-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("REJECTED"));
+    }
+
+    @Test
+    void approve_락충돌_409() throws Exception {
+        // given
+        willThrow(new PessimisticLockingFailureException("lock timeout"))
+                .given(applyService).approve(any(), any());
+
+        // when & then
+        mockMvc.perform(patch("/api/applies/{applyId}/approve", applyId)
+                .header("Authorization", "Bearer fake-token"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false));
     }
 }
