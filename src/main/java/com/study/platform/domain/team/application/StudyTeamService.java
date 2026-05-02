@@ -66,9 +66,10 @@ public class StudyTeamService {
 
     @Transactional
     public void delegateLeader(UUID userId, UUID teamId, UUID targetUserId) {
-        validateLeader(teamId, userId);
         TeamMember currentLeader = teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TEAM_MEMBER_NOT_FOUND));
+        currentLeader.validateIsLeader();
+
         TeamMember newLeader = teamMemberRepository.findByTeamIdAndUserId(teamId, targetUserId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TEAM_MEMBER_NOT_FOUND));
 
@@ -78,10 +79,13 @@ public class StudyTeamService {
 
     @Transactional
     public void removeMember(UUID userId, UUID teamId, UUID targetUserId) {
-        validateLeader(teamId, userId);
-        TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, targetUserId)
+        TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TEAM_MEMBER_NOT_FOUND));
-        teamMemberRepository.delete(member);
+        member.validateIsLeader();
+
+        TeamMember target = teamMemberRepository.findByTeamIdAndUserId(teamId, targetUserId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.TEAM_MEMBER_NOT_FOUND));
+        teamMemberRepository.delete(target);
     }
 
     @Transactional
@@ -89,7 +93,7 @@ public class StudyTeamService {
         TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TEAM_MEMBER_NOT_FOUND));
 
-        if (member.getRole() == TeamMemberRole.LEADER) {
+        if (member.isLeader()) {
             boolean isLastMember = teamMemberRepository.countByTeamId(teamId) == 1;
             if (isLastMember) {
                 teamMemberRepository.deleteAllByTeamId(teamId);
@@ -116,14 +120,6 @@ public class StudyTeamService {
         User applicant = userRepository.findById(event.applicantId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         teamMemberRepository.save(TeamMember.createMember(team, applicant));
-    }
-
-    private void validateLeader(UUID teamId, UUID userId) {
-        TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.TEAM_MEMBER_NOT_FOUND));
-        if (member.getRole() != TeamMemberRole.LEADER) {
-            throw new CustomException(ErrorCode.FORBIDDEN);
-        }
     }
 
     private StudyTeam getTeam(UUID teamId) {

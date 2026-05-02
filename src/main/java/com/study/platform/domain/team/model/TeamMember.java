@@ -2,6 +2,8 @@ package com.study.platform.domain.team.model;
 
 import com.study.platform.domain.user.model.User;
 import com.study.platform.global.entity.BaseTimeEntity;
+import com.study.platform.global.exception.CustomException;
+import com.study.platform.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -62,5 +64,15 @@ public class TeamMember extends BaseTimeEntity {
 
     public void downgradeToMember() {
         this.role = TeamMemberRole.MEMBER;
+    }
+
+    public boolean isLeader() {
+        return this.role == TeamMemberRole.LEADER;
+    }
+
+    public void validateIsLeader() {
+        if (!isLeader()) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
     }
 }

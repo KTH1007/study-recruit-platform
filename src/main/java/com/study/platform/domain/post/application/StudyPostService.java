@@ -57,7 +57,7 @@ public class StudyPostService {
     @CacheEvict(cacheNames = CacheConstants.POST_CACHE, key = "#postId")
     public StudyPostResponse updatePost(UUID userId, UUID postId, StudyPostUpdateRequest request) {
         StudyPost post = getPostWithAuthor(postId);
-        validateAuthor(post, userId);
+        post.validateAuthor(userId);
         post.update(request.title(), request.description(), request.techStack(),
                 request.maxMembers(), request.deadline());
         eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT));
@@ -68,7 +68,7 @@ public class StudyPostService {
     @CacheEvict(cacheNames = CacheConstants.POST_CACHE, key = "#postId")
     public void deletePost(UUID userId, UUID postId) {
         StudyPost post = getPostWithAuthor(postId);
-        validateAuthor(post, userId);
+        post.validateAuthor(userId);
         studyPostRepository.delete(post);
         eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.DELETE));
     }
@@ -77,7 +77,7 @@ public class StudyPostService {
     @CacheEvict(cacheNames = CacheConstants.POST_CACHE, key = "#postId")
     public StudyPostResponse closePost(UUID userId, UUID postId) {
         StudyPost post = getPostWithAuthor(postId);
-        validateAuthor(post, userId);
+        post.validateAuthor(userId);
         post.close();
         eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT));
         return StudyPostResponse.from(post);
@@ -86,11 +86,5 @@ public class StudyPostService {
     private StudyPost getPostWithAuthor(UUID postId) {
         return studyPostRepository.findByIdWithAuthor(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-    }
-
-    private void validateAuthor(StudyPost post, UUID userId) {
-        if (!post.isAuthor(userId)) {
-            throw new CustomException(ErrorCode.FORBIDDEN);
-        }
     }
 }

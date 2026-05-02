@@ -35,7 +35,7 @@ public class ApplyService {
 
     public List<ApplyResponse> findApplies(UUID userId, UUID postId) {
         StudyPost post = getPostWithAuthor(postId);
-        validateAuthor(post, userId);
+        post.validateAuthor(userId);
         return applyRepository.findAllByPostIdWithApplicant(postId).stream()
                 .map(ApplyResponse::from)
                 .toList();
@@ -45,8 +45,8 @@ public class ApplyService {
     public ApplyResponse apply(UUID userId, UUID postId, ApplyCreateRequest request) {
         StudyPost post = studyPostRepository.findByIdWithAuthorForUpdate(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-        validatePostOpen(post);
-        validateNotAuthor(post, userId);
+        post.validateOpen();
+        post.validateNotAuthor(userId);
 
         User applicant = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -82,7 +82,7 @@ public class ApplyService {
         // StudyPost 먼저 락
         StudyPost post = studyPostRepository.findByIdWithAuthorForUpdate(applyInfo.getPost().getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-        validateAuthor(post, userId);
+        post.validateAuthor(userId);
 
         // Apply 락
         Apply apply = applyRepository.findByIdWithPostAndApplicantForUpdate(applyId)
@@ -105,7 +105,8 @@ public class ApplyService {
     public ApplyResponse reject(UUID userId, UUID applyId) {
         Apply apply = applyRepository.findByIdWithPostAndApplicantForUpdate(applyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
-        validateAuthor(apply.getPost(), userId);
+        StudyPost post = apply.getPost();
+        post.validateAuthor(userId);
         apply.reject();
 
         eventPublisher.publishEvent(new ApplyRejectedEvent(
@@ -121,26 +122,6 @@ public class ApplyService {
         return studyPostRepository.findByIdWithAuthor(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
     }
-
-    private void validatePostOpen(StudyPost post) {
-        if (!post.isOpen()) {
-            throw new CustomException(ErrorCode.POST_CLOSED);
-        }
-    }
-
-    private void validateAuthor(StudyPost post, UUID userId) {
-        if (!post.isAuthor(userId)) {
-            throw new CustomException(ErrorCode.FORBIDDEN);
-        }
-    }
-
-    // 게시글 작성자이면 CANNOT_APPLY_OWN_POST 예외 (본인 게시글 지원 방지)
-    private void validateNotAuthor(StudyPost post, UUID userId) {
-        if (post.isAuthor(userId)) {
-            throw new CustomException(ErrorCode.CANNOT_APPLY_OWN_POST);
-        }
-    }
-
 
     private boolean isPostFull(StudyPost post) {
         long approvedCount = applyRepository.countByPostIdAndStatus(post.getId(), ApplyStatus.APPROVED);

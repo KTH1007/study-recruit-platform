@@ -3,6 +3,8 @@ package com.study.platform.domain.comment.model;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.global.entity.BaseTimeEntity;
+import com.study.platform.global.exception.CustomException;
+import com.study.platform.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -59,5 +61,11 @@ public class Comment extends BaseTimeEntity {
 
     public boolean isAuthor(UUID userId) {
         return this.author.getId().equals(userId);
+    }
+
+    public void validateAuthor(UUID userId) {
+        if (!isAuthor(userId)) {
+            throw new CustomException(ErrorCode.NOT_COMMENT_AUTHOR);
+        }
     }
 }

@@ -61,7 +61,7 @@ public class CommentService {
     @Transactional
     public CommentResponse updateComment(UUID userId, UUID commentId, CommentUpdateRequest request) {
         Comment comment = getCommentWithAuthor(commentId);
-        validateCommentAuthor(comment, userId);
+        comment.validateAuthor(userId);
         comment.update(request.content());
         return CommentResponse.from(comment);
     }
@@ -69,7 +69,7 @@ public class CommentService {
     @Transactional
     public void deleteComment(UUID userId, UUID commentId) {
         Comment comment = getCommentWithAuthor(commentId);
-        validateCommentAuthor(comment, userId);
+        comment.validateAuthor(userId);
         commentRepository.delete(comment);
     }
 
@@ -119,11 +119,5 @@ public class CommentService {
     private Comment getCommentWithAuthor(UUID commentId) {
         return commentRepository.findByIdWithAuthor(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
-    }
-
-    private void validateCommentAuthor(Comment comment, UUID userId) {
-        if (!comment.isAuthor(userId)) {
-            throw new CustomException(ErrorCode.NOT_COMMENT_AUTHOR);
-        }
     }
 }
