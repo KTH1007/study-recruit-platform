@@ -2,6 +2,8 @@ package com.study.platform.domain.post.model;
 
 import com.study.platform.domain.user.model.User;
 import com.study.platform.global.entity.BaseTimeEntity;
+import com.study.platform.global.exception.CustomException;
+import com.study.platform.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -97,5 +99,23 @@ public class StudyPost extends BaseTimeEntity {
 
     public boolean isOpen() {
         return this.status == StudyPostStatus.OPEN;
+    }
+
+    public void validateOpen() {
+        if (!isOpen()) {
+            throw new CustomException(ErrorCode.POST_CLOSED);
+        }
+    }
+
+    public void validateAuthor(UUID userId) {
+        if (!isAuthor(userId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    public void validateNotAuthor(UUID userId) {
+        if (isAuthor(userId)) {
+            throw new CustomException(ErrorCode.CANNOT_APPLY_OWN_POST);
+        }
     }
 }

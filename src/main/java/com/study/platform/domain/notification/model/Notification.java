@@ -2,6 +2,8 @@ package com.study.platform.domain.notification.model;
 
 import com.study.platform.domain.user.model.User;
 import com.study.platform.global.entity.BaseTimeEntity;
+import com.study.platform.global.exception.CustomException;
+import com.study.platform.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -64,5 +66,11 @@ public class Notification extends BaseTimeEntity {
 
     public void markAsRead() {
         this.isRead = true;
+    }
+
+    public void validateReceiver(UUID userId) {
+        if (!this.receiver.getId().equals(userId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
     }
 }

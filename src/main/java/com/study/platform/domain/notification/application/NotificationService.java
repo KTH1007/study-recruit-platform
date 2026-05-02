@@ -46,7 +46,7 @@ public class NotificationService {
     public void markAsRead(UUID userId, UUID notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
-        validateReceiver(notification, userId);
+        notification.validateReceiver(userId);
         notification.markAsRead();
     }
 
@@ -63,11 +63,5 @@ public class NotificationService {
 //            log.warn("알림 Redis 발행 실패 : {}", e.getMessage());
 //        }
 //    }
-
-    private void validateReceiver(Notification notification, UUID userId) {
-        if (!notification.getReceiver().getId().equals(userId)) {
-            throw new CustomException(ErrorCode.FORBIDDEN);
-        }
-    }
 
 }
