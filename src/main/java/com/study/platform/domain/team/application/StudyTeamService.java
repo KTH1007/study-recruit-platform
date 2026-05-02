@@ -79,12 +79,12 @@ public class StudyTeamService {
 
     @Transactional
     public void removeMember(UUID userId, UUID teamId, UUID targetUserId) {
-        TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
+        TeamMember currentLeader = teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TEAM_MEMBER_NOT_FOUND));
-        member.validateIsLeader();
+        currentLeader.validateIsLeader();
 
         TeamMember target = teamMemberRepository.findByTeamIdAndUserId(teamId, targetUserId)
-                        .orElseThrow(() -> new CustomException(ErrorCode.TEAM_MEMBER_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.TEAM_MEMBER_NOT_FOUND));
         teamMemberRepository.delete(target);
     }
 
