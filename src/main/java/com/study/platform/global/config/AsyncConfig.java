@@ -1,11 +1,14 @@
 package com.study.platform.global.config;
 
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskDecorator;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -32,7 +35,24 @@ public class AsyncConfig {
         executor.setQueueCapacity(queueCapacity);
         executor.setThreadNamePrefix(NOTIFICATION_THREAD_PREFIX);
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+        executor.setTaskDecorator(mdcTaskDecorator());
         executor.initialize();
         return executor;
+    }
+
+    private TaskDecorator mdcTaskDecorator() {
+        return task -> {
+            Map<String, String> mdcContext = MDC.getCopyOfContextMap();
+            return () -> {
+                try {
+                    if (mdcContext != null) {
+                        MDC.setContextMap(mdcContext);
+                    }
+                    task.run();
+                } finally {
+                    MDC.clear();
+                }
+            };
+        };
     }
 }

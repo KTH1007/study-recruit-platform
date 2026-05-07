@@ -1,6 +1,7 @@
 package com.study.platform.global.config;
 
 import com.study.platform.global.filter.JwtAuthenticationFilter;
+import com.study.platform.global.filter.MdcFilter;
 import com.study.platform.global.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -53,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(new MdcFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
