@@ -16,6 +16,8 @@ public class MdcFilter extends OncePerRequestFilter {
     private static final String SERVER_INSTANCE = "serverInstance";
     private static final String CLIENT_IP = "clientIp";
     private static final String X_REQUEST_ID = "X-Request-Id";
+    private static final String METHOD = "method";
+    private static final String URI = "uri";
 
     private static final String HOSTNAME = System.getenv("HOSTNAME") != null
             ? System.getenv("HOSTNAME") : "local";
@@ -33,6 +35,8 @@ public class MdcFilter extends OncePerRequestFilter {
         MDC.put(REQUEST_ID, UUID.randomUUID().toString());
         MDC.put(SERVER_INSTANCE, HOSTNAME);
         MDC.put(CLIENT_IP, extractClientIp(request));
+        MDC.put(METHOD, request.getMethod());
+        MDC.put(URI, request.getRequestURI());
         response.setHeader(X_REQUEST_ID, MDC.get(REQUEST_ID));
         try {
             filterChain.doFilter(request, response);
