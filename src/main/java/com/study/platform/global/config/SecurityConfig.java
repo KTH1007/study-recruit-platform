@@ -38,6 +38,7 @@ public class SecurityConfig {
     };
 
     private final JwtProvider jwtProvider;
+    private final MdcFilter mdcFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -54,7 +55,7 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new MdcFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(mdcFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

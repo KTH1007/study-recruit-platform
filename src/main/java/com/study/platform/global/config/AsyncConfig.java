@@ -47,6 +47,8 @@ public class AsyncConfig {
                 try {
                     if (mdcContext != null) {
                         MDC.setContextMap(mdcContext);
+                    } else {
+                        MDC.clear();
                     }
                     task.run();
                 } finally {

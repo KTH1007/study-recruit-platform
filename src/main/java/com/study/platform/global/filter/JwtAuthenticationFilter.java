@@ -1,5 +1,6 @@
 package com.study.platform.global.filter;
 
+import com.study.platform.global.constant.MdcConstants;
 import com.study.platform.global.constant.SecurityConstants;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.jwt.JwtProvider;
@@ -23,13 +24,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String USER_ID = "userId";
-
     private final JwtProvider jwtProvider;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
         String token = extractToken(request);
         if (token != null) {
             try {
@@ -38,7 +37,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userId, null, List.of());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                MDC.put(USER_ID, userId.toString());
+                MDC.put(MdcConstants.USER_ID, userId.toString());
             } catch (CustomException e) {
                 log.warn("JWT authentication failed: {}", e.getMessage());
             }
