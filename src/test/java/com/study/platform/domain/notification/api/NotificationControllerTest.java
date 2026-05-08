@@ -7,6 +7,7 @@ import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import com.study.platform.global.jwt.JwtProvider;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -42,6 +43,9 @@ class NotificationControllerTest {
 
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
+    @MockitoBean
+    private RedisTemplate<String, Object> redisTemplate;
 
     private UUID userId;
     private UUID notificationId;

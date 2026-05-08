@@ -4,6 +4,7 @@ import com.study.platform.domain.apply.api.doc.ApplyControllerDoc;
 import com.study.platform.domain.apply.application.ApplyService;
 import com.study.platform.domain.apply.dto.request.ApplyCreateRequest;
 import com.study.platform.domain.apply.dto.response.ApplyResponse;
+import com.study.platform.global.idempotency.Idempotent;
 import com.study.platform.global.response.ApiResponse;
 import com.study.platform.global.response.SuccessCode;
 import jakarta.validation.Valid;
@@ -29,6 +30,7 @@ public class ApplyController implements ApplyControllerDoc {
         return ApiResponse.success(SuccessCode.APPLY_LIST, applyService.findApplies(userId, postId));
     }
 
+    @Idempotent
     @PostMapping("/posts/{postId}/applies")
     public ResponseEntity<ApiResponse<ApplyResponse>> apply(
             @AuthenticationPrincipal UUID userId,

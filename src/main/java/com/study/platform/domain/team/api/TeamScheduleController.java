@@ -5,6 +5,7 @@ import com.study.platform.domain.team.application.TeamScheduleService;
 import com.study.platform.domain.team.dto.request.TeamScheduleCreateRequest;
 import com.study.platform.domain.team.dto.request.TeamScheduleUpdateRequest;
 import com.study.platform.domain.team.dto.response.TeamScheduleResponse;
+import com.study.platform.global.idempotency.Idempotent;
 import com.study.platform.global.response.ApiResponse;
 import com.study.platform.global.response.SuccessCode;
 import jakarta.validation.Valid;
@@ -23,6 +24,7 @@ public class TeamScheduleController implements TeamScheduleControllerDoc {
 
     private final TeamScheduleService teamScheduleService;
 
+    @Idempotent
     @PostMapping
     public ResponseEntity<ApiResponse<TeamScheduleResponse>> createSchedule(
             @AuthenticationPrincipal UUID userId,
