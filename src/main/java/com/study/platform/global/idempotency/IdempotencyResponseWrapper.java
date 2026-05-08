@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 
 public class IdempotencyResponseWrapper extends HttpServletResponseWrapper {
 
@@ -39,7 +40,7 @@ public class IdempotencyResponseWrapper extends HttpServletResponseWrapper {
 
     public String getCapturedBody() {
         writer.flush();
-        return buffer.toString();
+        return buffer.toString(StandardCharsets.UTF_8);
     }
 
     private static class WrappedOutputStream extends ServletOutputStream {
@@ -53,6 +54,16 @@ public class IdempotencyResponseWrapper extends HttpServletResponseWrapper {
         @Override
         public void write(int b) {
             buffer.write(b);
+        }
+
+        @Override
+        public void write(byte[] b) throws IOException {
+            buffer.write(b);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) {
+            buffer.write(b, off, len);
         }
 
         @Override

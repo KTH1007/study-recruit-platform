@@ -1,15 +1,22 @@
 package com.study.platform.global.idempotency;
 
+
+import tools.jackson.databind.ObjectMapper;
 import com.study.platform.global.constant.IdempotencyConstants;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
+
 import java.time.Duration;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -17,16 +24,18 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class IdempotencyInterceptor implements HandlerInterceptor {
 
-    private static final Duration TTL = Duration.ofMinutes(30);
+    private static final Duration PROCESSING_TTL = Duration.ofMinutes(2);
+    private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
-    public boolean preHandle(HttpServletRequest request , HttpServletResponse response, Object handler) throws  Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
+                             Object handler) throws Exception {
         if (!(handler instanceof HandlerMethod handlerMethod)) {
             return true;
         }
-
         if (!handlerMethod.hasMethodAnnotation(Idempotent.class)) {
             return true;
         }
@@ -36,9 +45,8 @@ public class IdempotencyInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        String redisKey = IdempotencyConstants.IDEMPOTENCY_PREFIX + idempotencyKey;
+        String redisKey = buildRedisKey(idempotencyKey);
 
-        // 캐싱된 응답 있으면 그대로 반환
         Object cached = redisTemplate.opsForValue().get(redisKey);
         if (cached instanceof IdempotentResponse cachedResponse) {
             log.debug("Idempotent response returned for key: {}", idempotencyKey);
@@ -48,20 +56,15 @@ public class IdempotencyInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        // 처리 중이면 409 반환
         if (IdempotencyConstants.PROCESSING.equals(cached)) {
-            response.setStatus(HttpServletResponse.SC_CONFLICT);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"message\":\"동일한 요청이 처리 중입니다.\"}");
+            writeConflictResponse(response);
             return false;
         }
 
-        // 처리 중 락 설정
-        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(redisKey, IdempotencyConstants.PROCESSING, TTL.toSeconds(), TimeUnit.SECONDS);
+        Boolean acquired = redisTemplate.opsForValue()
+                .setIfAbsent(redisKey, IdempotencyConstants.PROCESSING, PROCESSING_TTL.toSeconds(), TimeUnit.SECONDS);
         if (Boolean.FALSE.equals(acquired)) {
-            response.setStatus(HttpServletResponse.SC_CONFLICT);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"message\":\"동일한 요청이 처리 중입니다.\"}");
+            writeConflictResponse(response);
             return false;
         }
 
@@ -73,13 +76,10 @@ public class IdempotencyInterceptor implements HandlerInterceptor {
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
                                 Object handler, Exception ex) throws Exception {
         String redisKey = (String) request.getAttribute(IdempotencyConstants.IDEMPOTENCY_KEY_HEADER);
-
-        // 멱등성 키가 없으면 무시
         if (redisKey == null) {
             return;
         }
 
-        // 예외 발생 or 500 에러 -> 락 해제 (재시도 허용)
         if (ex != null || response.getStatus() >= 500) {
             redisTemplate.delete(redisKey);
             return;
@@ -91,7 +91,24 @@ public class IdempotencyInterceptor implements HandlerInterceptor {
                     wrapper.getCapturedBody(),
                     response.getContentType()
             );
-            redisTemplate.opsForValue().set(redisKey, idempotentResponse, TTL);
+            redisTemplate.opsForValue().set(redisKey, idempotentResponse, CACHE_TTL);
         }
+    }
+
+    private String buildRedisKey(String idempotencyKey) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UUID userId) {
+            return IdempotencyConstants.IDEMPOTENCY_PREFIX + userId + ":" + idempotencyKey;
+        }
+        return IdempotencyConstants.IDEMPOTENCY_PREFIX + idempotencyKey;
+    }
+
+    private void writeConflictResponse(HttpServletResponse response) throws Exception {
+        response.setStatus(HttpServletResponse.SC_CONFLICT);
+        response.setContentType("application/json;charset=UTF-8");
+        String body = objectMapper.writeValueAsString(
+                Map.of("success", false, "message", "동일한 요청이 처리 중입니다.")
+        );
+        response.getWriter().write(body);
     }
 }

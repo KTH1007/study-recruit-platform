@@ -22,7 +22,14 @@ public class IdempotencyFilter extends OncePerRequestFilter {
             return;
         }
 
+        String uri = request.getRequestURI();
+        if (!uri.startsWith("/api/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         IdempotencyResponseWrapper wrapper = new IdempotencyResponseWrapper(response);
         filterChain.doFilter(request, wrapper);
+        wrapper.flushBuffer();
     }
 }
