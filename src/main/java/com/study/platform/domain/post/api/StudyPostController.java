@@ -10,6 +10,7 @@ import com.study.platform.domain.post.dto.response.StudyPostSummaryResponse;
 import com.study.platform.domain.post.model.StudyPostStatus;
 import com.study.platform.domain.team.application.StudyTeamService;
 import com.study.platform.domain.team.dto.response.StudyTeamResponse;
+import com.study.platform.global.idempotency.Idempotent;
 import com.study.platform.global.response.ApiResponse;
 import com.study.platform.global.response.SuccessCode;
 import jakarta.validation.Valid;
@@ -47,6 +48,7 @@ public class StudyPostController implements StudyPostControllerDoc {
         return ApiResponse.success(SuccessCode.POST_DETAIL, studyPostService.findPost(postId));
     }
 
+    @Idempotent
     @PostMapping
     public ResponseEntity<ApiResponse<StudyPostResponse>> createPost(
             @AuthenticationPrincipal UUID userId,

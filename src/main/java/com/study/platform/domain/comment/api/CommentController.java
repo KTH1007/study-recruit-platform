@@ -5,6 +5,7 @@ import com.study.platform.domain.comment.application.CommentService;
 import com.study.platform.domain.comment.dto.request.CommentCreateRequest;
 import com.study.platform.domain.comment.dto.request.CommentUpdateRequest;
 import com.study.platform.domain.comment.dto.response.CommentResponse;
+import com.study.platform.global.idempotency.Idempotent;
 import com.study.platform.global.response.ApiResponse;
 import com.study.platform.global.response.SuccessCode;
 import jakarta.validation.Valid;
@@ -33,6 +34,7 @@ public class CommentController implements CommentControllerDoc {
         return ApiResponse.success(SuccessCode.COMMENT_LIST, commentService.findComments(postId, pageable));
     }
 
+    @Idempotent
     @PostMapping
     public ResponseEntity<ApiResponse<CommentResponse>> createComment(
             @PathVariable UUID postId,
