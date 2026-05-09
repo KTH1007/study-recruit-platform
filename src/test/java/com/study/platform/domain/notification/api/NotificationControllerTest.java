@@ -47,6 +47,9 @@ class NotificationControllerTest {
     @MockitoBean
     private RedisTemplate<String, Object> redisTemplate;
 
+    @MockitoBean
+    private org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
+
     private UUID userId;
     private UUID notificationId;
     private NotificationResponse notificationResponse;

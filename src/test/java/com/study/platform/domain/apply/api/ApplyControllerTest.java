@@ -49,6 +49,9 @@ class ApplyControllerTest {
     @MockitoBean
     private RedisTemplate<String, Object> redisTemplate;
 
+    @MockitoBean
+    private org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
+
     @Autowired
     private ObjectMapper objectMapper;
 
