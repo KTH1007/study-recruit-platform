@@ -1,7 +1,7 @@
 package com.study.platform.domain.chat.application;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.study.platform.domain.chat.dto.request.ChatMessageRequest;
 import com.study.platform.domain.chat.dto.response.ChatMessageResponse;
 import com.study.platform.domain.chat.model.ChatMessage;
@@ -58,7 +58,7 @@ public class ChatService {
         try {
             String message = objectMapper.writeValueAsString(response);
             stringRedisTemplate.convertAndSend(WebSocketConstants.REDIS_CHAT_CHANNEL_PREFIX + teamId, message);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("채팅 메시지 직렬화 실패", e);
         }
     }

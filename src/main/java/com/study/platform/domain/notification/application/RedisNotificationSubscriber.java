@@ -1,6 +1,6 @@
 package com.study.platform.domain.notification.application;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.study.platform.domain.notification.dto.response.NotificationResponse;
 import com.study.platform.domain.notification.infrastructure.SseEmitterRepository;
 import lombok.RequiredArgsConstructor;

@@ -7,7 +7,8 @@ import com.study.platform.domain.user.model.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import com.study.platform.global.support.AbstractIntegrationTest;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -15,8 +16,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
-class StudyTeamRepositoryTest {
+@Transactional
+class StudyTeamRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private StudyTeamRepository studyTeamRepository;
