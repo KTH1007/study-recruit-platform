@@ -100,9 +100,10 @@
 
 ### 9. MDC 기반 요청 추적 로그
 
-- `OncePerRequestFilter`로 요청마다 `requestId`, `userId`, `clientIp`, `requestUri` 를 MDC에 자동 주입
-- 기존 코드 수정 없이 모든 로그에 자동 포함 (필터 하나로 전체 적용)
+- `MdcFilter`: 요청마다 `requestId`, `serverInstance`, `clientIp`, `method`, `uri` 를 MDC에 자동 주입
+- `JwtAuthenticationFilter`: JWT 인증 성공 시 `userId` 를 MDC에 추가 주입
 - LogstashEncoder 사용 중이므로 MDC 값이 JSON 필드로 자동 직렬화 -> Kibana에서 requestId 기반 필터링 가능
+- 기존 비즈니스 코드 수정 없이 모든 로그에 자동 포함
 
 ```
 INFO  [requestId=abc123] [userId=uuid] [ip=1.2.3.4] [uri=POST /api/applies] 지원 처리 완료
@@ -275,7 +276,7 @@ Consumer 실패 -> 지수 백오프 retry 3회 -> DLT topic (post-sync.DLT / not
 
 ### 11. Circuit Breaker + Graceful Shutdown
 
-- **Circuit Breaker (Resilience4j)**: 외부 서비스(Kakao OAuth) 장애 시 빠른 실패 처리, 불필요한 대기 및 스레드 점유 제거
+- **Circuit Breaker (Resilience4j)**: Elasticsearch / Kafka 외부 서비스 장애 시 빠른 실패 처리, 불필요한 대기 및 스레드 점유 제거 (실패율 50% 초과 시 OPEN, 30초 후 HALF_OPEN)
 - **Graceful Shutdown**: 배포 시 처리 중인 요청을 완료한 후 종료 (`server.shutdown=graceful`, `spring.lifecycle.timeout-per-shutdown-phase=30s`)
 
 ```yaml
