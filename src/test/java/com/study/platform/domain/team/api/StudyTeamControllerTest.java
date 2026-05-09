@@ -48,6 +48,9 @@ class StudyTeamControllerTest {
     @MockitoBean
     private RedisTemplate<String, Object> redisTemplate;
 
+    @MockitoBean
+    private org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
+
     private UUID userId;
     private UUID teamId;
     private UUID targetUserId;
