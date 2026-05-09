@@ -5,6 +5,7 @@ import com.study.platform.domain.apply.application.ApplyService;
 import com.study.platform.domain.apply.dto.request.ApplyCreateRequest;
 import com.study.platform.domain.apply.dto.response.ApplyResponse;
 import com.study.platform.global.idempotency.Idempotent;
+import com.study.platform.global.ratelimit.RateLimit;
 import com.study.platform.global.response.ApiResponse;
 import com.study.platform.global.response.SuccessCode;
 import jakarta.validation.Valid;
@@ -31,6 +32,7 @@ public class ApplyController implements ApplyControllerDoc {
     }
 
     @Idempotent
+    @RateLimit(limit = 5, windowSeconds = 60)
     @PostMapping("/posts/{postId}/applies")
     public ResponseEntity<ApiResponse<ApplyResponse>> apply(
             @AuthenticationPrincipal UUID userId,
@@ -47,6 +49,7 @@ public class ApplyController implements ApplyControllerDoc {
         return ApiResponse.success(SuccessCode.APPLY_CANCELED, null);
     }
 
+    @RateLimit(limit = 5, windowSeconds = 60)
     @PatchMapping("/applies/{applyId}/approve")
     public ResponseEntity<ApiResponse<ApplyResponse>> approve(
             @AuthenticationPrincipal UUID userId,
@@ -54,6 +57,7 @@ public class ApplyController implements ApplyControllerDoc {
         return ApiResponse.success(SuccessCode.APPLY_APPROVED, applyService.approve(userId, applyId));
     }
 
+    @RateLimit(limit = 5, windowSeconds = 60)
     @PatchMapping("/applies/{applyId}/reject")
     public ResponseEntity<ApiResponse<ApplyResponse>> reject(
             @AuthenticationPrincipal UUID userId,

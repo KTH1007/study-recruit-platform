@@ -11,6 +11,7 @@ import com.study.platform.domain.post.model.StudyPostStatus;
 import com.study.platform.domain.team.application.StudyTeamService;
 import com.study.platform.domain.team.dto.response.StudyTeamResponse;
 import com.study.platform.global.idempotency.Idempotent;
+import com.study.platform.global.ratelimit.RateLimit;
 import com.study.platform.global.response.ApiResponse;
 import com.study.platform.global.response.SuccessCode;
 import jakarta.validation.Valid;
@@ -49,6 +50,7 @@ public class StudyPostController implements StudyPostControllerDoc {
     }
 
     @Idempotent
+    @RateLimit(limit = 3, windowSeconds = 60)
     @PostMapping
     public ResponseEntity<ApiResponse<StudyPostResponse>> createPost(
             @AuthenticationPrincipal UUID userId,

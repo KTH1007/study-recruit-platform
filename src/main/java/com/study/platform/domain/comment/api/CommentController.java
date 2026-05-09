@@ -6,6 +6,7 @@ import com.study.platform.domain.comment.dto.request.CommentCreateRequest;
 import com.study.platform.domain.comment.dto.request.CommentUpdateRequest;
 import com.study.platform.domain.comment.dto.response.CommentResponse;
 import com.study.platform.global.idempotency.Idempotent;
+import com.study.platform.global.ratelimit.RateLimit;
 import com.study.platform.global.response.ApiResponse;
 import com.study.platform.global.response.SuccessCode;
 import jakarta.validation.Valid;
@@ -35,6 +36,7 @@ public class CommentController implements CommentControllerDoc {
     }
 
     @Idempotent
+    @RateLimit(limit = 10, windowSeconds = 60)
     @PostMapping
     public ResponseEntity<ApiResponse<CommentResponse>> createComment(
             @PathVariable UUID postId,
