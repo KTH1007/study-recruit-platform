@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.HandlerMapping;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,23 +27,21 @@ public class RateLimitInterceptor implements HandlerInterceptor{
     private final RedisTemplate<String, Object> redisTemplate;
 
     // Lua Script
-    private static final String SLIDING_WINDOW_SCRIPT = """
-              local key = KEYS[1]
-              local now = tonumber(ARGV[1])
-              local window = tonumber(ARGV[2])
-              local limit = tonumber(ARGV[3])
-              local clearBefore = now - window * 1000
-
-              redis.call('ZREMRANGEBYSCORE', key, '-inf', clearBefore)
-              local count = redis.call('ZCARD', key)
-
-              if count < limit then
-                  redis.call('ZADD', key, now, now)
-                  redis.call('PEXPIRE', key, window * 1000)
-                  return 1
-              end
-              return 0
-              """;
+    private static final RedisScript<Long> SLIDING_WINDOW_REDIS_SCRIPT = RedisScript.of("""
+          local key = KEYS[1]
+          local now = tonumber(ARGV[1])
+          local window = tonumber(ARGV[2])
+          local limit = tonumber(ARGV[3])
+          local clearBefore = now - window * 1000
+          redis.call('ZREMRANGEBYSCORE', key, '-inf', clearBefore)
+          local count = redis.call('ZCARD', key)
+          if count < limit then
+              redis.call('ZADD', key, now, now)
+              redis.call('PEXPIRE', key, window * 1000)
+              return 1
+          end
+          return 0
+          """, Long.class);
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
@@ -61,15 +60,16 @@ public class RateLimitInterceptor implements HandlerInterceptor{
             return true;
         }
 
-        String endpoint = request.getMethod() + ":" + request.getRequestURI();
+        String pattern = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+        String endpoint = request.getMethod() + ":" + pattern;
         String redisKey = RateLimitConstants.RATE_LIMIT_PREFIX + userId + ":" + endpoint;
 
         Long result = redisTemplate.execute(
-                RedisScript.of(SLIDING_WINDOW_SCRIPT, Long.class),
+                SLIDING_WINDOW_REDIS_SCRIPT,
                 List.of(redisKey),
-                System.currentTimeMillis(),
-                rateLimit.windowSeconds(),
-                rateLimit.limit()
+                String.valueOf(System.currentTimeMillis()),
+                String.valueOf(rateLimit.windowSeconds()),
+                String.valueOf(rateLimit.limit())
         );
 
         if (!Long.valueOf(1L).equals(result)) {
