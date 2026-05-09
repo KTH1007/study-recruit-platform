@@ -19,7 +19,7 @@
 | Messaging | Apache Kafka (KRaft) |
 | Search | Elasticsearch 9.0.2 |
 | Cache | Redis 7 |
-| Test | JUnit5, MockMvc, Mockito, k6 (부하테스트) |
+| Test | JUnit5, MockMvc, Mockito, TestContainers, k6 (부하테스트) |
 
 ### Infra & DevOps
 
@@ -97,6 +97,41 @@
 
 - Nginx 로드밸런싱 (App 2대), Let's Encrypt HTTPS, WSS, gzip 압축
 - GitHub Actions: PR -> 빌드/테스트, develop 머지 -> 자동 배포
+
+### 9. MDC 기반 요청 추적 로그
+
+- `OncePerRequestFilter`로 요청마다 `requestId`, `userId`, `clientIp`, `requestUri` 를 MDC에 자동 주입
+- 기존 코드 수정 없이 모든 로그에 자동 포함 (필터 하나로 전체 적용)
+- LogstashEncoder 사용 중이므로 MDC 값이 JSON 필드로 자동 직렬화 -> Kibana에서 requestId 기반 필터링 가능
+
+```
+INFO  [requestId=abc123] [userId=uuid] [ip=1.2.3.4] [uri=POST /api/applies] 지원 처리 완료
+ERROR [requestId=abc123] [userId=uuid] [ip=1.2.3.4] [uri=POST /api/applies] 지원 처리 중 예외 발생
+```
+
+### 10. API 멱등성 처리 (중복 요청 방지)
+
+- 클라이언트가 `Idempotency-Key` 헤더를 포함해 요청 시 Redis에 키 저장 (`SET NX`, TTL 24시간)
+- 동일 키로 재요청 시 DB 처리 없이 캐시된 응답 즉시 반환
+- 네트워크 재시도, 더블 클릭 등으로 인한 중복 지원/결제 방지
+
+```
+첫 번째 요청: Idempotency-Key: abc -> 처리 후 응답 Redis 저장
+재시도 요청:  Idempotency-Key: abc -> Redis 캐시 응답 반환 (DB 미조회)
+```
+
+### 11. Redis 기반 Rate Limiting
+
+- `@RateLimit` 커스텀 어노테이션으로 API별 선택적 적용
+- Redis Sorted Set + Lua Script로 Sliding Window 원자적 처리
+- 키 구조: `rate:limit:{userId}:{endpoint}` (사용자별 엔드포인트별 독립 제한)
+- 제한 초과 시 HTTP 429 Too Many Requests 반환
+
+```java
+@RateLimit(limit = 10, windowSeconds = 60)
+@PostMapping("/api/applies")
+public ResponseEntity<ApplyResponse> apply(...) { ... }
+```
 
 ---
 
@@ -285,6 +320,75 @@ spring:
 EC2 한계: t3.large (2코어) 단일 서버에 7개 서비스 공유. 부하 시 nginx(41%) + app1(40%) + app2(34%) CPU 합계 ~115% -> CPU 병목 확인.
 실제 서비스라면 서비스별 인스턴스 분리 (RDS, ElastiCache, MSK, OpenSearch) 필요.
 
+### 14. Rate Limiting (Sliding Window)
+
+| 항목 | 내용 |
+|------|------|
+| 저장소 | Redis Sorted Set |
+| 알고리즘 | Sliding Window |
+| 원자성 | Lua Script (ZADD + ZREMRANGEBYSCORE + ZCARD 원자적 실행) |
+| 키 구조 | `rate:limit:{userId}:{endpoint}` |
+| 적용 방식 | `@RateLimit` 어노테이션 + `HandlerInterceptor` |
+| 초과 응답 | HTTP 429 Too Many Requests |
+
+고정 윈도우(Fixed Window)는 윈도우 경계에서 순간 버스트 허용 취약점 존재.
+Sliding Window는 현재 시각 기준 정확한 시간 범위를 계산하여 일관된 제한 적용.
+Lua Script로 조회-카운트-만료 처리를 원자적으로 실행해 레이스컨디션 방지.
+
+```
+요청 -> HandlerInterceptor -> Lua Script 실행 (Redis Sorted Set)
+  -> 윈도우 내 요청 수 <= limit: 통과
+  -> 윈도우 내 요청 수 > limit: 429 반환
+```
+
+---
+
+## 테스트 환경
+
+### TestContainers 기반 Repository 통합 테스트
+
+**기존 문제**
+
+- H2 인메모리 DB 사용 시 MySQL 방언 불일치 (UUID BINARY, 락 문법 등)
+- Redis Lua Script, Pub/Sub, TTL 등 고급 기능을 Mock으로 대체 -> 실제 동작 검증 불가
+- 테스트 통과 후 배포 환경에서 DB/Redis 관련 버그 발생
+
+**TestContainers를 선택한 이유**
+
+- 실제 MySQL 8.0 / Redis 7 컨테이너를 테스트 시 직접 실행 -> 프로덕션 환경과 완전히 동일
+- `@DynamicPropertySource`로 컨테이너 포트를 Spring에 자동 주입 -> 환경 설정 불필요
+- GitHub Actions CI 환경에서도 Docker만 있으면 동일하게 동작
+- Rate Limiting(Lua Script), 멱등성(SET NX) 등 Redis 고급 기능 실제 검증 가능
+
+**구조**
+
+```java
+@SpringBootTest
+@ActiveProfiles("test")
+public abstract class AbstractIntegrationTest {
+
+    static final MySQLContainer<?> mysql;
+    static final GenericContainer<?> redis;
+
+    static {
+        mysql = new MySQLContainer<>("mysql:8.0.36");
+        redis = new GenericContainer<>("redis:7.4").withExposedPorts(6379);
+        mysql.start();
+        redis.start();
+    }
+
+    @DynamicPropertySource
+    static void overrideProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", mysql::getJdbcUrl);
+        registry.add("spring.data.redis.host", redis::getHost);
+        registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
+    }
+}
+```
+
+- static 블록으로 컨테이너 최초 1회 시작 후 전체 테스트에서 재사용 (테스트 속도 최적화)
+- 모든 Repository 통합 테스트는 `AbstractIntegrationTest`를 상속해 동일 환경 보장
+
 ---
 
 ## 트러블슈팅
@@ -406,3 +510,66 @@ st    : 5.4%  <- t3 버스터블 CPU 크레딧 소진으로 스로틀링
 ```
 
 **결과**: 멀티 인스턴스 환경에서 SSE 알림 유실 0
+
+---
+
+### 7. 데드락 및 타임아웃 처리
+
+**문제**: 비관적 락(`PESSIMISTIC_WRITE`) 사용 시 두 트랜잭션이 서로의 락을 기다리는 데드락 발생 가능
+
+**원인**
+
+```
+Transaction A: 게시글 락 획득 -> 지원 행 락 대기
+Transaction B: 지원 행 락 획득 -> 게시글 락 대기
+-> 서로 대기 -> 데드락
+```
+
+**해결**
+
+- `@QueryHints`로 락 획득 타임아웃 3초 설정 -> 타임아웃 초과 시 `LockTimeoutException` 발생 후 503 응답
+- 락 획득 순서를 항상 `게시글 -> 지원` 단방향으로 고정해 순환 대기 조건 제거
+
+```java
+@QueryHints(@QueryHint(
+    name = "jakarta.persistence.lock.timeout",
+    value = "3000"
+))
+@Lock(LockModeType.PESSIMISTIC_WRITE)
+Optional<StudyPost> findByIdWithAuthorForUpdate(@Param("postId") UUID postId);
+```
+
+**결과**: 데드락 발생 시 무한 대기 없이 3초 내 실패 응답, 락 순서 고정으로 데드락 발생 자체 제거
+
+---
+
+## TDD / DDD 적용
+
+### 도메인 주도 설계 (DDD)
+
+- 비즈니스 로직을 서비스가 아닌 **도메인 객체**에 위임
+- `Apply.approve()`, `Apply.reject()`, `StudyPost.markFull()` 등 상태 전이를 엔티티 메서드로 캡슐화
+- 서비스 간 직접 의존 금지 -> **Spring 이벤트**(`ApplicationEventPublisher`)로 결합 제거
+- 알림 타입별 **전략 패턴**: `NotificationHandler` 인터페이스 구현체를 타입별로 등록, 새 알림 타입 추가 시 Handler 클래스만 추가
+
+```java
+// 도메인 로직을 엔티티에 위임
+apply.approve();  // 상태 검증 + 전이를 Apply 내부에서 처리
+
+// 서비스 간 결합 제거 - 이벤트로 분리
+eventPublisher.publishEvent(new ApplyApprovedEvent(...));
+// ApplyService는 알림 로직을 모름, NotificationService가 @EventListener로 수신
+```
+
+### 테스트 주도 개발 (TDD)
+
+- **Repository 통합 테스트**: TestContainers(MySQL 8.0 + Redis 7)로 실제 환경과 동일한 조건에서 검증
+- **Service 단위 테스트**: Mockito + BDDMockito로 의존성 격리, 비즈니스 로직 집중 검증
+- **Controller 단위 테스트**: `@WebMvcTest` + MockMvc로 HTTP 레이어 독립 검증
+- given-when-then 패턴 + 한글 메서드명으로 테스트 의도 명확화
+
+```
+Service 단위 테스트  -> Mockito Mock, 비즈니스 규칙 검증
+Repository 통합 테스트 -> TestContainers, 실제 쿼리/락/Redis 동작 검증
+Controller 단위 테스트 -> MockMvc, HTTP 상태코드/응답 구조 검증
+```
