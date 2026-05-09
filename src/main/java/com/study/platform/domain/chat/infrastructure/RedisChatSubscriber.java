@@ -8,9 +8,9 @@ import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
+import tools.jackson.core.JacksonException;
 
 @Slf4j
 @Component
@@ -27,7 +27,7 @@ public class RedisChatSubscriber implements MessageListener {
             messagingTemplate.convertAndSend(
                     WebSocketConstants.CHAT_TOPIC_PREFIX + response.teamId(), response
             );
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             log.error("Redis 채팅 메시지 처리 실패", e);
         }
     }

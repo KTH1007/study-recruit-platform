@@ -1,7 +1,7 @@
 package com.study.platform.global.oauth.kakao;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import com.study.platform.global.oauth.kakao.dto.KakaoIdTokenPayload;
@@ -61,7 +61,7 @@ public class KakaoOAuthClient {
             String[] parts = idToken.split("\\.");
             String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
             return objectMapper.readValue(payload, KakaoIdTokenPayload.class);
-        } catch (JsonProcessingException | IllegalArgumentException e) {
+        } catch (JacksonException | IllegalArgumentException e) {
             log.error("id_token parse error: {}", e.getMessage());
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }

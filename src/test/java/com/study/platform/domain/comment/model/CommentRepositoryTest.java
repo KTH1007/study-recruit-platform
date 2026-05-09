@@ -7,7 +7,8 @@ import com.study.platform.domain.user.model.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import com.study.platform.global.support.AbstractIntegrationTest;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
@@ -17,8 +18,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
-class CommentRepositoryTest {
+@Transactional
+class CommentRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private CommentRepository commentRepository;
