@@ -1,5 +1,6 @@
 package com.study.platform.domain.notification.application;
 
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.study.platform.domain.notification.dto.response.NotificationResponse;
 import com.study.platform.domain.notification.infrastructure.SseEmitterRepository;
@@ -30,7 +31,7 @@ public class RedisNotificationSubscriber {
             emitter.send(SseEmitter.event()
                     .name(SSE_EVENT_NAME)
                     .data(response));
-        } catch (IOException e) {
+        } catch (IOException | JacksonException e) {
             log.warn("SSE 전송 실패 : {}", e.getMessage());
         }
     }

@@ -15,11 +15,11 @@ public abstract class AbstractIntegrationTest {
     static final GenericContainer<?> redis;
 
     static {
-        mysql = new MySQLContainer<>("mysql:8.0")
+        mysql = new MySQLContainer<>("mysql:8.0.36")
                 .withDatabaseName("platform_test")
                 .withUsername("test")
                 .withPassword("test");
-        redis = new GenericContainer<>("redis:7")
+        redis = new GenericContainer<>("redis:7.4")
                 .withExposedPorts(6379);
 
         mysql.start();
