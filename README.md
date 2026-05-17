@@ -129,7 +129,7 @@ ERROR [requestId=abc123] [userId=uuid] [ip=1.2.3.4] [uri=POST /api/applies] 지�
 - 제한 초과 시 HTTP 429 Too Many Requests 반환
 
 ```java
-@RateLimit(limit = 10, windowSeconds = 60)
+@RateLimit(limit = 5, windowSeconds = 60)
 @PostMapping("/api/applies")
 public ResponseEntity<ApplyResponse> apply(...) { ... }
 ```
