@@ -3,6 +3,7 @@ package com.study.platform.global.config;
 import org.slf4j.MDC;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskDecorator;
 import org.springframework.scheduling.annotation.EnableAsync;
 
@@ -15,9 +16,10 @@ public class AsyncConfig {
 
     @Bean(name = "notificationExecutor")
     public Executor notificationExecutor() {
-        return task -> Thread.ofVirtual()
-                .name("notification-", 0)
-                .start(mdcTaskDecorator().decorate(task));
+        SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor("notification-");
+        executor.setVirtualThreads(true);
+        executor.setTaskDecorator(mdcTaskDecorator());
+        return executor;
     }
 
     private TaskDecorator mdcTaskDecorator() {
