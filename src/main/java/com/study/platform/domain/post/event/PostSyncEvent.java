@@ -10,5 +10,11 @@ public record PostSyncEvent(
         UUID postId,
 
         @Schema(description = "ES 동기화 작업 타입")
-        PostSyncOperationType operationType
-) {}
+        PostSyncOperationType operationType,
+
+        int retryCount
+) {
+    public PostSyncEvent withRetry() {
+        return new PostSyncEvent(postId, operationType, retryCount + 1);
+    }
+}

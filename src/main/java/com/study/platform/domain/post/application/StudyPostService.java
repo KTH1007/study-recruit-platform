@@ -49,7 +49,7 @@ public class StudyPostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         StudyPost post = studyPostRepository.saveAndFlush(request.toEntity(user));
-        eventPublisher.publishEvent(new PostSyncEvent(post.getId(), PostSyncOperationType.UPSERT));
+        eventPublisher.publishEvent(new PostSyncEvent(post.getId(), PostSyncOperationType.UPSERT, 0));
         return StudyPostResponse.from(post);
     }
 
@@ -60,7 +60,7 @@ public class StudyPostService {
         post.validateAuthor(userId);
         post.update(request.title(), request.description(), request.techStack(),
                 request.maxMembers(), request.deadline());
-        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT));
+        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT, 0));
         return StudyPostResponse.from(post);
     }
 
@@ -70,7 +70,7 @@ public class StudyPostService {
         StudyPost post = getPostWithAuthor(postId);
         post.validateAuthor(userId);
         studyPostRepository.delete(post);
-        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.DELETE));
+        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.DELETE, 0));
     }
 
     @Transactional
@@ -79,7 +79,7 @@ public class StudyPostService {
         StudyPost post = getPostWithAuthor(postId);
         post.validateAuthor(userId);
         post.close();
-        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT));
+        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT, 0));
         return StudyPostResponse.from(post);
     }
 

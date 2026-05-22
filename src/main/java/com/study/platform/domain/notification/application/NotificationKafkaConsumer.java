@@ -2,6 +2,8 @@ package com.study.platform.domain.notification.application;
 
 import com.study.platform.domain.notification.dto.event.NotificationEvent;
 import com.study.platform.domain.notification.dto.response.NotificationResponse;
+import com.study.platform.domain.notification.model.FailedNotification;
+import com.study.platform.domain.notification.model.FailedNotificationRepository;
 import com.study.platform.domain.notification.model.Notification;
 import com.study.platform.domain.notification.model.NotificationRepository;
 import com.study.platform.domain.user.model.User;
@@ -29,11 +31,18 @@ public class NotificationKafkaConsumer {
     private final UserRepository userRepository;
     private final NotificationRepository notificationRepository;
     private final StringRedisTemplate stringRedisTemplate;
+    private final FailedNotificationRepository failedNotificationRepository;
 
     @Transactional
     @KafkaListener(topics = KafkaConstants.NOTIFICATION_TOPIC, groupId = KafkaConstants.NOTIFICATION_GROUP)
     public void consume(String payload, Acknowledgment ack) {
         NotificationEvent event = objectMapper.readValue(payload, NotificationEvent.class);
+
+        if (event.retryCount() >= KafkaConstants.MAX_DLT_RETRY) {
+            failedNotificationRepository.save(FailedNotification.from(event, "메인 Consumer 최종 실패"));
+            ack.acknowledge();
+            return;
+        }
         User receiver = userRepository.findById(event.receiverId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         Notification notification = Notification.create(receiver, event.type(), event.message(), event.targetId());
