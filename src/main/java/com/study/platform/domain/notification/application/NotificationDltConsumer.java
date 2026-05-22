@@ -12,6 +12,7 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
@@ -23,21 +24,26 @@ public class NotificationDltConsumer {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final FailedNotificationRepository failedNotificationRepository;
 
+    @Transactional
     @KafkaListener(topics = KafkaConstants.NOTIFICATION_DLT_TOPIC, groupId = KafkaConstants.NOTIFICATION_DLT_GROUP)
     public void consume(String payload, Acknowledgment ack,
                         @Header(name = KafkaHeaders.EXCEPTION_MESSAGE, required = false) String exceptionMessage) {
-        NotificationEvent event = objectMapper.readValue(payload, NotificationEvent.class);
-        log.error("DLT 수신 - receiverId={}, type={}, retryCount={}, 원인={}",
-                event.receiverId(), event.type(), event.retryCount(), exceptionMessage);
+        try {
+            NotificationEvent event = objectMapper.readValue(payload, NotificationEvent.class);
+            log.error("DLT 수신 - receiverId={}, type={}, retryCount={}, 원인={}",
+                    event.receiverId(), event.type(), event.retryCount(), exceptionMessage);
 
-        if (event.retryCount() < KafkaConstants.MAX_DLT_RETRY) {
-            kafkaTemplate.send(KafkaConstants.NOTIFICATION_TOPIC, objectMapper.writeValueAsString(event.withRetry()));
-            log.info("notification 토픽 재투입 - retryCount={}", event.retryCount() + 1);
-        } else {
-            failedNotificationRepository.save(FailedNotification.from(event, exceptionMessage));
-            log.error("최대 재시도 초과 - DB 영구 저장. receiverId={}", event.receiverId());
+            if (event.retryCount() < KafkaConstants.MAX_DLT_RETRY) {
+                kafkaTemplate.send(KafkaConstants.NOTIFICATION_TOPIC, objectMapper.writeValueAsString(event.withRetry())).get();
+                log.info("notification 토픽 재투입 - retryCount={}", event.retryCount() + 1);
+            } else {
+                failedNotificationRepository.save(FailedNotification.from(event, exceptionMessage));
+                log.error("최대 재시도 초과 - DB 영구 저장. receiverId={}", event.receiverId());
+            }
+        } catch (Exception e) {
+            log.error("DLT 페이로드 파싱 실패 - payload: {}", payload, e);
+        } finally {
+            ack.acknowledge();
         }
-
-        ack.acknowledge();
     }
 }
