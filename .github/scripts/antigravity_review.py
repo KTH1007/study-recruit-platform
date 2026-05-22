@@ -28,12 +28,15 @@ async def main():
 
 Git Diff:
 ```diff
-{git_diff}
+{git_diff.replace(chr(96)*3, chr(96) + ' ' + chr(96) + ' ' + chr(96))}
 ```"""
 
-    async with Agent(config) as agent:
-        response = await agent.chat(review_prompt)
-        review_text = await response.text()
+    try:
+        async with Agent(config) as agent:
+            response = await agent.chat(review_prompt)
+            review_text = await response.text()
+    except Exception as e:
+        review_text = f"AI 리뷰 생성 중 오류가 발생했습니다: {e}"
 
     with open("review_result.md", "w", encoding="utf-8") as f:
         f.write("## Antigravity AI Code Review\n\n")
