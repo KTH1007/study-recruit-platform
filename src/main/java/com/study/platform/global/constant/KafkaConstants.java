@@ -16,4 +16,5 @@ public class KafkaConstants {
 
     public static final String NOTIFICATION_DLT_TOPIC = "notification.DLT";
     public static final String NOTIFICATION_DLT_GROUP = "notification-dlt-group";
+    public static final int MAX_DLT_RETRY = 3;
 }

@@ -22,7 +22,7 @@ public class NotificationKafkaProducer {
 
     @CircuitBreaker(name = "kafka", fallbackMethod = "sendFallback")
     public void send(UUID receiverId, NotificationType type, String message, UUID targetId) {
-        NotificationEvent event = new NotificationEvent(receiverId, type, message, targetId);
+        NotificationEvent event = new NotificationEvent(receiverId, type, message, targetId, 0);
         String payload = objectMapper.writeValueAsString(event);
         kafkaTemplate.send(KafkaConstants.NOTIFICATION_TOPIC, payload);
     }

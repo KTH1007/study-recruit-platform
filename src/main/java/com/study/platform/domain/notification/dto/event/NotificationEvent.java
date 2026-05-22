@@ -8,6 +8,10 @@ public record NotificationEvent(
         UUID receiverId,
         NotificationType type,
         String message,
-        UUID targetId
+        UUID targetId,
+        int retryCount
 ) {
+    public NotificationEvent withRetry() {
+        return new NotificationEvent(receiverId, type, message, targetId, retryCount + 1);
+    }
 }
