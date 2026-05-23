@@ -44,7 +44,7 @@ public class OutboxRetryScheduler {
         kafkaTemplate.send(outbox.getTopic(), outbox.getMessageKey(), outbox.getPayload())
                 .whenComplete((result, ex) -> {
                     if (ex == null) {
-                        outboxEventService.markSent(outbox.getMessageKey(), outbox.getTopic());
+                        outboxEventService.markSent(outbox.getId());
                         log.info("Outbox 재발행 성공 - id: {}, topic: {}", outbox.getId(), outbox.getTopic());
                     } else {
                         log.warn("Outbox 재발행 실패 - id: {}, topic: {}", outbox.getId(), outbox.getTopic(), ex);

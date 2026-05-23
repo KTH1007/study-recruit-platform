@@ -54,8 +54,8 @@ public class StudyPostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         StudyPost post = studyPostRepository.saveAndFlush(request.toEntity(user));
-        saveOutboxEvent(post.getId(), PostSyncOperationType.UPSERT);
-        eventPublisher.publishEvent(new PostSyncEvent(post.getId(), PostSyncOperationType.UPSERT, 0));
+        Long outboxEventId = saveOutboxEvent(post.getId(), PostSyncOperationType.UPSERT);
+        eventPublisher.publishEvent(new PostSyncEvent(post.getId(), PostSyncOperationType.UPSERT, outboxEventId, 0));
         return StudyPostResponse.from(post);
     }
 
@@ -66,8 +66,8 @@ public class StudyPostService {
         post.validateAuthor(userId);
         post.update(request.title(), request.description(), request.techStack(),
                 request.maxMembers(), request.deadline());
-        saveOutboxEvent(postId, PostSyncOperationType.UPSERT);
-        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT, 0));
+        Long outboxEventId = saveOutboxEvent(postId, PostSyncOperationType.UPSERT);
+        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT, outboxEventId, 0));
         return StudyPostResponse.from(post);
     }
 
@@ -77,8 +77,8 @@ public class StudyPostService {
         StudyPost post = getPostWithAuthor(postId);
         post.validateAuthor(userId);
         studyPostRepository.delete(post);
-        saveOutboxEvent(postId, PostSyncOperationType.DELETE);
-        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.DELETE, 0));
+        Long outboxEventId = saveOutboxEvent(postId, PostSyncOperationType.DELETE);
+        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.DELETE, outboxEventId, 0));
     }
 
     @Transactional
@@ -87,15 +87,15 @@ public class StudyPostService {
         StudyPost post = getPostWithAuthor(postId);
         post.validateAuthor(userId);
         post.close();
-        saveOutboxEvent(postId, PostSyncOperationType.UPSERT);
-        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT, 0));
+        Long outboxEventId = saveOutboxEvent(postId, PostSyncOperationType.UPSERT);
+        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT, outboxEventId, 0));
         return StudyPostResponse.from(post);
     }
 
-    private void saveOutboxEvent(UUID postId, PostSyncOperationType operationType) {
-        PostSyncEvent event = new PostSyncEvent(postId, operationType, 0);
+    private Long saveOutboxEvent(UUID postId, PostSyncOperationType operationType) {
+        PostSyncEvent event = new PostSyncEvent(postId, operationType, null, 0);
         String payload = objectMapper.writeValueAsString(event);
-        outboxEventService.save(KafkaConstants.POST_SYNC_TOPIC, postId.toString(), payload);
+        return outboxEventService.save(KafkaConstants.POST_SYNC_TOPIC, postId.toString(), payload);
     }
 
     private StudyPost getPostWithAuthor(UUID postId) {

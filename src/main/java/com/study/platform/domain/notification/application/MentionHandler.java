@@ -27,7 +27,7 @@ public class MentionHandler implements NotificationHandler<MentionEvent> {
         String message = event.commenterNickname() + "님이 댓글에서 회원님을 멘션했습니다.";
         String payload = objectMapper.writeValueAsString(
                 new NotificationEvent(event.mentionedUserId(), NotificationType.MENTION, message, event.postId(), 0));
-        outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.mentionedUserId().toString(), payload);
-        kafkaProducer.send(event.mentionedUserId(), NotificationType.MENTION, message, event.postId());
+        Long outboxEventId = outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.mentionedUserId().toString(), payload);
+        kafkaProducer.send(outboxEventId, event.mentionedUserId(), NotificationType.MENTION, message, event.postId());
     }
 }

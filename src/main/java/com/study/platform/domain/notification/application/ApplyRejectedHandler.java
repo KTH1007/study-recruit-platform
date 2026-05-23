@@ -27,7 +27,7 @@ public class ApplyRejectedHandler implements NotificationHandler<ApplyRejectedEv
         String message = event.postTitle() + " 스터디 지원이 거절되었습니다.";
         String payload = objectMapper.writeValueAsString(
                 new NotificationEvent(event.applicantId(), NotificationType.APPLY_REJECTED, message, event.postId(), 0));
-        outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.applicantId().toString(), payload);
-        kafkaProducer.send(event.applicantId(), NotificationType.APPLY_REJECTED, message, event.postId());
+        Long outboxEventId = outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.applicantId().toString(), payload);
+        kafkaProducer.send(outboxEventId, event.applicantId(), NotificationType.APPLY_REJECTED, message, event.postId());
     }
 }

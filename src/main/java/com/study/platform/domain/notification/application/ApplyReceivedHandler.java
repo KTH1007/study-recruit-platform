@@ -27,7 +27,7 @@ public class ApplyReceivedHandler implements NotificationHandler<ApplyReceivedEv
         String message = event.postTitle() + " 게시글에 새로운 지원서가 도착했습니다.";
         String payload = objectMapper.writeValueAsString(
                 new NotificationEvent(event.authorId(), NotificationType.APPLY_RECEIVED, message, event.postId(), 0));
-        outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.authorId().toString(), payload);
-        kafkaProducer.send(event.authorId(), NotificationType.APPLY_RECEIVED, message, event.postId());
+        Long outboxEventId = outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.authorId().toString(), payload);
+        kafkaProducer.send(outboxEventId, event.authorId(), NotificationType.APPLY_RECEIVED, message, event.postId());
     }
 }

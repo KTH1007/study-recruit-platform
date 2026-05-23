@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -50,6 +51,7 @@ class OutboxRetrySchedulerTest {
 
     private OutboxEvent pendingOutbox(String topic, int retryCount) {
         OutboxEvent outbox = OutboxEvent.pending(topic, UUID.randomUUID().toString(), "{}");
+        ReflectionTestUtils.setField(outbox, "id", 1L);
         ReflectionTestUtils.setField(outbox, "retryCount", retryCount);
         return outbox;
     }
@@ -68,7 +70,7 @@ class OutboxRetrySchedulerTest {
         outboxRetryScheduler.retryPendingEvents();
 
         // then
-        then(outboxEventService).should().markSent(anyString(), eq(KafkaConstants.POST_SYNC_TOPIC));
+        then(outboxEventService).should().markSent(anyLong());
     }
 
     @Test
@@ -86,7 +88,7 @@ class OutboxRetrySchedulerTest {
 
         // then
         then(outboxEventRepository).should().save(outbox);
-        then(outboxEventService).should(never()).markSent(anyString(), anyString());
+        then(outboxEventService).should(never()).markSent(anyLong());
     }
 
     @Test
@@ -99,14 +101,14 @@ class OutboxRetrySchedulerTest {
                 .willReturn(List.of(outbox));
         given(kafkaTemplate.send(anyString(), anyString(), anyString())).willReturn(future);
         given(objectMapper.readValue(anyString(), eq(PostSyncEvent.class))).willReturn(
-                new PostSyncEvent(UUID.randomUUID(), PostSyncOperationType.UPSERT, 3));
+                new PostSyncEvent(UUID.randomUUID(), PostSyncOperationType.UPSERT, null, 3));
 
         // when
         outboxRetryScheduler.retryPendingEvents();
 
         // then
         then(failedPostSyncRepository).should().save(any(FailedPostSync.class));
-        then(outboxEventService).should().markSent(anyString(), eq(KafkaConstants.POST_SYNC_TOPIC));
+        then(outboxEventService).should().markFailedPermanently(anyLong());
     }
 
     @Test
@@ -124,6 +126,6 @@ class OutboxRetrySchedulerTest {
 
         // then
         then(failedPostSyncRepository).should(never()).save(any());
-        then(outboxEventService).should().markSent(anyString(), eq(KafkaConstants.NOTIFICATION_TOPIC));
+        then(outboxEventService).should().markFailedPermanently(anyLong());
     }
 }

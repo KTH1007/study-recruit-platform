@@ -56,7 +56,7 @@ class PostSyncKafkaConsumerTest {
     @Test
     void consume_최대재시도초과_정상흐름_건너뛰고_DB저장() throws Exception {
         // given
-        PostSyncEvent event = new PostSyncEvent(postId, PostSyncOperationType.UPSERT, KafkaConstants.MAX_DLT_RETRY);
+        PostSyncEvent event = new PostSyncEvent(postId, PostSyncOperationType.UPSERT, null, KafkaConstants.MAX_DLT_RETRY);
         given(objectMapper.readValue(payload, PostSyncEvent.class)).willReturn(event);
 
         // when
@@ -72,7 +72,7 @@ class PostSyncKafkaConsumerTest {
     @Test
     void consume_UPSERT_정상처리() throws Exception {
         // given
-        PostSyncEvent event = new PostSyncEvent(postId, PostSyncOperationType.UPSERT, 0);
+        PostSyncEvent event = new PostSyncEvent(postId, PostSyncOperationType.UPSERT, null, 0);
         given(objectMapper.readValue(payload, PostSyncEvent.class)).willReturn(event);
         given(studyPostRepository.findByIdWithAuthor(postId)).willReturn(Optional.empty());
 
@@ -87,7 +87,7 @@ class PostSyncKafkaConsumerTest {
     @Test
     void consume_DELETE_정상처리() throws Exception {
         // given
-        PostSyncEvent event = new PostSyncEvent(postId, PostSyncOperationType.DELETE, 0);
+        PostSyncEvent event = new PostSyncEvent(postId, PostSyncOperationType.DELETE, null, 0);
         given(objectMapper.readValue(payload, PostSyncEvent.class)).willReturn(event);
 
         // when

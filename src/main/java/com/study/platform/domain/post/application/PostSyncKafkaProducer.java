@@ -28,7 +28,7 @@ public class PostSyncKafkaProducer {
         kafkaTemplate.send(KafkaConstants.POST_SYNC_TOPIC, event.postId().toString(), payload)
                 .whenComplete((result, ex) -> {
                     if (ex == null) {
-                        outboxEventService.markSent(event.postId().toString(), KafkaConstants.POST_SYNC_TOPIC);
+                        outboxEventService.markSent(event.outboxEventId());
                         log.info("ES 동기화 이벤트 발행 성공 - postId: {}, type: {}", event.postId(), event.operationType());
                     } else {
                         log.warn("ES 동기화 이벤트 발행 실패 - outbox 스케줄러가 재시도 예정. postId: {}, type: {}", event.postId(), event.operationType(), ex);

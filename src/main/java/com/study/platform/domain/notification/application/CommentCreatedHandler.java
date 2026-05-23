@@ -27,7 +27,7 @@ public class CommentCreatedHandler implements NotificationHandler<CommentCreated
         String message = event.postTitle() + " 게시글에 댓글이 달렸습니다.";
         String payload = objectMapper.writeValueAsString(
                 new NotificationEvent(event.authorId(), NotificationType.COMMENT_CREATED, message, event.postId(), 0));
-        outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.authorId().toString(), payload);
-        kafkaProducer.send(event.authorId(), NotificationType.COMMENT_CREATED, message, event.postId());
+        Long outboxEventId = outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.authorId().toString(), payload);
+        kafkaProducer.send(outboxEventId, event.authorId(), NotificationType.COMMENT_CREATED, message, event.postId());
     }
 }

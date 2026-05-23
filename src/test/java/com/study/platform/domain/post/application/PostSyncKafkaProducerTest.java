@@ -2,7 +2,6 @@ package com.study.platform.domain.post.application;
 
 import com.study.platform.domain.post.event.PostSyncEvent;
 import com.study.platform.domain.post.event.PostSyncOperationType;
-import com.study.platform.global.constant.KafkaConstants;
 import com.study.platform.global.outbox.application.OutboxEventService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +39,7 @@ class PostSyncKafkaProducerTest {
 
     @BeforeEach
     void setUp() {
-        event = new PostSyncEvent(UUID.randomUUID(), PostSyncOperationType.UPSERT, 0);
+        event = new PostSyncEvent(UUID.randomUUID(), PostSyncOperationType.UPSERT, 1L, 0);
     }
 
     @Test
@@ -55,7 +54,7 @@ class PostSyncKafkaProducerTest {
         postSyncKafkaProducer.handle(event);
 
         // then
-        then(outboxEventService).should().markSent(eq(event.postId().toString()), eq(KafkaConstants.POST_SYNC_TOPIC));
+        then(outboxEventService).should().markSent(eq(1L));
     }
 
     @Test
@@ -70,6 +69,6 @@ class PostSyncKafkaProducerTest {
         postSyncKafkaProducer.handle(event);
 
         // then
-        then(outboxEventService).should(never()).markSent(anyString(), anyString());
+        then(outboxEventService).should(never()).markSent(anyLong());
     }
 }

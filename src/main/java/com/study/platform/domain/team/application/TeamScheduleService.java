@@ -2,16 +2,20 @@ package com.study.platform.domain.team.application;
 
 import com.study.platform.domain.notification.application.NotificationKafkaProducer;
 import com.study.platform.domain.notification.application.NotificationService;
+import com.study.platform.domain.notification.dto.event.NotificationEvent;
 import com.study.platform.domain.notification.model.NotificationType;
 import com.study.platform.domain.team.dto.request.TeamScheduleCreateRequest;
 import com.study.platform.domain.team.dto.request.TeamScheduleUpdateRequest;
 import com.study.platform.domain.team.dto.response.TeamScheduleResponse;
 import com.study.platform.domain.team.model.*;
+import com.study.platform.global.constant.KafkaConstants;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
+import com.study.platform.global.outbox.application.OutboxEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +29,8 @@ public class TeamScheduleService {
     private final TeamMemberRepository teamMemberRepository;
     private final StudyTeamRepository studyTeamRepository;
     private final NotificationKafkaProducer kafkaProducer;
+    private final OutboxEventService outboxEventService;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public TeamScheduleResponse createSchedule(UUID userId, UUID teamId, TeamScheduleCreateRequest request) {
@@ -61,13 +67,12 @@ public class TeamScheduleService {
 
     private void notifyAllMembers(UUID teamId, String teamName, UUID scheduledId) {
         String message = teamName + " " + NotificationType.SCHEDULE_CREATED.getDescription();
-        teamMemberRepository.findAllByTeamId(teamId).forEach(member ->
-                kafkaProducer.send(
-                        member.getUser().getId(),
-                        NotificationType.SCHEDULE_CREATED,
-                        message,
-                        scheduledId
-                ));
+        teamMemberRepository.findAllByTeamId(teamId).forEach(member -> {
+            String payload = objectMapper.writeValueAsString(
+                    new NotificationEvent(member.getUser().getId(), NotificationType.SCHEDULE_CREATED, message, scheduledId, 0));
+            Long outboxEventId = outboxEventService.save(KafkaConstants.NOTIFICATION_TOPIC, member.getUser().getId().toString(), payload);
+            kafkaProducer.send(outboxEventId, member.getUser().getId(), NotificationType.SCHEDULE_CREATED, message, scheduledId);
+        });
     }
 
     private void validateTeamMember(UUID teamId, UUID userId) {

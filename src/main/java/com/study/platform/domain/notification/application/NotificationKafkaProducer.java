@@ -21,13 +21,13 @@ public class NotificationKafkaProducer {
     private final ObjectMapper objectMapper;
     private final OutboxEventService outboxEventService;
 
-    public void send(UUID receiverId, NotificationType type, String message, UUID targetId) {
+    public void send(Long outboxEventId, UUID receiverId, NotificationType type, String message, UUID targetId) {
         NotificationEvent event = new NotificationEvent(receiverId, type, message, targetId, 0);
         String payload = objectMapper.writeValueAsString(event);
         kafkaTemplate.send(KafkaConstants.NOTIFICATION_TOPIC, receiverId.toString(), payload)
                 .whenComplete((result, ex) -> {
                     if (ex == null) {
-                        outboxEventService.markSent(receiverId.toString(), KafkaConstants.NOTIFICATION_TOPIC);
+                        outboxEventService.markSent(outboxEventId);
                         log.info("알림 이벤트 발행 성공 - receiverId: {}, type: {}", receiverId, type);
                     } else {
                         log.warn("알림 이벤트 발행 실패 - outbox 스케줄러가 재시도 예정. receiverId: {}, type: {}", receiverId, type, ex);

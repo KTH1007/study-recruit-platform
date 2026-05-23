@@ -13,14 +13,12 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> 
     List<OutboxEvent> findAllByStatusAndCreatedAtBefore(OutboxEventStatus status, LocalDateTime createdAt);
 
     @Modifying
-    @Query("UPDATE OutboxEvent o " +
-            "SET o.status = 'SENT', o.sentAt = NOW() " +
-            "WHERE o.messageKey = :messageKey AND o.topic = :topic AND o.status = 'PENDING'")
-    int markSentByMessageKeyAndTopic(@Param("messageKey") String messageKey, @Param("topic") String topic);
+    @Query("UPDATE OutboxEvent o SET o.status = 'SENT', o.sentAt = NOW() " +
+            "WHERE o.id = :id AND o.status = 'PENDING'")
+    int markSentById(@Param("id") Long id);
 
     @Modifying
-    @Query("UPDATE OutboxEvent o " +
-            "SET o.status = 'FAILED_PERMANENTLY' " +
+    @Query("UPDATE OutboxEvent o SET o.status = 'FAILED_PERMANENTLY' " +
             "WHERE o.id = :id")
     void markFailedPermanently(@Param("id") Long id);
 }

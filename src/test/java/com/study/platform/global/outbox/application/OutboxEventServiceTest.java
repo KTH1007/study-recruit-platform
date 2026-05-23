@@ -7,9 +7,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,6 +25,11 @@ class OutboxEventServiceTest {
 
     @Test
     void save_정상_PENDING_저장() {
+        // given
+        OutboxEvent saved = OutboxEvent.pending("post-sync", "postId-123", "{\"postId\":\"123\"}");
+        ReflectionTestUtils.setField(saved, "id", 1L);
+        given(outboxEventRepository.save(any(OutboxEvent.class))).willReturn(saved);
+
         // when
         outboxEventService.save("post-sync", "postId-123", "{\"postId\":\"123\"}");
 
@@ -33,9 +40,9 @@ class OutboxEventServiceTest {
     @Test
     void markSent_정상_SENT_업데이트() {
         // when
-        outboxEventService.markSent("postId-123", "post-sync");
+        outboxEventService.markSent(1L);
 
         // then
-        then(outboxEventRepository).should().markSentByMessageKeyAndTopic(eq("postId-123"), eq("post-sync"));
+        then(outboxEventRepository).should().markSentById(eq(1L));
     }
 }

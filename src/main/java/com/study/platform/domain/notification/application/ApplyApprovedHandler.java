@@ -28,7 +28,7 @@ public class ApplyApprovedHandler implements NotificationHandler<ApplyApprovedEv
         NotificationEvent notificationEvent = new NotificationEvent(
                 event.applicantId(), NotificationType.APPLY_APPROVED, message, event.postId(), 0);
         String payload = objectMapper.writeValueAsString(notificationEvent);
-        outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.applicantId().toString(), payload);
-        kafkaProducer.send(event.applicantId(), NotificationType.APPLY_APPROVED, message, event.postId());
+        Long outboxEventId = outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.applicantId().toString(), payload);
+        kafkaProducer.send(outboxEventId, event.applicantId(), NotificationType.APPLY_APPROVED, message, event.postId());
     }
 }
