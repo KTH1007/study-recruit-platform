@@ -17,4 +17,10 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> 
             "SET o.status = 'SENT', o.sentAt = NOW() " +
             "WHERE o.messageKey = :messageKey AND o.topic = :topic AND o.status = 'PENDING'")
     int markSentByMessageKeyAndTopic(@Param("messageKey") String messageKey, @Param("topic") String topic);
+
+    @Modifying
+    @Query("UPDATE OutboxEvent o " +
+            "SET o.status = 'FAILED_PERMANENTLY' " +
+            "WHERE o.id = :id")
+    void markFailedPermanently(@Param("id") Long id);
 }

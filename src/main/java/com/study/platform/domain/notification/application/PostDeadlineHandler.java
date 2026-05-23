@@ -7,8 +7,6 @@ import com.study.platform.global.constant.KafkaConstants;
 import com.study.platform.global.outbox.application.OutboxEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import tools.jackson.databind.ObjectMapper;
@@ -22,13 +20,12 @@ public class PostDeadlineHandler implements NotificationHandler<PostDeadlineRemi
     private final ObjectMapper objectMapper;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @Override
     public void handle(PostDeadlineReminderEvent event) {
         String message = event.postTitle() + " 게시글 모집 마감이 내일입니다.";
         String payload = objectMapper.writeValueAsString(
                 new NotificationEvent(event.authorId(), NotificationType.POST_DEADLINE, message, event.postId(), 0));
-        outboxEventService.save(KafkaConstants.NOTIFICATION_TOPIC, event.authorId().toString(), payload);
+        outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.authorId().toString(), payload);
         kafkaProducer.send(event.authorId(), NotificationType.POST_DEADLINE, message, event.postId());
     }
 }

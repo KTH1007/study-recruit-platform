@@ -8,8 +8,6 @@ import com.study.platform.global.outbox.application.OutboxEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import tools.jackson.databind.ObjectMapper;
@@ -24,13 +22,12 @@ public class ApplyRejectedHandler implements NotificationHandler<ApplyRejectedEv
 
     @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @Override
     public void handle(ApplyRejectedEvent event) {
         String message = event.postTitle() + " 스터디 지원이 거절되었습니다.";
         String payload = objectMapper.writeValueAsString(
                 new NotificationEvent(event.applicantId(), NotificationType.APPLY_REJECTED, message, event.postId(), 0));
-        outboxEventService.save(KafkaConstants.NOTIFICATION_TOPIC, event.applicantId().toString(), payload);
+        outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.applicantId().toString(), payload);
         kafkaProducer.send(event.applicantId(), NotificationType.APPLY_REJECTED, message, event.postId());
     }
 }

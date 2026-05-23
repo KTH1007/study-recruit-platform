@@ -41,24 +41,26 @@ public class OutboxRetryScheduler {
     }
 
     private void retry(OutboxEvent outbox) {
-        try {
-            kafkaTemplate.send(outbox.getTopic(), outbox.getMessageKey(), outbox.getPayload()).get();
-            outboxEventService.markSent(outbox.getMessageKey(), outbox.getTopic());
-            log.info("Outbox 재발행 성공 - id: {}, topic: {}", outbox.getId(), outbox.getTopic());
-        } catch (Exception e) {
-            log.warn("Outbox 재발행 실패 - id: {}, topic: {}", outbox.getId(), outbox.getTopic(), e);
-            handleRetryFailure(outbox, e);
-        }
+        kafkaTemplate.send(outbox.getTopic(), outbox.getMessageKey(), outbox.getPayload())
+                .whenComplete((result, ex) -> {
+                    if (ex == null) {
+                        outboxEventService.markSent(outbox.getMessageKey(), outbox.getTopic());
+                        log.info("Outbox 재발행 성공 - id: {}, topic: {}", outbox.getId(), outbox.getTopic());
+                    } else {
+                        log.warn("Outbox 재발행 실패 - id: {}, topic: {}", outbox.getId(), outbox.getTopic(), ex);
+                        handleRetryFailure(outbox, ex);
+                    }
+                });
     }
 
-    private void handleRetryFailure(OutboxEvent outbox, Exception e) {
+    private void handleRetryFailure(OutboxEvent outbox, Throwable e) {
         if (outbox.getRetryCount() >= MAX_OUTBOX_RETRY) {
             log.error("Outbox 최대 재시도 초과 - id: {}, topic: {}", outbox.getId(), outbox.getTopic());
             if (outbox.getTopic().equals(KafkaConstants.POST_SYNC_TOPIC)) {
                 PostSyncEvent event = objectMapper.readValue(outbox.getPayload(), PostSyncEvent.class);
                 failedPostSyncRepository.save(FailedPostSync.from(event, e.getMessage()));
             }
-            outboxEventService.markSent(outbox.getMessageKey(), outbox.getTopic());
+            outboxEventService.markFailedPermanently(outbox.getId());
         } else {
             outbox.incrementRetryCount();
             outboxEventRepository.save(outbox);

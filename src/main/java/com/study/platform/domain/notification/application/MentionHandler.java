@@ -8,8 +8,6 @@ import com.study.platform.global.outbox.application.OutboxEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import tools.jackson.databind.ObjectMapper;
@@ -24,13 +22,12 @@ public class MentionHandler implements NotificationHandler<MentionEvent> {
 
     @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @Override
     public void handle(MentionEvent event) {
         String message = event.commenterNickname() + "님이 댓글에서 회원님을 멘션했습니다.";
         String payload = objectMapper.writeValueAsString(
                 new NotificationEvent(event.mentionedUserId(), NotificationType.MENTION, message, event.postId(), 0));
-        outboxEventService.save(KafkaConstants.NOTIFICATION_TOPIC, event.mentionedUserId().toString(), payload);
+        outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.mentionedUserId().toString(), payload);
         kafkaProducer.send(event.mentionedUserId(), NotificationType.MENTION, message, event.postId());
     }
 }

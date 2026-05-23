@@ -19,7 +19,17 @@ public class OutboxEventService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void saveWithNewTx(String topic, String messageKey, String payload) {
+        outboxEventRepository.save(OutboxEvent.pending(topic, messageKey, payload));
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markSent(String messageKey, String topic) {
         outboxEventRepository.markSentByMessageKeyAndTopic(messageKey, topic);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markFailedPermanently(Long id) {
+        outboxEventRepository.markFailedPermanently(id);
     }
 }

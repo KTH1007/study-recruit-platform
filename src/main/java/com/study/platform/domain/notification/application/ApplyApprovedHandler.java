@@ -8,8 +8,6 @@ import com.study.platform.global.outbox.application.OutboxEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import tools.jackson.databind.ObjectMapper;
@@ -24,14 +22,13 @@ public class ApplyApprovedHandler implements NotificationHandler<ApplyApprovedEv
 
     @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     @Override
     public void handle(ApplyApprovedEvent event) {
         String message = event.postTitle() + " 스터디 지원이 승인되었습니다.";
         NotificationEvent notificationEvent = new NotificationEvent(
                 event.applicantId(), NotificationType.APPLY_APPROVED, message, event.postId(), 0);
         String payload = objectMapper.writeValueAsString(notificationEvent);
-        outboxEventService.save(KafkaConstants.NOTIFICATION_TOPIC, event.applicantId().toString(), payload);
+        outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.applicantId().toString(), payload);
         kafkaProducer.send(event.applicantId(), NotificationType.APPLY_APPROVED, message, event.postId());
     }
 }

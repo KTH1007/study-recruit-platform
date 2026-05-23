@@ -13,7 +13,10 @@ public enum OutboxEventStatus {
     PENDING("Kafka 미발행 상태"),
 
     @Schema(description = "Kafka 발행 완료 상태")
-    SENT("Kafka 발행 완료 상태");
+    SENT("Kafka 발행 완료 상태"),
+
+    @Schema(description = "최대 재시도 초과로 영구 실패")
+    FAILED_PERMANENTLY("최대 재시도 초과로 영구 실패");
 
     private final String description;
 }
