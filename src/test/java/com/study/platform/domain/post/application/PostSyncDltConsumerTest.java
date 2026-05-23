@@ -56,7 +56,7 @@ class PostSyncDltConsumerTest {
     @Test
     void consume_재시도횟수_미만_메인토픽_재투입() throws Exception {
         // given
-        PostSyncEvent event = new PostSyncEvent(postId, PostSyncOperationType.UPSERT, 1);
+        PostSyncEvent event = new PostSyncEvent(postId, PostSyncOperationType.UPSERT, null, 1);
         CompletableFuture<SendResult<String, String>> future = CompletableFuture.completedFuture(mock(SendResult.class));
         given(objectMapper.readValue(payload, PostSyncEvent.class)).willReturn(event);
         given(objectMapper.writeValueAsString(any())).willReturn(payload);
@@ -74,7 +74,7 @@ class PostSyncDltConsumerTest {
     @Test
     void consume_재시도횟수_초과_DB_영구저장() throws Exception {
         // given
-        PostSyncEvent event = new PostSyncEvent(postId, PostSyncOperationType.UPSERT, KafkaConstants.MAX_DLT_RETRY);
+        PostSyncEvent event = new PostSyncEvent(postId, PostSyncOperationType.UPSERT, null, KafkaConstants.MAX_DLT_RETRY);
         given(objectMapper.readValue(payload, PostSyncEvent.class)).willReturn(event);
 
         // when

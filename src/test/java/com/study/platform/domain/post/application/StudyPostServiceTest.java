@@ -12,6 +12,7 @@ import com.study.platform.domain.user.model.User;
 import com.study.platform.domain.user.model.UserRepository;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
+import com.study.platform.global.outbox.application.OutboxEventService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -28,6 +30,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -40,6 +44,10 @@ class StudyPostServiceTest {
     private UserRepository userRepository;
     @Mock
     private ApplicationEventPublisher eventPublisher;
+    @Mock
+    private OutboxEventService outboxEventService;
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private StudyPostService studyPostService;
@@ -87,19 +95,20 @@ class StudyPostServiceTest {
     }
 
     @Test
-    void createPost_성공() {
+    void createPost_성공_outbox_저장() {
         // given
         StudyPostCreateRequest request = new StudyPostCreateRequest(
                 "스터디 모집", "열심히 합니다", "Java", 3, LocalDateTime.now().plusDays(7));
         given(userRepository.findById(authorId)).willReturn(Optional.of(author));
         given(studyPostRepository.saveAndFlush(any())).willReturn(post);
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
         // when
         StudyPostResponse response = studyPostService.createPost(authorId, request);
 
         // then
-        assertThat(response).isNotNull();
         assertThat(response.title()).isEqualTo("스터디 모집");
+        then(outboxEventService).should().save(anyString(), eq(postId.toString()), anyString());
         then(eventPublisher).should().publishEvent(any(PostSyncEvent.class));
     }
 
@@ -117,17 +126,19 @@ class StudyPostServiceTest {
     }
 
     @Test
-    void updatePost_성공() {
+    void updatePost_성공_outbox_저장() {
         // given
         StudyPostUpdateRequest request = new StudyPostUpdateRequest(
                 "수정된 제목", "수정된 내용", "Kotlin", 5, LocalDateTime.now().plusDays(14));
         given(studyPostRepository.findByIdWithAuthor(postId)).willReturn(Optional.of(post));
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
         // when
         StudyPostResponse response = studyPostService.updatePost(authorId, postId, request);
 
         // then
         assertThat(response.title()).isEqualTo("수정된 제목");
+        then(outboxEventService).should().save(anyString(), eq(postId.toString()), anyString());
         then(eventPublisher).should().publishEvent(any(PostSyncEvent.class));
     }
 
@@ -146,15 +157,17 @@ class StudyPostServiceTest {
     }
 
     @Test
-    void deletePost_성공() {
+    void deletePost_성공_outbox_저장() {
         // given
         given(studyPostRepository.findByIdWithAuthor(postId)).willReturn(Optional.of(post));
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
         // when
         studyPostService.deletePost(authorId, postId);
 
         // then
         then(studyPostRepository).should().delete(post);
+        then(outboxEventService).should().save(anyString(), eq(postId.toString()), anyString());
         then(eventPublisher).should().publishEvent(any(PostSyncEvent.class));
     }
 
@@ -171,15 +184,17 @@ class StudyPostServiceTest {
     }
 
     @Test
-    void closePost_성공() {
+    void closePost_성공_outbox_저장() {
         // given
         given(studyPostRepository.findByIdWithAuthor(postId)).willReturn(Optional.of(post));
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
         // when
         StudyPostResponse response = studyPostService.closePost(authorId, postId);
 
         // then
         assertThat(response.status()).isEqualTo(StudyPostStatus.CLOSED);
+        then(outboxEventService).should().save(anyString(), eq(postId.toString()), anyString());
         then(eventPublisher).should().publishEvent(any(PostSyncEvent.class));
     }
 

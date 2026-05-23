@@ -1,7 +1,10 @@
 package com.study.platform.domain.team.application;
 
 import com.study.platform.domain.notification.application.NotificationKafkaProducer;
+import com.study.platform.domain.notification.model.NotificationType;
 import com.study.platform.domain.post.model.StudyPost;
+import com.study.platform.global.outbox.application.OutboxEventService;
+import tools.jackson.databind.ObjectMapper;
 import com.study.platform.domain.team.dto.request.TeamScheduleCreateRequest;
 import com.study.platform.domain.team.dto.request.TeamScheduleUpdateRequest;
 import com.study.platform.domain.team.dto.response.TeamScheduleResponse;
@@ -36,6 +39,8 @@ class TeamScheduleServiceTest {
     @Mock private TeamMemberRepository teamMemberRepository;
     @Mock private StudyTeamRepository studyTeamRepository;
     @Mock private NotificationKafkaProducer kafkaProducer;
+    @Mock private OutboxEventService outboxEventService;
+    @Mock private ObjectMapper objectMapper;
 
     @InjectMocks
     private TeamScheduleService teamScheduleService;
@@ -80,7 +85,9 @@ class TeamScheduleServiceTest {
         given(studyTeamRepository.findById(teamId)).willReturn(Optional.of(team));
         given(teamScheduleRepository.save(any())).willReturn(schedule);
         given(teamMemberRepository.findAllByTeamId(teamId)).willReturn(List.of(teamMember));
-        willDoNothing().given(kafkaProducer).send(any(), any(), any(), any());
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
+        given(outboxEventService.save(any(), any(), any())).willReturn(1L);
+        willDoNothing().given(kafkaProducer).send(any(), any(), any(NotificationType.class), any(), any());
 
         // when
         TeamScheduleResponse response = teamScheduleService.createSchedule(userId, teamId, request);
