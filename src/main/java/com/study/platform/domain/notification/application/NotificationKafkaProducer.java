@@ -3,7 +3,7 @@ package com.study.platform.domain.notification.application;
 import com.study.platform.domain.notification.dto.event.NotificationEvent;
 import com.study.platform.domain.notification.model.NotificationType;
 import com.study.platform.global.constant.KafkaConstants;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import com.study.platform.global.outbox.application.OutboxEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -19,15 +19,19 @@ public class NotificationKafkaProducer {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
+    private final OutboxEventService outboxEventService;
 
-    @CircuitBreaker(name = "kafka", fallbackMethod = "sendFallback")
     public void send(UUID receiverId, NotificationType type, String message, UUID targetId) {
         NotificationEvent event = new NotificationEvent(receiverId, type, message, targetId, 0);
         String payload = objectMapper.writeValueAsString(event);
-        kafkaTemplate.send(KafkaConstants.NOTIFICATION_TOPIC, payload);
-    }
-
-    private void sendFallback(UUID receiverId, NotificationType type, String message, UUID targetId, Exception e) {
-        log.warn("Kafka 장애로 알림 발송 실패. receiverId={}, type={}", receiverId, type, e);
+        kafkaTemplate.send(KafkaConstants.NOTIFICATION_TOPIC, receiverId.toString(), payload)
+                .whenComplete((result, ex) -> {
+                    if (ex == null) {
+                        outboxEventService.markSent(receiverId.toString(), KafkaConstants.NOTIFICATION_TOPIC);
+                        log.info("알림 이벤트 발행 성공 - receiverId: {}, type: {}", receiverId, type);
+                    } else {
+                        log.warn("알림 이벤트 발행 실패 - outbox 스케줄러가 재시도 예정. receiverId: {}, type: {}", receiverId, type, ex);
+                    }
+                });
     }
 }

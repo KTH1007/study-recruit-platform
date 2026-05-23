@@ -1,0 +1,25 @@
+package com.study.platform.global.outbox.application;
+
+import com.study.platform.global.outbox.model.OutboxEvent;
+import com.study.platform.global.outbox.model.OutboxEventRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class OutboxEventService {
+
+    private final OutboxEventRepository outboxEventRepository;
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void save(String topic, String messageKey, String payload) {
+        outboxEventRepository.save(OutboxEvent.pending(topic, messageKey, payload));
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markSent(String messageKey, String topic) {
+        outboxEventRepository.markSentByMessageKeyAndTopic(messageKey, topic);
+    }
+}
