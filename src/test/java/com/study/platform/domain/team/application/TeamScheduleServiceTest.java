@@ -1,10 +1,7 @@
 package com.study.platform.domain.team.application;
 
-import com.study.platform.domain.notification.application.NotificationKafkaProducer;
 import com.study.platform.domain.notification.model.NotificationType;
 import com.study.platform.domain.post.model.StudyPost;
-import com.study.platform.global.outbox.application.OutboxEventService;
-import tools.jackson.databind.ObjectMapper;
 import com.study.platform.domain.team.dto.request.TeamScheduleCreateRequest;
 import com.study.platform.domain.team.dto.request.TeamScheduleUpdateRequest;
 import com.study.platform.domain.team.dto.response.TeamScheduleResponse;
@@ -12,50 +9,52 @@ import com.study.platform.domain.team.model.*;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
+import com.study.platform.global.outbox.application.OutboxEventService;
+import com.study.platform.support.fake.FakeNotificationPublisher;
+import com.study.platform.support.fake.FakeOutboxEventRepository;
+import com.study.platform.support.fake.FakeStudyTeamRepository;
+import com.study.platform.support.fake.FakeTeamMemberRepository;
+import com.study.platform.support.fake.FakeTeamScheduleRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.BDDMockito.willDoNothing;
 
-@ExtendWith(MockitoExtension.class)
 class TeamScheduleServiceTest {
 
-    @Mock private TeamScheduleRepository teamScheduleRepository;
-    @Mock private TeamMemberRepository teamMemberRepository;
-    @Mock private StudyTeamRepository studyTeamRepository;
-    @Mock private NotificationKafkaProducer kafkaProducer;
-    @Mock private OutboxEventService outboxEventService;
-    @Mock private ObjectMapper objectMapper;
-
-    @InjectMocks
+    private FakeTeamScheduleRepository teamScheduleRepository;
+    private FakeTeamMemberRepository teamMemberRepository;
+    private FakeStudyTeamRepository studyTeamRepository;
+    private FakeNotificationPublisher notificationPublisher;
+    private OutboxEventService outboxEventService;
     private TeamScheduleService teamScheduleService;
 
     private UUID userId;
     private UUID teamId;
     private UUID scheduleId;
     private User user;
-    private StudyPost post;
     private StudyTeam team;
     private TeamMember teamMember;
     private TeamSchedule schedule;
 
     @BeforeEach
     void setUp() {
+        teamScheduleRepository = new FakeTeamScheduleRepository();
+        teamMemberRepository = new FakeTeamMemberRepository();
+        studyTeamRepository = new FakeStudyTeamRepository();
+        notificationPublisher = new FakeNotificationPublisher();
+        outboxEventService = new OutboxEventService(new FakeOutboxEventRepository());
+        teamScheduleService = new TeamScheduleService(
+                teamScheduleRepository, teamMemberRepository, studyTeamRepository,
+                notificationPublisher, outboxEventService, new ObjectMapper());
+
         userId = UUID.randomUUID();
         teamId = UUID.randomUUID();
         scheduleId = UUID.randomUUID();
@@ -63,7 +62,7 @@ class TeamScheduleServiceTest {
         user = User.create("kakao-1", "팀원", "member@test.com");
         ReflectionTestUtils.setField(user, "id", userId);
 
-        post = com.study.platform.domain.post.model.StudyPost.create(
+        StudyPost post = StudyPost.create(
                 user, "스터디", "열심히", "Java", 5, LocalDateTime.now().plusDays(7));
         ReflectionTestUtils.setField(post, "id", UUID.randomUUID());
 
@@ -71,9 +70,13 @@ class TeamScheduleServiceTest {
         ReflectionTestUtils.setField(team, "id", teamId);
 
         teamMember = TeamMember.createMember(team, user);
+        ReflectionTestUtils.setField(teamMember, "id", UUID.randomUUID());
 
         schedule = TeamSchedule.create(team, "1회차 미팅", "미팅 내용", LocalDateTime.now().plusDays(3));
         ReflectionTestUtils.setField(schedule, "id", scheduleId);
+
+        studyTeamRepository.save(team);
+        teamMemberRepository.save(teamMember);
     }
 
     @Test
@@ -81,20 +84,12 @@ class TeamScheduleServiceTest {
         // given
         TeamScheduleCreateRequest request = new TeamScheduleCreateRequest(
                 "1회차 미팅", "미팅 내용", LocalDateTime.now().plusDays(3));
-        given(teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)).willReturn(true);
-        given(studyTeamRepository.findById(teamId)).willReturn(Optional.of(team));
-        given(teamScheduleRepository.save(any())).willReturn(schedule);
-        given(teamMemberRepository.findAllByTeamId(teamId)).willReturn(List.of(teamMember));
-        given(objectMapper.writeValueAsString(any())).willReturn("{}");
-        given(outboxEventService.save(any(), any(), any())).willReturn(1L);
-        willDoNothing().given(kafkaProducer).send(any(), any(), any(NotificationType.class), any(), any());
-
         // when
         TeamScheduleResponse response = teamScheduleService.createSchedule(userId, teamId, request);
 
         // then
         assertThat(response.title()).isEqualTo("1회차 미팅");
-        then(teamScheduleRepository).should().save(any(TeamSchedule.class));
+        assertThat(notificationPublisher.hasSentTo(userId)).isTrue();
     }
 
     @Test
@@ -102,20 +97,17 @@ class TeamScheduleServiceTest {
         // given
         TeamScheduleCreateRequest request = new TeamScheduleCreateRequest(
                 "1회차 미팅", "미팅 내용", LocalDateTime.now().plusDays(3));
-        given(teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)).willReturn(false);
 
         // when & then
-        assertThatThrownBy(() -> teamScheduleService.createSchedule(userId, teamId, request))
+        assertThatThrownBy(() -> teamScheduleService.createSchedule(UUID.randomUUID(), teamId, request))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(ErrorCode.NOT_TEAM_MEMBER.getMessage());
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_TEAM_MEMBER);
     }
 
     @Test
     void findSchedules_성공() {
         // given
-        given(teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)).willReturn(true);
-        given(teamScheduleRepository.findAllByTeamIdOrderByScheduledAtAsc(teamId))
-                .willReturn(List.of(schedule));
+        teamScheduleRepository.save(schedule);
 
         // when
         List<TeamScheduleResponse> responses = teamScheduleService.findSchedules(userId, teamId);
@@ -127,22 +119,18 @@ class TeamScheduleServiceTest {
 
     @Test
     void findSchedules_팀멤버아님_예외발생() {
-        // given
-        given(teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)).willReturn(false);
-
         // when & then
-        assertThatThrownBy(() -> teamScheduleService.findSchedules(userId, teamId))
+        assertThatThrownBy(() -> teamScheduleService.findSchedules(UUID.randomUUID(), teamId))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(ErrorCode.NOT_TEAM_MEMBER.getMessage());
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_TEAM_MEMBER);
     }
 
     @Test
     void updateSchedule_성공() {
         // given
+        teamScheduleRepository.save(schedule);
         TeamScheduleUpdateRequest request = new TeamScheduleUpdateRequest(
                 "2회차 미팅", "수정된 내용", LocalDateTime.now().plusDays(7));
-        given(teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)).willReturn(true);
-        given(teamScheduleRepository.findById(scheduleId)).willReturn(Optional.of(schedule));
 
         // when
         TeamScheduleResponse response = teamScheduleService.updateSchedule(userId, teamId, scheduleId, request);
@@ -157,36 +145,30 @@ class TeamScheduleServiceTest {
         // given
         TeamScheduleUpdateRequest request = new TeamScheduleUpdateRequest(
                 "2회차 미팅", "수정된 내용", LocalDateTime.now().plusDays(7));
-        given(teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)).willReturn(true);
-        given(teamScheduleRepository.findById(scheduleId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> teamScheduleService.updateSchedule(userId, teamId, scheduleId, request))
+        assertThatThrownBy(() -> teamScheduleService.updateSchedule(userId, teamId, UUID.randomUUID(), request))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(ErrorCode.TEAM_SCHEDULE_NOT_FOUND.getMessage());
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TEAM_SCHEDULE_NOT_FOUND);
     }
 
     @Test
     void deleteSchedule_성공() {
         // given
-        given(teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)).willReturn(true);
-        given(teamScheduleRepository.findById(scheduleId)).willReturn(Optional.of(schedule));
+        teamScheduleRepository.save(schedule);
 
         // when
         teamScheduleService.deleteSchedule(userId, teamId, scheduleId);
 
         // then
-        then(teamScheduleRepository).should().delete(schedule);
+        assertThat(teamScheduleRepository.findById(scheduleId)).isEmpty();
     }
 
     @Test
     void deleteSchedule_팀멤버아님_예외발생() {
-        // given
-        given(teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)).willReturn(false);
-
         // when & then
-        assertThatThrownBy(() -> teamScheduleService.deleteSchedule(userId, teamId, scheduleId))
+        assertThatThrownBy(() -> teamScheduleService.deleteSchedule(UUID.randomUUID(), teamId, scheduleId))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(ErrorCode.NOT_TEAM_MEMBER.getMessage());
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_TEAM_MEMBER);
     }
 }

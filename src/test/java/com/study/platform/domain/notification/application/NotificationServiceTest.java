@@ -1,72 +1,57 @@
 package com.study.platform.domain.notification.application;
 
 import com.study.platform.domain.notification.model.Notification;
-import com.study.platform.domain.notification.model.NotificationRepository;
 import com.study.platform.domain.notification.model.NotificationType;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
+import com.study.platform.support.fake.FakeNotificationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
 
-@ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {
 
-    @Mock
-    private NotificationRepository notificationRepository;
-
-    @InjectMocks
+    private FakeNotificationRepository notificationRepository;
     private NotificationService notificationService;
 
     private UUID receiverId;
-    private UUID notificationId;
     private User receiver;
     private Notification notification;
 
     @BeforeEach
     void setUp() {
+        notificationRepository = new FakeNotificationRepository();
+        notificationService = new NotificationService(notificationRepository);
+
         receiverId = UUID.randomUUID();
-        notificationId = UUID.randomUUID();
 
         receiver = User.create("kakao1", "수신자", "receiver@test.com");
         ReflectionTestUtils.setField(receiver, "id", receiverId);
 
         notification = Notification.create(receiver, NotificationType.APPLY_RECEIVED, "새 지원이 있습니다", UUID.randomUUID());
-        ReflectionTestUtils.setField(notification, "id", notificationId);
+        ReflectionTestUtils.setField(notification, "id", UUID.randomUUID());
+        notificationRepository.save(notification);
     }
 
     @Test
     void countUnread_성공() {
-        // given
-        given(notificationRepository.countByReceiverIdAndIsReadFalse(receiverId)).willReturn(3L);
-
         // when
         long count = notificationService.countUnread(receiverId);
 
         // then
-        assertThat(count).isEqualTo(3L);
+        assertThat(count).isEqualTo(1L);
     }
 
     @Test
     void markAsRead_성공() {
-        // given
-        given(notificationRepository.findById(notificationId)).willReturn(Optional.of(notification));
-
         // when
-        notificationService.markAsRead(receiverId, notificationId);
+        notificationService.markAsRead(receiverId, notification.getId());
 
         // then
         assertThat(notification.isRead()).isTrue();
@@ -74,11 +59,8 @@ class NotificationServiceTest {
 
     @Test
     void markAsRead_알림없음_예외발생() {
-        // given
-        given(notificationRepository.findById(notificationId)).willReturn(Optional.empty());
-
         // when & then
-        assertThatThrownBy(() -> notificationService.markAsRead(receiverId, notificationId))
+        assertThatThrownBy(() -> notificationService.markAsRead(receiverId, UUID.randomUUID()))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOTIFICATION_NOT_FOUND);
     }
@@ -87,20 +69,24 @@ class NotificationServiceTest {
     void markAsRead_본인알림아님_예외발생() {
         // given
         UUID otherId = UUID.randomUUID();
-        given(notificationRepository.findById(notificationId)).willReturn(Optional.of(notification));
 
         // when & then
-        assertThatThrownBy(() -> notificationService.markAsRead(otherId, notificationId))
+        assertThatThrownBy(() -> notificationService.markAsRead(otherId, notification.getId()))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
     }
 
     @Test
     void markAllAsRead_성공() {
+        // given
+        Notification another = Notification.create(receiver, NotificationType.COMMENT_CREATED, "새 댓글이 있습니다", UUID.randomUUID());
+        ReflectionTestUtils.setField(another, "id", UUID.randomUUID());
+        notificationRepository.save(another);
+
         // when
         notificationService.markAllAsRead(receiverId);
 
         // then
-        then(notificationRepository).should().markAllAsRead(receiverId);
+        assertThat(notificationRepository.countByReceiverIdAndIsReadFalse(receiverId)).isZero();
     }
 }

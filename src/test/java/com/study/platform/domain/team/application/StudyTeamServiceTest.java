@@ -2,44 +2,33 @@ package com.study.platform.domain.team.application;
 
 import com.study.platform.domain.apply.event.ApplyApprovedEvent;
 import com.study.platform.domain.post.model.StudyPost;
-import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.team.dto.response.StudyTeamResponse;
 import com.study.platform.domain.team.dto.response.TeamMemberResponse;
 import com.study.platform.domain.team.model.*;
 import com.study.platform.domain.user.model.User;
-import com.study.platform.domain.user.model.UserRepository;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
+import com.study.platform.support.fake.FakeStudyPostRepository;
+import com.study.platform.support.fake.FakeStudyTeamRepository;
+import com.study.platform.support.fake.FakeTeamMemberRepository;
+import com.study.platform.support.fake.FakeUserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.BDDMockito.willDoNothing;
 
-@ExtendWith(MockitoExtension.class)
 class StudyTeamServiceTest {
 
-    @Mock private StudyTeamRepository studyTeamRepository;
-    @Mock private TeamMemberRepository teamMemberRepository;
-    @Mock private StudyPostRepository studyPostRepository;
-    @Mock private UserRepository userRepository;
-
-    @InjectMocks
+    private FakeStudyTeamRepository studyTeamRepository;
+    private FakeTeamMemberRepository teamMemberRepository;
+    private FakeStudyPostRepository studyPostRepository;
+    private FakeUserRepository userRepository;
     private StudyTeamService studyTeamService;
 
     private UUID leaderId;
@@ -55,6 +44,13 @@ class StudyTeamServiceTest {
 
     @BeforeEach
     void setUp() {
+        studyTeamRepository = new FakeStudyTeamRepository();
+        teamMemberRepository = new FakeTeamMemberRepository();
+        studyPostRepository = new FakeStudyPostRepository();
+        userRepository = new FakeUserRepository();
+        studyTeamService = new StudyTeamService(
+                studyTeamRepository, teamMemberRepository, studyPostRepository, userRepository);
+
         leaderId = UUID.randomUUID();
         memberId = UUID.randomUUID();
         postId = UUID.randomUUID();
@@ -73,61 +69,63 @@ class StudyTeamServiceTest {
         ReflectionTestUtils.setField(team, "id", teamId);
 
         leaderMember = TeamMember.createLeader(team, leader);
+        ReflectionTestUtils.setField(leaderMember, "id", UUID.randomUUID());
+
         normalMember = TeamMember.createMember(team, member);
+        ReflectionTestUtils.setField(normalMember, "id", UUID.randomUUID());
+
+        studyPostRepository.save(post);
+        userRepository.save(leader);
+        userRepository.save(member);
     }
 
     @Test
     void createTeam_팀없을때_새팀생성() {
         // given
         ApplyApprovedEvent event = new ApplyApprovedEvent(postId, memberId, "스터디 모집");
-        given(studyTeamRepository.findByPostId(postId)).willReturn(Optional.empty());
-        given(studyPostRepository.findByIdWithAuthor(postId)).willReturn(Optional.of(post));
-        given(studyTeamRepository.save(any())).willReturn(team);
-        given(userRepository.findById(memberId)).willReturn(Optional.of(member));
 
         // when
         studyTeamService.createTeam(event);
 
         // then
-        then(studyTeamRepository).should().save(any(StudyTeam.class));
-        then(teamMemberRepository).should().save(argThat(m -> m.getRole() == TeamMemberRole.LEADER));
-        then(teamMemberRepository).should().save(argThat(m -> m.getRole() == TeamMemberRole.MEMBER));
+        assertThat(studyTeamRepository.findByPostId(postId)).isPresent();
+        assertThat(teamMemberRepository.findAllByTeamId(
+                studyTeamRepository.findByPostId(postId).get().getId())).hasSize(2);
     }
 
     @Test
     void createTeam_팀있을때_멤버만추가() {
         // given
+        studyTeamRepository.save(team);
+        teamMemberRepository.save(leaderMember);
         ApplyApprovedEvent event = new ApplyApprovedEvent(postId, memberId, "스터디 모집");
-        given(studyTeamRepository.findByPostId(postId)).willReturn(Optional.of(team));
-        given(teamMemberRepository.existsByTeamIdAndUserId(teamId, memberId)).willReturn(false);
-        given(userRepository.findById(memberId)).willReturn(Optional.of(member));
 
         // when
         studyTeamService.createTeam(event);
 
         // then
-        then(studyTeamRepository).shouldHaveNoMoreInteractions();
-        then(teamMemberRepository).should().save(any(TeamMember.class));
+        assertThat(teamMemberRepository.findAllByTeamId(teamId)).hasSize(2);
     }
 
     @Test
     void createTeam_이미멤버인경우_추가안함() {
         // given
+        studyTeamRepository.save(team);
+        teamMemberRepository.save(leaderMember);
+        teamMemberRepository.save(normalMember);
         ApplyApprovedEvent event = new ApplyApprovedEvent(postId, memberId, "스터디 모집");
-        given(studyTeamRepository.findByPostId(postId)).willReturn(Optional.of(team));
-        given(teamMemberRepository.existsByTeamIdAndUserId(teamId, memberId)).willReturn(true);
 
         // when
         studyTeamService.createTeam(event);
 
         // then
-        then(teamMemberRepository).shouldHaveNoMoreInteractions();
+        assertThat(teamMemberRepository.findAllByTeamId(teamId)).hasSize(2);
     }
 
     @Test
     void findTeam_성공() {
         // given
-        given(studyTeamRepository.findById(teamId)).willReturn(Optional.of(team));
+        studyTeamRepository.save(team);
 
         // when
         StudyTeamResponse response = studyTeamService.findTeam(teamId);
@@ -139,19 +137,18 @@ class StudyTeamServiceTest {
 
     @Test
     void findTeam_존재하지않음_예외발생() {
-        // given
-        given(studyTeamRepository.findById(teamId)).willReturn(Optional.empty());
-
         // when & then
-        assertThatThrownBy(() -> studyTeamService.findTeam(teamId))
+        assertThatThrownBy(() -> studyTeamService.findTeam(UUID.randomUUID()))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(ErrorCode.TEAM_NOT_FOUND.getMessage());
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TEAM_NOT_FOUND);
     }
 
     @Test
     void findMembers_성공() {
         // given
-        given(teamMemberRepository.findAllByTeamId(teamId)).willReturn(List.of(leaderMember, normalMember));
+        studyTeamRepository.save(team);
+        teamMemberRepository.save(leaderMember);
+        teamMemberRepository.save(normalMember);
 
         // when
         List<TeamMemberResponse> responses = studyTeamService.findMembers(teamId);
@@ -163,8 +160,9 @@ class StudyTeamServiceTest {
     @Test
     void delegateLeader_성공() {
         // given
-        given(teamMemberRepository.findByTeamIdAndUserId(teamId, leaderId)).willReturn(Optional.of(leaderMember));
-        given(teamMemberRepository.findByTeamIdAndUserId(teamId, memberId)).willReturn(Optional.of(normalMember));
+        studyTeamRepository.save(team);
+        teamMemberRepository.save(leaderMember);
+        teamMemberRepository.save(normalMember);
 
         // when
         studyTeamService.delegateLeader(leaderId, teamId, memberId);
@@ -177,74 +175,81 @@ class StudyTeamServiceTest {
     @Test
     void delegateLeader_리더아님_예외발생() {
         // given
-        given(teamMemberRepository.findByTeamIdAndUserId(teamId, memberId)).willReturn(Optional.of(normalMember));
+        studyTeamRepository.save(team);
+        teamMemberRepository.save(leaderMember);
+        teamMemberRepository.save(normalMember);
 
         // when & then
         assertThatThrownBy(() -> studyTeamService.delegateLeader(memberId, teamId, leaderId))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(ErrorCode.FORBIDDEN.getMessage());
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
     }
 
     @Test
     void removeMember_성공() {
         // given
-        given(teamMemberRepository.findByTeamIdAndUserId(teamId, leaderId)).willReturn(Optional.of(leaderMember));
-        given(teamMemberRepository.findByTeamIdAndUserId(teamId, memberId)).willReturn(Optional.of(normalMember));
+        studyTeamRepository.save(team);
+        teamMemberRepository.save(leaderMember);
+        teamMemberRepository.save(normalMember);
 
         // when
         studyTeamService.removeMember(leaderId, teamId, memberId);
 
         // then
-        then(teamMemberRepository).should().delete(normalMember);
+        assertThat(teamMemberRepository.existsByTeamIdAndUserId(teamId, memberId)).isFalse();
     }
 
     @Test
     void removeMember_리더아님_예외발생() {
         // given
-        given(teamMemberRepository.findByTeamIdAndUserId(teamId, memberId)).willReturn(Optional.of(normalMember));
+        studyTeamRepository.save(team);
+        teamMemberRepository.save(leaderMember);
+        teamMemberRepository.save(normalMember);
 
         // when & then
         assertThatThrownBy(() -> studyTeamService.removeMember(memberId, teamId, leaderId))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(ErrorCode.FORBIDDEN.getMessage());
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
     }
 
     @Test
     void leaveTeam_일반멤버_탈퇴성공() {
         // given
-        given(teamMemberRepository.findByTeamIdAndUserId(teamId, memberId)).willReturn(Optional.of(normalMember));
+        studyTeamRepository.save(team);
+        teamMemberRepository.save(leaderMember);
+        teamMemberRepository.save(normalMember);
 
         // when
         studyTeamService.leaveTeam(memberId, teamId);
 
         // then
-        then(teamMemberRepository).should().delete(normalMember);
+        assertThat(teamMemberRepository.existsByTeamIdAndUserId(teamId, memberId)).isFalse();
     }
 
     @Test
     void leaveTeam_리더_마지막멤버_팀삭제() {
         // given
-        given(teamMemberRepository.findByTeamIdAndUserId(teamId, leaderId)).willReturn(Optional.of(leaderMember));
-        given(teamMemberRepository.countByTeamId(teamId)).willReturn(1L);
-        willDoNothing().given(teamMemberRepository).deleteAllByTeamId(teamId);
+        studyTeamRepository.save(team);
+        teamMemberRepository.save(leaderMember);
 
         // when
         studyTeamService.leaveTeam(leaderId, teamId);
 
         // then
-        then(teamMemberRepository).should().deleteAllByTeamId(teamId);
-        then(studyTeamRepository).should().delete(team);
+        assertThat(studyTeamRepository.findById(teamId)).isEmpty();
+        assertThat(teamMemberRepository.findAllByTeamId(teamId)).isEmpty();
     }
 
     @Test
     void leaveTeam_리더_다른멤버있음_예외발생() {
         // given
-        given(teamMemberRepository.findByTeamIdAndUserId(teamId, leaderId)).willReturn(Optional.of(leaderMember));
-        given(teamMemberRepository.countByTeamId(teamId)).willReturn(2L);
+        studyTeamRepository.save(team);
+        teamMemberRepository.save(leaderMember);
+        teamMemberRepository.save(normalMember);
 
         // when & then
         assertThatThrownBy(() -> studyTeamService.leaveTeam(leaderId, teamId))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(ErrorCode.LEADER_MUST_DELEGATE.getMessage());
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.LEADER_MUST_DELEGATE);
     }
 }

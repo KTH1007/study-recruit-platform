@@ -1,4 +1,7 @@
 package com.study.platform.domain.apply.api;
+import com.study.platform.global.idempotency.IdempotencyObjectStoragePort;
+import com.study.platform.global.idempotency.IdempotencyStoragePort;
+import com.study.platform.global.ratelimit.RateLimitStoragePort;
 
 import com.study.platform.domain.apply.application.ApplyService;
 import com.study.platform.domain.apply.dto.request.ApplyCreateRequest;
@@ -8,7 +11,6 @@ import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import com.study.platform.global.jwt.JwtProvider;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -47,10 +49,13 @@ class ApplyControllerTest {
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
     @MockitoBean
-    private RedisTemplate<String, Object> redisTemplate;
+    private IdempotencyObjectStoragePort idempotencyObjectStoragePort;
 
     @MockitoBean
-    private org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
+    private IdempotencyStoragePort idempotencyStoragePort;
+
+    @MockitoBean
+    private RateLimitStoragePort rateLimitStoragePort;
 
     @Autowired
     private ObjectMapper objectMapper;
