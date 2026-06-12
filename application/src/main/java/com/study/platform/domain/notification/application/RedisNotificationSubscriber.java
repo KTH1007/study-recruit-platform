@@ -3,11 +3,11 @@ package com.study.platform.domain.notification.application;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.study.platform.domain.notification.dto.response.NotificationResponse;
+import com.study.platform.domain.notification.model.SseConnection;
 import com.study.platform.domain.notification.model.SseEmitterPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 
@@ -24,13 +24,11 @@ public class RedisNotificationSubscriber {
     public void onMessage(String message, String channel) {
         try {
             NotificationResponse response = objectMapper.readValue(message, NotificationResponse.class);
-            SseEmitter emitter = sseEmitterPort.findByUserId(response.receiverId());
-            if (emitter == null) {
+            SseConnection connection = sseEmitterPort.findByUserId(response.receiverId());
+            if (connection == null) {
                 return;
             }
-            emitter.send(SseEmitter.event()
-                    .name(SSE_EVENT_NAME)
-                    .data(response));
+            connection.send(SSE_EVENT_NAME, response);
         } catch (IOException | JacksonException e) {
             log.warn("SSE 전송 실패 : {}", e.getMessage());
         }

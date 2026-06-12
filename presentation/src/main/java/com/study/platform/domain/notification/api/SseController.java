@@ -24,8 +24,9 @@ public class SseController implements SseControllerDoc {
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe(@AuthenticationPrincipal UUID userId) {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
+        SseEmitterAdapter connection = new SseEmitterAdapter(emitter);
 
-        sseEmitterPort.save(userId, emitter);
+        sseEmitterPort.save(userId, connection);
 
         emitter.onCompletion(() -> sseEmitterPort.delete(userId));
         emitter.onTimeout(() -> sseEmitterPort.delete(userId));
