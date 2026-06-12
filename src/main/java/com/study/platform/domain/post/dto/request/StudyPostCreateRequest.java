@@ -1,7 +1,5 @@
 package com.study.platform.domain.post.dto.request;
 
-import com.study.platform.domain.post.model.StudyPost;
-import com.study.platform.domain.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
@@ -32,7 +30,4 @@ public record StudyPostCreateRequest(
         @Future(message = "마감일은 현재 시간 이후여야 합니다.")
         LocalDateTime deadline
 ) {
-    public StudyPost toEntity(User author) {
-        return StudyPost.create(author, title, description, techStack, maxMembers, deadline);
-    }
 }

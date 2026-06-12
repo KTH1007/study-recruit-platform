@@ -1,6 +1,5 @@
 package com.study.platform.domain.notification.model;
 
-import com.study.platform.domain.notification.dto.event.NotificationEvent;
 import com.study.platform.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

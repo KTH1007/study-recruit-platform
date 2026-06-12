@@ -11,10 +11,10 @@ import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.domain.user.model.UserRepository;
+import com.study.platform.global.event.DomainEventPublisher;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -36,7 +36,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final StudyPostRepository studyPostRepository;
     private final UserRepository userRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final DomainEventPublisher eventPublisher;
 
     public Page<CommentResponse> findComments(UUID postId, Pageable pageable) {
         return commentRepository.findAllByPostIdWithAuthor(postId, pageable)
@@ -78,7 +78,7 @@ public class CommentService {
         if (post.isAuthor(commenter.getId())) {
             return;
         }
-        eventPublisher.publishEvent(new CommentCreatedEvent(
+        eventPublisher.publish(new CommentCreatedEvent(
                 post.getId(),
                 post.getAuthor().getId(),
                 commenter.getId(),
@@ -93,7 +93,7 @@ public class CommentService {
             if (mentionedUser.getId().equals(commenter.getId())) {
                 return;
             }
-            eventPublisher.publishEvent(new MentionEvent(
+            eventPublisher.publish(new MentionEvent(
                     post.getId(),
                     mentionedUser.getId(),
                     commenter.getNickname(),

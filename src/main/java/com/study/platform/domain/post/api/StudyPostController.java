@@ -95,6 +95,7 @@ public class StudyPostController implements StudyPostControllerDoc {
             @RequestParam(required = false, defaultValue = "0") int maxMembers,
             @PageableDefault(size = 10) Pageable pageable) {
         return ApiResponse.success(SuccessCode.POST_LIST,
-                postSearchService.search(keyword, techStack, status, maxMembers, pageable));
+                postSearchService.search(keyword, techStack, status, maxMembers, pageable)
+                        .map(StudyPostSummaryResponse::from));
     }
 }

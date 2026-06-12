@@ -23,17 +23,21 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false, unique = true)
     private String kakaoId;
 
-    @Column(length = 50, nullable = false, unique = true)
-    private String nickname;
+    @Getter(AccessLevel.NONE)
+    @Embedded
+    @AttributeOverride(name = "value", column = @Column(name = "nickname", length = 50, nullable = false, unique = true))
+    private Nickname nickname;
 
-    @Column(length = 100, nullable = false, unique = true)
-    private String email;
+    @Getter(AccessLevel.NONE)
+    @Embedded
+    @AttributeOverride(name = "value", column = @Column(name = "email", length = 100, nullable = false, unique = true))
+    private Email email;
 
     @Column(length = 255)
     private String techStack;
 
     @Builder
-    private User(String kakaoId, String nickname, String email, String techStack) {
+    private User(String kakaoId, Nickname nickname, Email email, String techStack) {
         this.kakaoId = kakaoId;
         this.nickname = nickname;
         this.email = email;
@@ -43,8 +47,16 @@ public class User extends BaseTimeEntity {
     public static User create(String kakaoId, String nickname, String email) {
         return User.builder()
                 .kakaoId(kakaoId)
-                .nickname(nickname)
-                .email(email)
+                .nickname(new Nickname(nickname))
+                .email(new Email(email))
                 .build();
+    }
+
+    public String getNickname() {
+        return nickname.value();
+    }
+
+    public String getEmail() {
+        return email.value();
     }
 }

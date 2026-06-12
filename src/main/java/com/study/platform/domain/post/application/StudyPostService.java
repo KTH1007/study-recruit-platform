@@ -13,13 +13,13 @@ import com.study.platform.domain.user.model.User;
 import com.study.platform.domain.user.model.UserRepository;
 import com.study.platform.global.constant.CacheConstants;
 import com.study.platform.global.constant.KafkaConstants;
+import com.study.platform.global.event.DomainEventPublisher;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import com.study.platform.global.outbox.application.OutboxEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -35,7 +35,7 @@ public class StudyPostService {
 
     private final StudyPostRepository studyPostRepository;
     private final UserRepository userRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final DomainEventPublisher eventPublisher;
     private final OutboxEventService outboxEventService;
     private final ObjectMapper objectMapper;
 
@@ -53,9 +53,11 @@ public class StudyPostService {
     public StudyPostResponse createPost(UUID userId, StudyPostCreateRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        StudyPost post = studyPostRepository.saveAndFlush(request.toEntity(user));
+        StudyPost post = studyPostRepository.save(
+                StudyPost.create(user, request.title(), request.description(),
+                        request.techStack(), request.maxMembers(), request.deadline()));
         Long outboxEventId = saveOutboxEvent(post.getId(), PostSyncOperationType.UPSERT);
-        eventPublisher.publishEvent(new PostSyncEvent(post.getId(), PostSyncOperationType.UPSERT, outboxEventId, 0));
+        eventPublisher.publish(new PostSyncEvent(post.getId(), PostSyncOperationType.UPSERT, outboxEventId, 0));
         return StudyPostResponse.from(post);
     }
 
@@ -67,7 +69,7 @@ public class StudyPostService {
         post.update(request.title(), request.description(), request.techStack(),
                 request.maxMembers(), request.deadline());
         Long outboxEventId = saveOutboxEvent(postId, PostSyncOperationType.UPSERT);
-        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT, outboxEventId, 0));
+        eventPublisher.publish(new PostSyncEvent(postId, PostSyncOperationType.UPSERT, outboxEventId, 0));
         return StudyPostResponse.from(post);
     }
 
@@ -78,7 +80,7 @@ public class StudyPostService {
         post.validateAuthor(userId);
         studyPostRepository.delete(post);
         Long outboxEventId = saveOutboxEvent(postId, PostSyncOperationType.DELETE);
-        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.DELETE, outboxEventId, 0));
+        eventPublisher.publish(new PostSyncEvent(postId, PostSyncOperationType.DELETE, outboxEventId, 0));
     }
 
     @Transactional
@@ -88,7 +90,7 @@ public class StudyPostService {
         post.validateAuthor(userId);
         post.close();
         Long outboxEventId = saveOutboxEvent(postId, PostSyncOperationType.UPSERT);
-        eventPublisher.publishEvent(new PostSyncEvent(postId, PostSyncOperationType.UPSERT, outboxEventId, 0));
+        eventPublisher.publish(new PostSyncEvent(postId, PostSyncOperationType.UPSERT, outboxEventId, 0));
         return StudyPostResponse.from(post);
     }
 

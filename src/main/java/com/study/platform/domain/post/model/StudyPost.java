@@ -43,8 +43,10 @@ public class StudyPost extends BaseTimeEntity {
     @Column(length = 255)
     private String techStack;
 
-    @Column(nullable = false)
-    private int maxMembers;
+    @Getter(AccessLevel.NONE)
+    @Embedded
+    @AttributeOverride(name = "value", column = @Column(name = "max_members", nullable = false))
+    private MaxMembers maxMembers;
 
     private LocalDateTime deadline;
 
@@ -54,7 +56,7 @@ public class StudyPost extends BaseTimeEntity {
 
     @Builder
     private StudyPost(User author, String title, String description,
-                      String techStack, int maxMembers, LocalDateTime deadline) {
+                      String techStack, MaxMembers maxMembers, LocalDateTime deadline) {
         this.author = author;
         this.title = title;
         this.description = description;
@@ -71,9 +73,13 @@ public class StudyPost extends BaseTimeEntity {
                 .title(title)
                 .description(description)
                 .techStack(techStack)
-                .maxMembers(maxMembers)
+                .maxMembers(new MaxMembers(maxMembers))
                 .deadline(deadline)
                 .build();
+    }
+
+    public int getMaxMembers() {
+        return maxMembers.value();
     }
 
     public void update(String title, String description, String techStack,
@@ -81,7 +87,7 @@ public class StudyPost extends BaseTimeEntity {
         this.title = title;
         this.description = description;
         this.techStack = techStack;
-        this.maxMembers = maxMembers;
+        this.maxMembers = new MaxMembers(maxMembers);
         this.deadline = deadline;
     }
 
@@ -99,6 +105,10 @@ public class StudyPost extends BaseTimeEntity {
 
     public boolean isOpen() {
         return this.status == StudyPostStatus.OPEN;
+    }
+
+    public boolean isFull(long approvedCount) {
+        return approvedCount >= maxMembers.value();
     }
 
     public void validateOpen() {

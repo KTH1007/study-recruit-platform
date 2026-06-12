@@ -1,8 +1,6 @@
 package com.study.platform.domain.notification.model;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+public interface FailedNotificationRepository {
 
-import java.util.UUID;
-
-public interface FailedNotificationRepository extends JpaRepository<FailedNotification, UUID> {
+    FailedNotification save(FailedNotification failedNotification);
 }

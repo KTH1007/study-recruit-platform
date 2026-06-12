@@ -1,13 +1,13 @@
 package com.study.platform.domain.notification.application;
 
-import com.study.platform.domain.notification.dto.event.NotificationEvent;
+import com.study.platform.domain.notification.model.NotificationEvent;
 import com.study.platform.domain.notification.model.FailedNotification;
 import com.study.platform.domain.notification.model.FailedNotificationRepository;
 import com.study.platform.global.constant.KafkaConstants;
+import com.study.platform.global.kafka.KafkaMessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
@@ -21,7 +21,7 @@ import tools.jackson.databind.ObjectMapper;
 public class NotificationDltConsumer {
 
     private final ObjectMapper objectMapper;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaMessagePublisher kafkaMessagePublisher;
     private final FailedNotificationRepository failedNotificationRepository;
 
     @Transactional
@@ -34,7 +34,7 @@ public class NotificationDltConsumer {
                     event.receiverId(), event.type(), event.retryCount(), exceptionMessage);
 
             if (event.retryCount() < KafkaConstants.MAX_DLT_RETRY) {
-                kafkaTemplate.send(KafkaConstants.NOTIFICATION_TOPIC, objectMapper.writeValueAsString(event.withRetry())).get();
+                kafkaMessagePublisher.publish(KafkaConstants.NOTIFICATION_TOPIC, objectMapper.writeValueAsString(event.withRetry())).get();
                 log.info("notification 토픽 재투입 - retryCount={}", event.retryCount() + 1);
             } else {
                 failedNotificationRepository.save(FailedNotification.from(event, exceptionMessage));

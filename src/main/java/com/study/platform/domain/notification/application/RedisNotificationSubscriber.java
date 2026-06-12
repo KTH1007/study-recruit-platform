@@ -3,7 +3,7 @@ package com.study.platform.domain.notification.application;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.study.platform.domain.notification.dto.response.NotificationResponse;
-import com.study.platform.domain.notification.infrastructure.SseEmitterRepository;
+import com.study.platform.domain.notification.model.SseEmitterPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -18,13 +18,13 @@ public class RedisNotificationSubscriber {
 
     private static final String SSE_EVENT_NAME = "notification";
 
-    private final SseEmitterRepository sseEmitterRepository;
+    private final SseEmitterPort sseEmitterPort;
     private final ObjectMapper objectMapper;
 
     public void onMessage(String message, String channel) {
         try {
             NotificationResponse response = objectMapper.readValue(message, NotificationResponse.class);
-            SseEmitter emitter = sseEmitterRepository.findByUserId(response.receiverId());
+            SseEmitter emitter = sseEmitterPort.findByUserId(response.receiverId());
             if (emitter == null) {
                 return;
             }

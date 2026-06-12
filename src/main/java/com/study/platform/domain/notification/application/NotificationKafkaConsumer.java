@@ -1,6 +1,6 @@
 package com.study.platform.domain.notification.application;
 
-import com.study.platform.domain.notification.dto.event.NotificationEvent;
+import com.study.platform.domain.notification.model.NotificationEvent;
 import com.study.platform.domain.notification.dto.response.NotificationResponse;
 import com.study.platform.domain.notification.model.FailedNotification;
 import com.study.platform.domain.notification.model.FailedNotificationRepository;
@@ -11,9 +11,9 @@ import com.study.platform.domain.user.model.UserRepository;
 import com.study.platform.global.constant.KafkaConstants;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
+import com.study.platform.global.redis.RedisMessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
@@ -30,7 +30,7 @@ public class NotificationKafkaConsumer {
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
     private final NotificationRepository notificationRepository;
-    private final StringRedisTemplate stringRedisTemplate;
+    private final RedisMessagePublisher redisMessagePublisher;
     private final FailedNotificationRepository failedNotificationRepository;
 
     @Transactional
@@ -48,6 +48,6 @@ public class NotificationKafkaConsumer {
         Notification notification = Notification.create(receiver, event.type(), event.message(), event.targetId());
         notificationRepository.save(notification);
         ack.acknowledge(); // DB 저장 완료 후 커밋
-        stringRedisTemplate.convertAndSend(NOTIFICATION_CHANNEL, objectMapper.writeValueAsString(NotificationResponse.from(notification)));
+        redisMessagePublisher.publish(NOTIFICATION_CHANNEL, objectMapper.writeValueAsString(NotificationResponse.from(notification)));
     }
 }

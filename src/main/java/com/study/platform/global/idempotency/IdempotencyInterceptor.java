@@ -1,13 +1,11 @@
 package com.study.platform.global.idempotency;
 
-
 import tools.jackson.databind.ObjectMapper;
 import com.study.platform.global.constant.IdempotencyConstants;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -17,7 +15,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -27,7 +24,7 @@ public class IdempotencyInterceptor implements HandlerInterceptor {
     private static final Duration PROCESSING_TTL = Duration.ofMinutes(2);
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final IdempotencyObjectStoragePort idempotencyObjectStoragePort;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -47,7 +44,7 @@ public class IdempotencyInterceptor implements HandlerInterceptor {
 
         String redisKey = buildRedisKey(idempotencyKey);
 
-        Object cached = redisTemplate.opsForValue().get(redisKey);
+        Object cached = idempotencyObjectStoragePort.get(redisKey);
         if (cached instanceof IdempotentResponse cachedResponse) {
             log.debug("Idempotent response returned for key: {}", idempotencyKey);
             response.setStatus(cachedResponse.status());
@@ -61,9 +58,8 @@ public class IdempotencyInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        Boolean acquired = redisTemplate.opsForValue()
-                .setIfAbsent(redisKey, IdempotencyConstants.PROCESSING, PROCESSING_TTL.toSeconds(), TimeUnit.SECONDS);
-        if (Boolean.FALSE.equals(acquired)) {
+        boolean acquired = idempotencyObjectStoragePort.setIfAbsent(redisKey, IdempotencyConstants.PROCESSING, PROCESSING_TTL);
+        if (!acquired) {
             writeConflictResponse(response);
             return false;
         }
@@ -81,7 +77,7 @@ public class IdempotencyInterceptor implements HandlerInterceptor {
         }
 
         if (ex != null || response.getStatus() >= 500) {
-            redisTemplate.delete(redisKey);
+            idempotencyObjectStoragePort.delete(redisKey);
             return;
         }
 
@@ -91,7 +87,7 @@ public class IdempotencyInterceptor implements HandlerInterceptor {
                     wrapper.getCapturedBody(),
                     response.getContentType()
             );
-            redisTemplate.opsForValue().set(redisKey, idempotentResponse, CACHE_TTL);
+            idempotencyObjectStoragePort.set(redisKey, idempotentResponse, CACHE_TTL);
         }
     }
 

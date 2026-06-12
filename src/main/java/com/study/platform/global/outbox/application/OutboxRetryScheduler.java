@@ -4,12 +4,12 @@ import com.study.platform.domain.post.event.PostSyncEvent;
 import com.study.platform.domain.post.model.FailedPostSync;
 import com.study.platform.domain.post.model.FailedPostSyncRepository;
 import com.study.platform.global.constant.KafkaConstants;
+import com.study.platform.global.kafka.KafkaMessagePublisher;
 import com.study.platform.global.outbox.model.OutboxEvent;
 import com.study.platform.global.outbox.model.OutboxEventRepository;
 import com.study.platform.global.outbox.model.OutboxEventStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
@@ -26,7 +26,7 @@ public class OutboxRetryScheduler {
 
     private final OutboxEventRepository outboxEventRepository;
     private final OutboxEventService outboxEventService;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaMessagePublisher kafkaMessagePublisher;
     private final FailedPostSyncRepository failedPostSyncRepository;
     private final ObjectMapper objectMapper;
 
@@ -41,7 +41,7 @@ public class OutboxRetryScheduler {
     }
 
     private void retry(OutboxEvent outbox) {
-        kafkaTemplate.send(outbox.getTopic(), outbox.getMessageKey(), outbox.getPayload())
+        kafkaMessagePublisher.publish(outbox.getTopic(), outbox.getMessageKey(), outbox.getPayload())
                 .whenComplete((result, ex) -> {
                     if (ex == null) {
                         outboxEventService.markSent(outbox.getId());

@@ -1,7 +1,7 @@
 package com.study.platform.domain.notification.application;
 
 import com.study.platform.domain.apply.event.ApplyRejectedEvent;
-import com.study.platform.domain.notification.dto.event.NotificationEvent;
+import com.study.platform.domain.notification.model.NotificationEvent;
 import com.study.platform.domain.notification.model.NotificationType;
 import com.study.platform.global.constant.KafkaConstants;
 import com.study.platform.global.outbox.application.OutboxEventService;

@@ -2,10 +2,10 @@ package com.study.platform.domain.post.application;
 
 import com.study.platform.domain.post.event.PostSyncEvent;
 import com.study.platform.global.constant.KafkaConstants;
+import com.study.platform.global.kafka.KafkaMessagePublisher;
 import com.study.platform.global.outbox.application.OutboxEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -17,7 +17,7 @@ import tools.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class PostSyncKafkaProducer {
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaMessagePublisher kafkaMessagePublisher;
     private final ObjectMapper objectMapper;
     private final OutboxEventService outboxEventService;
 
@@ -25,7 +25,7 @@ public class PostSyncKafkaProducer {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(PostSyncEvent event) {
         String payload = objectMapper.writeValueAsString(event);
-        kafkaTemplate.send(KafkaConstants.POST_SYNC_TOPIC, event.postId().toString(), payload)
+        kafkaMessagePublisher.publish(KafkaConstants.POST_SYNC_TOPIC, event.postId().toString(), payload)
                 .whenComplete((result, ex) -> {
                     if (ex == null) {
                         outboxEventService.markSent(event.outboxEventId());

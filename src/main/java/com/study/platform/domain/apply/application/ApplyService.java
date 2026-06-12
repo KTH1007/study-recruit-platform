@@ -12,11 +12,10 @@ import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.domain.user.model.UserRepository;
+import com.study.platform.global.event.DomainEventPublisher;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +30,7 @@ public class ApplyService {
     private final ApplyRepository applyRepository;
     private final StudyPostRepository studyPostRepository;
     private final UserRepository userRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final DomainEventPublisher eventPublisher;
 
     public List<ApplyResponse> findApplies(UUID userId, UUID postId) {
         StudyPost post = getPostWithAuthor(postId);
@@ -52,13 +51,9 @@ public class ApplyService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         Apply apply = Apply.create(post, applicant, request.message());
 
-        try {
-            applyRepository.save(apply);
-        } catch (DataIntegrityViolationException e) {
-            throw new CustomException(ErrorCode.ALREADY_APPLIED);
-        }
+        applyRepository.save(apply);
 
-        eventPublisher.publishEvent(new ApplyReceivedEvent(
+        eventPublisher.publish(new ApplyReceivedEvent(
                 post.getId(),
                 post.getAuthor().getId(),
                 post.getTitle()
@@ -89,11 +84,12 @@ public class ApplyService {
                 .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
         apply.approve();
 
-        if (isPostFull(post)) {
+        long approvedCount = applyRepository.countByPostIdAndStatus(post.getId(), ApplyStatus.APPROVED);
+        if (post.isFull(approvedCount)) {
             post.markFull();
         }
 
-        eventPublisher.publishEvent(new ApplyApprovedEvent(
+        eventPublisher.publish(new ApplyApprovedEvent(
                 post.getId(),
                 apply.getApplicant().getId(),
                 post.getTitle()
@@ -109,7 +105,7 @@ public class ApplyService {
         post.validateAuthor(userId);
         apply.reject();
 
-        eventPublisher.publishEvent(new ApplyRejectedEvent(
+        eventPublisher.publish(new ApplyRejectedEvent(
                 apply.getPost().getId(),
                 apply.getApplicant().getId(),
                 apply.getPost().getTitle()
@@ -123,8 +119,5 @@ public class ApplyService {
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
     }
 
-    private boolean isPostFull(StudyPost post) {
-        long approvedCount = applyRepository.countByPostIdAndStatus(post.getId(), ApplyStatus.APPROVED);
-        return approvedCount >= post.getMaxMembers();
-    }
+
 }

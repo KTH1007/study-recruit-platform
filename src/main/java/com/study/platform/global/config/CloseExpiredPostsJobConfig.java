@@ -1,7 +1,6 @@
 package com.study.platform.global.config;
 
 import com.study.platform.domain.post.application.PostSearchService;
-import com.study.platform.domain.post.document.PostDocument;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.post.model.StudyPostStatus;
@@ -24,6 +23,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Configuration
@@ -86,12 +86,9 @@ public class CloseExpiredPostsJobConfig {
     @Bean
     public ItemWriter<StudyPost> closePostWriter() {
         return chunk -> {
-            studyPostRepository.saveAll(chunk.getItems());
-            postSearchService.indexAll(
-                    chunk.getItems().stream()
-                            .map(PostDocument::from)
-                            .toList()
-            );
+            List<StudyPost> posts = (List<StudyPost>) chunk.getItems();
+            studyPostRepository.saveAll(posts);
+            postSearchService.indexAll(posts);
         };
     }
 }

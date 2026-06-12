@@ -1,6 +1,4 @@
-package com.study.platform.domain.notification.dto.event;
-
-import com.study.platform.domain.notification.model.NotificationType;
+package com.study.platform.domain.notification.model;
 
 import java.util.UUID;
 

@@ -1,8 +1,7 @@
 package com.study.platform.domain.team.application;
 
-import com.study.platform.domain.notification.application.NotificationKafkaProducer;
-import com.study.platform.domain.notification.application.NotificationService;
-import com.study.platform.domain.notification.dto.event.NotificationEvent;
+import com.study.platform.domain.notification.model.NotificationEvent;
+import com.study.platform.domain.notification.model.NotificationPublisher;
 import com.study.platform.domain.notification.model.NotificationType;
 import com.study.platform.domain.team.dto.request.TeamScheduleCreateRequest;
 import com.study.platform.domain.team.dto.request.TeamScheduleUpdateRequest;
@@ -28,7 +27,7 @@ public class TeamScheduleService {
     private final TeamScheduleRepository teamScheduleRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final StudyTeamRepository studyTeamRepository;
-    private final NotificationKafkaProducer kafkaProducer;
+    private final NotificationPublisher notificationPublisher;
     private final OutboxEventService outboxEventService;
     private final ObjectMapper objectMapper;
 
@@ -71,7 +70,7 @@ public class TeamScheduleService {
             String payload = objectMapper.writeValueAsString(
                     new NotificationEvent(member.getUser().getId(), NotificationType.SCHEDULE_CREATED, message, scheduledId, 0));
             Long outboxEventId = outboxEventService.save(KafkaConstants.NOTIFICATION_TOPIC, member.getUser().getId().toString(), payload);
-            kafkaProducer.send(outboxEventId, member.getUser().getId(), NotificationType.SCHEDULE_CREATED, message, scheduledId);
+            notificationPublisher.send(outboxEventId, member.getUser().getId(), NotificationType.SCHEDULE_CREATED, message, scheduledId);
         });
     }
 

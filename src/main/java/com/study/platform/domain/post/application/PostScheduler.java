@@ -5,13 +5,13 @@ import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.post.model.StudyPostStatus;
 import com.study.platform.global.constant.TimeConstants;
+import com.study.platform.global.event.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.parameters.JobParameters;
 import org.springframework.batch.core.job.parameters.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobOperator;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -31,7 +31,7 @@ public class PostScheduler {
     private static final String RUN_AT_PARAM = "runAt";
 
     private final StudyPostRepository studyPostRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final DomainEventPublisher eventPublisher;
     private final JobOperator jobOperator;
     private final Job closeExpiredPostsJob;
 
@@ -55,7 +55,7 @@ public class PostScheduler {
         LocalDateTime start = tomorrow.atStartOfDay();
         LocalDateTime end = tomorrow.atTime(LocalTime.MAX);
         List<StudyPost> posts = studyPostRepository.findDeadlineReminderPosts(start, end, StudyPostStatus.OPEN);
-        posts.forEach(post -> eventPublisher.publishEvent(new PostDeadlineReminderEvent(
+        posts.forEach(post -> eventPublisher.publish(new PostDeadlineReminderEvent(
                 post.getId(),
                 post.getAuthor().getId(),
                 post.getTitle()

@@ -2,16 +2,15 @@ package com.study.platform.domain.user.application;
 
 import com.study.platform.domain.user.dto.request.TokenReissueRequest;
 import com.study.platform.domain.user.dto.response.LoginResponse;
+import com.study.platform.domain.user.dto.response.OAuthUserInfo;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.domain.user.model.UserRepository;
+import com.study.platform.global.auth.port.OAuthClient;
+import com.study.platform.global.auth.port.TokenManager;
+import com.study.platform.global.auth.port.TokenRepository;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
-import com.study.platform.global.jwt.JwtProvider;
-import com.study.platform.global.oauth.kakao.KakaoOAuthClient;
-import com.study.platform.global.oauth.kakao.dto.KakaoIdTokenPayload;
-import com.study.platform.global.oauth.kakao.dto.KakaoTokenResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,29 +26,29 @@ public class AuthService {
     private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(7);
 
     private final UserRepository userRepository;
-    private final JwtProvider jwtProvider;
-    private final StringRedisTemplate redisTemplate;
-    private final KakaoOAuthClient kakaoOAuthClient;
+    private final TokenManager tokenManager;
+    private final TokenRepository tokenRepository;
+    private final OAuthClient oAuthClient;
 
     @Transactional
     public LoginResponse kakaoLogin(String code) {
-        KakaoTokenResponse kakaoToken = kakaoOAuthClient.getToken(code);
-        KakaoIdTokenPayload payload = kakaoOAuthClient.parseIdToken(kakaoToken.idToken());
+        OAuthUserInfo userInfo = oAuthClient.getUserInfo(code);
 
-        User user = userRepository.findByKakaoId(payload.sub())
+        User user = userRepository.findByKakaoId(userInfo.oauthId())
                 .orElseGet(() -> userRepository.save(User.create(
-                        payload.sub(),
-                        resolveUniqueNickname(payload.nickname()),
-                        payload.email()
+                        userInfo.oauthId(),
+                        resolveUniqueNickname(userInfo.nickname()),
+                        userInfo.email()
                 )));
 
         return generateTokens(user.getId());
     }
 
     public LoginResponse reissueToken(TokenReissueRequest request) {
-        jwtProvider.validateToken(request.refreshToken());
-        UUID userId = jwtProvider.getUserIdFromToken(request.refreshToken());
-        String savedToken = redisTemplate.opsForValue().get(REFRESH_TOKEN_PREFIX + userId);
+        tokenManager.validateToken(request.refreshToken());
+        UUID userId = tokenManager.getUserIdFromToken(request.refreshToken());
+        String savedToken = tokenRepository.find(REFRESH_TOKEN_PREFIX + userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_TOKEN));
         if (!request.refreshToken().equals(savedToken)) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
@@ -57,18 +56,16 @@ public class AuthService {
     }
 
     public void logout(UUID userId) {
-        redisTemplate.delete(REFRESH_TOKEN_PREFIX + userId);
+        tokenRepository.delete(REFRESH_TOKEN_PREFIX + userId);
     }
 
     private LoginResponse generateTokens(UUID userId) {
-        String accessToken = jwtProvider.generateAccessToken(userId);
-        String refreshToken = jwtProvider.generateRefreshToken(userId);
-        String key = REFRESH_TOKEN_PREFIX + userId;
-        redisTemplate.opsForValue().set(key, refreshToken, REFRESH_TOKEN_TTL);
+        String accessToken = tokenManager.generateAccessToken(userId);
+        String refreshToken = tokenManager.generateRefreshToken(userId);
+        tokenRepository.save(REFRESH_TOKEN_PREFIX + userId, refreshToken, REFRESH_TOKEN_TTL);
         return LoginResponse.of(accessToken, refreshToken);
     }
 
-    // 닉네임 중복 방지
     private String resolveUniqueNickname(String nickname) {
         if (userRepository.findByNickname(nickname).isEmpty()) {
             return nickname;

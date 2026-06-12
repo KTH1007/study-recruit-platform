@@ -4,10 +4,10 @@ import com.study.platform.domain.post.event.PostSyncEvent;
 import com.study.platform.domain.post.model.FailedPostSync;
 import com.study.platform.domain.post.model.FailedPostSyncRepository;
 import com.study.platform.global.constant.KafkaConstants;
+import com.study.platform.global.kafka.KafkaMessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
@@ -21,7 +21,7 @@ import tools.jackson.databind.ObjectMapper;
 public class PostSyncDltConsumer {
 
     private final ObjectMapper objectMapper;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaMessagePublisher kafkaMessagePublisher;
     private final FailedPostSyncRepository failedPostSyncRepository;
 
     @Transactional
@@ -34,7 +34,7 @@ public class PostSyncDltConsumer {
                     event.postId(), event.operationType(), event.retryCount(), exceptionMessage);
 
             if (event.retryCount() < KafkaConstants.MAX_DLT_RETRY) {
-                kafkaTemplate.send(KafkaConstants.POST_SYNC_TOPIC, objectMapper.writeValueAsString(event.withRetry())).get();
+                kafkaMessagePublisher.publish(KafkaConstants.POST_SYNC_TOPIC, objectMapper.writeValueAsString(event.withRetry())).get();
                 log.info("post-sync 토픽 재투입 - retryCount={}", event.retryCount() + 1);
             } else {
                 failedPostSyncRepository.save(FailedPostSync.from(event, exceptionMessage));

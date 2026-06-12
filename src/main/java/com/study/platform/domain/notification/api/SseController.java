@@ -1,7 +1,7 @@
 package com.study.platform.domain.notification.api;
 
 import com.study.platform.domain.notification.api.doc.SseControllerDoc;
-import com.study.platform.domain.notification.infrastructure.SseEmitterRepository;
+import com.study.platform.domain.notification.model.SseEmitterPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,17 +19,17 @@ public class SseController implements SseControllerDoc {
 
     private static final long SSE_TIMEOUT = 30 * 60 * 1000L;
 
-    private final SseEmitterRepository sseEmitterRepository;
+    private final SseEmitterPort sseEmitterPort;
 
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe(@AuthenticationPrincipal UUID userId) {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
 
-        sseEmitterRepository.save(userId, emitter);
+        sseEmitterPort.save(userId, emitter);
 
-        emitter.onCompletion(() -> sseEmitterRepository.delete(userId));
-        emitter.onTimeout(() -> sseEmitterRepository.delete(userId));
-        emitter.onError(e -> sseEmitterRepository.delete(userId));
+        emitter.onCompletion(() -> sseEmitterPort.delete(userId));
+        emitter.onTimeout(() -> sseEmitterPort.delete(userId));
+        emitter.onError(e -> sseEmitterPort.delete(userId));
 
         return emitter;
     }

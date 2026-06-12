@@ -1,6 +1,5 @@
 package com.study.platform.domain.post.application;
 
-import com.study.platform.domain.post.document.PostDocument;
 import com.study.platform.domain.post.event.PostSyncEvent;
 import com.study.platform.domain.post.event.PostSyncOperationType;
 import com.study.platform.domain.post.model.FailedPostSync;
@@ -38,7 +37,7 @@ public class PostSyncKafkaConsumer {
             postSearchService.delete(event.postId().toString());
         } else {
             studyPostRepository.findByIdWithAuthor(event.postId())
-                    .ifPresent(post -> postSearchService.index(PostDocument.from(post)));
+                    .ifPresent(postSearchService::index);
         }
 
         ack.acknowledge();

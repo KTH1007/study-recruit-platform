@@ -6,7 +6,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -19,7 +18,7 @@ public class IdempotencyFilter extends OncePerRequestFilter {
 
     private static final Duration TTL = Duration.ofHours(24);
 
-    private final StringRedisTemplate stringRedisTemplate;
+    private final IdempotencyStoragePort idempotencyStoragePort;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -38,16 +37,15 @@ public class IdempotencyFilter extends OncePerRequestFilter {
 
         String redisKey = IdempotencyConstants.IDEMPOTENCY_PREFIX + idempotencyKey;
 
-        String cached = stringRedisTemplate.opsForValue().get(redisKey);
+        String cached = idempotencyStoragePort.get(redisKey);
         if (cached != null && !cached.equals(IdempotencyConstants.PROCESSING)) {
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(cached);
             return;
         }
 
-        Boolean acquired = stringRedisTemplate.opsForValue()
-                .setIfAbsent(redisKey, IdempotencyConstants.PROCESSING, TTL);
-        if (Boolean.FALSE.equals(acquired)) {
+        boolean acquired = idempotencyStoragePort.setIfAbsent(redisKey, IdempotencyConstants.PROCESSING, TTL);
+        if (!acquired) {
             response.sendError(HttpServletResponse.SC_CONFLICT, "요청 처리 중입니다. 잠시 후 다시 시도해주세요.");
             return;
         }
@@ -56,10 +54,9 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         try {
             filterChain.doFilter(request, wrapper);
             wrapper.flushBuffer();
-            String body = wrapper.getCapturedBody();
-            stringRedisTemplate.opsForValue().set(redisKey, body, TTL);
+            idempotencyStoragePort.set(redisKey, wrapper.getCapturedBody(), TTL);
         } catch (Exception e) {
-            stringRedisTemplate.delete(redisKey);
+            idempotencyStoragePort.delete(redisKey);
             throw e;
         }
     }
