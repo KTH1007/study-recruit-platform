@@ -3,7 +3,6 @@ package com.study.platform.domain.comment.application;
 import com.study.platform.domain.comment.dto.request.CommentCreateRequest;
 import com.study.platform.domain.comment.dto.request.CommentUpdateRequest;
 import com.study.platform.domain.comment.dto.response.CommentResponse;
-import com.study.platform.domain.comment.event.CommentCreatedEvent;
 import com.study.platform.domain.comment.event.MentionEvent;
 import com.study.platform.domain.comment.model.Comment;
 import com.study.platform.domain.comment.model.CommentRepository;
@@ -49,10 +48,9 @@ public class CommentService {
         User commenter = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        Comment comment = Comment.create(post, commenter, request.content());
+        Comment comment = Comment.create(post, commenter, request.content(), eventPublisher);
         commentRepository.save(comment);
 
-        publishCommentCreatedEvent(post, commenter);
         publishMentionEvents(request.content(), commenter, post);
 
         return CommentResponse.from(comment);
@@ -71,19 +69,6 @@ public class CommentService {
         Comment comment = getCommentWithAuthor(commentId);
         comment.validateAuthor(userId);
         commentRepository.delete(comment);
-    }
-
-    // 방장이 아닌 경우에만 방장에게 알림 발행
-    private void publishCommentCreatedEvent(StudyPost post, User commenter) {
-        if (post.isAuthor(commenter.getId())) {
-            return;
-        }
-        eventPublisher.publish(new CommentCreatedEvent(
-                post.getId(),
-                post.getAuthor().getId(),
-                commenter.getId(),
-                post.getTitle()
-        ));
     }
 
     // 댓글 내용에서 @닉네임 파싱 후 해당 유저에게 멘션 알림 발행

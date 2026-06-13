@@ -2,9 +2,6 @@ package com.study.platform.domain.apply.application;
 
 import com.study.platform.domain.apply.dto.request.ApplyCreateRequest;
 import com.study.platform.domain.apply.dto.response.ApplyResponse;
-import com.study.platform.domain.apply.event.ApplyApprovedEvent;
-import com.study.platform.domain.apply.event.ApplyReceivedEvent;
-import com.study.platform.domain.apply.event.ApplyRejectedEvent;
 import com.study.platform.domain.apply.model.Apply;
 import com.study.platform.domain.apply.model.ApplyRepository;
 import com.study.platform.domain.apply.model.ApplyStatus;
@@ -49,15 +46,8 @@ public class ApplyService {
 
         User applicant = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        Apply apply = Apply.create(post, applicant, request.message());
-
+        Apply apply = Apply.create(post, applicant, request.message(), eventPublisher);
         applyRepository.save(apply);
-
-        eventPublisher.publish(new ApplyReceivedEvent(
-                post.getId(),
-                post.getAuthor().getId(),
-                post.getTitle()
-        ));
         return ApplyResponse.from(apply);
     }
 
@@ -82,18 +72,11 @@ public class ApplyService {
         // Apply 락
         Apply apply = applyRepository.findByIdWithPostAndApplicantForUpdate(applyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
-        apply.approve();
+        apply.approve(eventPublisher);
 
         long approvedCount = applyRepository.countByPostIdAndStatus(post.getId(), ApplyStatus.APPROVED);
-        if (post.isFull(approvedCount)) {
-            post.markFull();
-        }
+        post.markFullIfNeeded(approvedCount);
 
-        eventPublisher.publish(new ApplyApprovedEvent(
-                post.getId(),
-                apply.getApplicant().getId(),
-                post.getTitle()
-        ));
         return ApplyResponse.from(apply);
     }
 
@@ -103,13 +86,7 @@ public class ApplyService {
                 .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
         StudyPost post = apply.getPost();
         post.validateAuthor(userId);
-        apply.reject();
-
-        eventPublisher.publish(new ApplyRejectedEvent(
-                apply.getPost().getId(),
-                apply.getApplicant().getId(),
-                apply.getPost().getTitle()
-        ));
+        apply.reject(eventPublisher);
         return ApplyResponse.from(apply);
     }
 

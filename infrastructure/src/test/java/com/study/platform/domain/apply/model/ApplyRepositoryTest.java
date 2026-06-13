@@ -37,7 +37,7 @@ class ApplyRepositoryTest extends AbstractIntegrationTest {
                 author, "스터디 모집", "열심히 합니다", "Java", 5,
                 LocalDateTime.now().plusDays(7)
         ));
-        apply = applyRepository.save(Apply.create(post, applicant, "지원합니다"));
+        apply = applyRepository.save(Apply.create(post, applicant, "지원합니다", e -> {}));
     }
 
     @Test
@@ -115,7 +115,7 @@ class ApplyRepositoryTest extends AbstractIntegrationTest {
 
     @Test
     void countByPostIdAndStatus_APPROVED_카운트() {
-        apply.approve();
+        apply.approve(e -> {});
         applyRepository.save(apply);
 
         long count = applyRepository.countByPostIdAndStatus(post.getId(), ApplyStatus.APPROVED);

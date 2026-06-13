@@ -142,7 +142,7 @@ class CommentServiceTest {
     @Test
     void updateComment_성공() {
         // given
-        Comment comment = Comment.create(post, commenter, "원본 댓글");
+        Comment comment = Comment.create(post, commenter, "원본 댓글", eventPublisher);
         UUID commentId = UUID.randomUUID();
         ReflectionTestUtils.setField(comment, "id", commentId);
         commentRepository.save(comment);
@@ -158,7 +158,7 @@ class CommentServiceTest {
     @Test
     void updateComment_작성자아님_예외발생() {
         // given
-        Comment comment = Comment.create(post, commenter, "원본 댓글");
+        Comment comment = Comment.create(post, commenter, "원본 댓글", eventPublisher);
         UUID commentId = UUID.randomUUID();
         ReflectionTestUtils.setField(comment, "id", commentId);
         commentRepository.save(comment);
@@ -184,7 +184,7 @@ class CommentServiceTest {
     @Test
     void deleteComment_성공() {
         // given
-        Comment comment = Comment.create(post, commenter, "삭제할 댓글");
+        Comment comment = Comment.create(post, commenter, "삭제할 댓글", eventPublisher);
         UUID commentId = UUID.randomUUID();
         ReflectionTestUtils.setField(comment, "id", commentId);
         commentRepository.save(comment);
@@ -199,7 +199,7 @@ class CommentServiceTest {
     @Test
     void deleteComment_작성자아님_예외발생() {
         // given
-        Comment comment = Comment.create(post, commenter, "삭제할 댓글");
+        Comment comment = Comment.create(post, commenter, "삭제할 댓글", eventPublisher);
         UUID commentId = UUID.randomUUID();
         ReflectionTestUtils.setField(comment, "id", commentId);
         commentRepository.save(comment);

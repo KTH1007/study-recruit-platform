@@ -1,8 +1,12 @@
 package com.study.platform.domain.apply.model;
 
+import com.study.platform.domain.apply.event.ApplyApprovedEvent;
+import com.study.platform.domain.apply.event.ApplyReceivedEvent;
+import com.study.platform.domain.apply.event.ApplyRejectedEvent;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.global.entity.BaseTimeEntity;
+import com.study.platform.global.event.DomainEventPublisher;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import jakarta.persistence.*;
@@ -54,22 +58,26 @@ public class Apply extends BaseTimeEntity {
         this.status = ApplyStatus.PENDING;
     }
 
-    public static Apply create(StudyPost post, User applicant, String message) {
-        return Apply.builder()
+    public static Apply create(StudyPost post, User applicant, String message, DomainEventPublisher publisher) {
+        Apply apply = Apply.builder()
                 .post(post)
                 .applicant(applicant)
                 .message(message)
                 .build();
+        publisher.publish(new ApplyReceivedEvent(post.getId(), post.getAuthor().getId(), post.getTitle()));
+        return apply;
     }
 
-    public void approve() {
+    public void approve(DomainEventPublisher publisher) {
         validatePending();
         this.status = ApplyStatus.APPROVED;
+        publisher.publish(new ApplyApprovedEvent(post.getId(), applicant.getId(), post.getTitle()));
     }
 
-    public void reject() {
+    public void reject(DomainEventPublisher publisher) {
         validatePending();
         this.status = ApplyStatus.REJECTED;
+        publisher.publish(new ApplyRejectedEvent(post.getId(), applicant.getId(), post.getTitle()));
     }
 
     private void validatePending() {

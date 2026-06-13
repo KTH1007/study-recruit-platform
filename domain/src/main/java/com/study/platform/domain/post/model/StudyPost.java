@@ -99,6 +99,12 @@ public class StudyPost extends BaseTimeEntity {
         this.status = StudyPostStatus.FULL;
     }
 
+    public void markFullIfNeeded(long approvedCount) {
+        if (approvedCount >= maxMembers.value()) {
+            this.status = StudyPostStatus.FULL;
+        }
+    }
+
     public boolean isAuthor(UUID userId) {
         return this.author.getId().equals(userId);
     }

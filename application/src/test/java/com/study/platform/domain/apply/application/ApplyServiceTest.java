@@ -117,7 +117,7 @@ class ApplyServiceTest {
     @Test
     void apply_중복지원_예외발생() {
         // given
-        Apply existing = Apply.create(post, applicant, "첫 번째 지원");
+        Apply existing = Apply.create(post, applicant, "첫 번째 지원", eventPublisher);
         ReflectionTestUtils.setField(existing, "id", UUID.randomUUID());
         applyRepository.save(existing);
         ApplyCreateRequest request = new ApplyCreateRequest("두 번째 지원");
@@ -131,7 +131,7 @@ class ApplyServiceTest {
     @Test
     void approve_성공() {
         // given
-        Apply apply = Apply.create(post, applicant, "지원합니다");
+        Apply apply = Apply.create(post, applicant, "지원합니다", eventPublisher);
         UUID applyId = UUID.randomUUID();
         ReflectionTestUtils.setField(apply, "id", applyId);
         applyRepository.save(apply);
@@ -150,12 +150,12 @@ class ApplyServiceTest {
         for (int i = 0; i < 2; i++) {
             User u = User.create("kakao" + i, "user" + i, "u" + i + "@test.com");
             ReflectionTestUtils.setField(u, "id", UUID.randomUUID());
-            Apply approved = Apply.create(post, u, "지원");
+            Apply approved = Apply.create(post, u, "지원", eventPublisher);
             ReflectionTestUtils.setField(approved, "id", UUID.randomUUID());
             applyRepository.save(approved);
-            approved.approve();
+            approved.approve(eventPublisher);
         }
-        Apply apply = Apply.create(post, applicant, "지원합니다");
+        Apply apply = Apply.create(post, applicant, "지원합니다", eventPublisher);
         UUID applyId = UUID.randomUUID();
         ReflectionTestUtils.setField(apply, "id", applyId);
         applyRepository.save(apply);
@@ -170,7 +170,7 @@ class ApplyServiceTest {
     @Test
     void reject_성공() {
         // given
-        Apply apply = Apply.create(post, applicant, "지원합니다");
+        Apply apply = Apply.create(post, applicant, "지원합니다", eventPublisher);
         UUID applyId = UUID.randomUUID();
         ReflectionTestUtils.setField(apply, "id", applyId);
         applyRepository.save(apply);
@@ -186,7 +186,7 @@ class ApplyServiceTest {
     @Test
     void cancel_성공() {
         // given
-        Apply apply = Apply.create(post, applicant, "지원합니다");
+        Apply apply = Apply.create(post, applicant, "지원합니다", eventPublisher);
         UUID applyId = UUID.randomUUID();
         ReflectionTestUtils.setField(apply, "id", applyId);
         applyRepository.save(apply);
@@ -202,7 +202,7 @@ class ApplyServiceTest {
     void findApplies_성공() {
         // given
         userRepository.save(author);
-        Apply apply = Apply.create(post, applicant, "지원합니다");
+        Apply apply = Apply.create(post, applicant, "지원합니다", eventPublisher);
         ReflectionTestUtils.setField(apply, "id", UUID.randomUUID());
         applyRepository.save(apply);
 

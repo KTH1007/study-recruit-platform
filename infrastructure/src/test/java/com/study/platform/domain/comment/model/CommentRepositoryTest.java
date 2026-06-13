@@ -41,7 +41,7 @@ class CommentRepositoryTest extends AbstractIntegrationTest {
                 author, "스터디 모집", "열심히 합니다", "Java", 5,
                 LocalDateTime.now().plusDays(7)
         ));
-        comment = commentRepository.save(Comment.create(post, author, "좋은 스터디네요"));
+        comment = commentRepository.save(Comment.create(post, author, "좋은 스터디네요", e -> {}));
     }
 
     @Test
@@ -74,8 +74,8 @@ class CommentRepositoryTest extends AbstractIntegrationTest {
     @Test
     void findAllByPostIdWithAuthor_페이징_성공() {
         // given
-        commentRepository.save(Comment.create(post, author, "두 번째 댓글"));
-        commentRepository.save(Comment.create(post, author, "세 번째 댓글"));
+        commentRepository.save(Comment.create(post, author, "두 번째 댓글", e -> {}));
+        commentRepository.save(Comment.create(post, author, "세 번째 댓글", e -> {}));
 
         // when
         Page<Comment> firstPage = commentRepository.findAllByPostIdWithAuthor(post.getId(), PageRequest.of(0, 2));
