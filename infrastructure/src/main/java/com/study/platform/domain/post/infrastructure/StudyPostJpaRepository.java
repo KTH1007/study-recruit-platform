@@ -20,10 +20,10 @@ import java.util.UUID;
 public interface StudyPostJpaRepository extends JpaRepository<StudyPost, UUID> {
 
     @Query(value = "SELECT p FROM StudyPost p JOIN FETCH p.author " +
-            "WHERE (:techStack IS NULL OR p.techStack LIKE %:techStack%) " +
+            "WHERE (:techStack IS NULL OR p.techStack.value LIKE %:techStack%) " +
             "AND (:status IS NULL OR p.status = :status)",
             countQuery = "SELECT COUNT(p) FROM StudyPost p " +
-                    "WHERE (:techStack IS NULL OR p.techStack LIKE %:techStack%) " +
+                    "WHERE (:techStack IS NULL OR p.techStack.value LIKE %:techStack%) " +
                     "AND (:status IS NULL OR p.status = :status)")
     Page<StudyPost> findAllWithFilter(@Param("techStack") String techStack,
                                       @Param("status") StudyPostStatus status,

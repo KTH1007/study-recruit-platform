@@ -4,6 +4,7 @@ import com.study.platform.domain.user.model.User;
 import com.study.platform.global.entity.BaseTimeEntity;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
+import com.study.platform.global.model.TechStack;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -34,14 +35,18 @@ public class StudyPost extends BaseTimeEntity {
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
-    @Column(length = 100, nullable = false)
-    private String title;
+    @Getter(AccessLevel.NONE)
+    @Embedded
+    @AttributeOverride(name = "value", column = @Column(name = "title", length = 100, nullable = false))
+    private PostTitle title;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
-    @Column(length = 255)
-    private String techStack;
+    @Getter(AccessLevel.NONE)
+    @Embedded
+    @AttributeOverride(name = "value", column = @Column(name = "tech_stack", length = 255))
+    private TechStack techStack;
 
     @Getter(AccessLevel.NONE)
     @Embedded
@@ -55,8 +60,8 @@ public class StudyPost extends BaseTimeEntity {
     private StudyPostStatus status;
 
     @Builder
-    private StudyPost(User author, String title, String description,
-                      String techStack, MaxMembers maxMembers, LocalDateTime deadline) {
+    private StudyPost(User author, PostTitle title, String description,
+                      TechStack techStack, MaxMembers maxMembers, LocalDateTime deadline) {
         this.author = author;
         this.title = title;
         this.description = description;
@@ -70,12 +75,20 @@ public class StudyPost extends BaseTimeEntity {
                                    String techStack, int maxMembers, LocalDateTime deadline) {
         return StudyPost.builder()
                 .author(author)
-                .title(title)
+                .title(new PostTitle(title))
                 .description(description)
-                .techStack(techStack)
+                .techStack(TechStack.of(techStack))
                 .maxMembers(new MaxMembers(maxMembers))
                 .deadline(deadline)
                 .build();
+    }
+
+    public String getTitle() {
+        return title.value();
+    }
+
+    public String getTechStack() {
+        return techStack != null ? techStack.value() : null;
     }
 
     public int getMaxMembers() {
@@ -84,9 +97,9 @@ public class StudyPost extends BaseTimeEntity {
 
     public void update(String title, String description, String techStack,
                        int maxMembers, LocalDateTime deadline) {
-        this.title = title;
+        this.title = new PostTitle(title);
         this.description = description;
-        this.techStack = techStack;
+        this.techStack = TechStack.of(techStack);
         this.maxMembers = new MaxMembers(maxMembers);
         this.deadline = deadline;
     }
