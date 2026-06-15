@@ -9,6 +9,7 @@ import com.study.platform.domain.post.event.PostSyncOperationType;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.post.model.StudyPostStatus;
+import com.study.platform.domain.post.port.StudyPostQueryPort;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.domain.user.model.UserRepository;
 import com.study.platform.global.constant.CacheConstants;
@@ -34,14 +35,14 @@ import java.util.UUID;
 public class StudyPostService {
 
     private final StudyPostRepository studyPostRepository;
+    private final StudyPostQueryPort studyPostQueryPort;
     private final UserRepository userRepository;
     private final DomainEventPublisher eventPublisher;
     private final OutboxEventService outboxEventService;
     private final ObjectMapper objectMapper;
 
     public Page<StudyPostSummaryResponse> findPosts(String techStack, StudyPostStatus status, Pageable pageable) {
-        return studyPostRepository.findAllWithFilter(techStack, status, pageable)
-                .map(StudyPostSummaryResponse::from);
+        return studyPostQueryPort.findAllWithFilter(techStack, status, pageable);
     }
 
     @Cacheable(cacheNames = CacheConstants.POST_CACHE, key = "#postId")

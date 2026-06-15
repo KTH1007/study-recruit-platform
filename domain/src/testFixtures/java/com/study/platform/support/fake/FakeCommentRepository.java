@@ -2,12 +2,10 @@ package com.study.platform.support.fake;
 
 import com.study.platform.domain.comment.model.Comment;
 import com.study.platform.domain.comment.model.CommentRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,15 +29,13 @@ public class FakeCommentRepository implements CommentRepository {
     }
 
     @Override
-    public Page<Comment> findAllByPostIdWithAuthor(UUID postId, Pageable pageable) {
-        var list = store.values().stream()
-                .filter(c -> c.getPost().getId().equals(postId))
-                .toList();
-        return new PageImpl<>(list, pageable, list.size());
-    }
-
-    @Override
     public Optional<Comment> findByIdWithAuthor(UUID commentId) {
         return Optional.ofNullable(store.get(commentId));
+    }
+
+    public List<Comment> findAllByPostId(UUID postId) {
+        return store.values().stream()
+                .filter(c -> c.getPost().getId().equals(postId))
+                .toList();
     }
 }

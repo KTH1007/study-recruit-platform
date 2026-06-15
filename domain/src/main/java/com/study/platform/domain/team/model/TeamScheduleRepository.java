@@ -10,6 +10,5 @@ public interface TeamScheduleRepository {
     TeamSchedule save(TeamSchedule schedule);
     Optional<TeamSchedule> findById(UUID id);
     void delete(TeamSchedule schedule);
-    List<TeamSchedule> findAllByTeamIdOrderByScheduledAtAsc(UUID teamId);
     List<TeamSchedule> findAllByScheduledAtBetweenWithTeam(LocalDateTime start, LocalDateTime end);
 }

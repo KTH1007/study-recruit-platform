@@ -5,6 +5,7 @@ import com.study.platform.domain.apply.dto.response.ApplyResponse;
 import com.study.platform.domain.apply.model.Apply;
 import com.study.platform.domain.apply.model.ApplyRepository;
 import com.study.platform.domain.apply.model.ApplyStatus;
+import com.study.platform.domain.apply.port.ApplyQueryPort;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.user.model.User;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class ApplyService {
 
     private final ApplyRepository applyRepository;
+    private final ApplyQueryPort applyQueryPort;
     private final StudyPostRepository studyPostRepository;
     private final UserRepository userRepository;
     private final DomainEventPublisher eventPublisher;
@@ -32,9 +34,7 @@ public class ApplyService {
     public List<ApplyResponse> findApplies(UUID userId, UUID postId) {
         StudyPost post = getPostWithAuthor(postId);
         post.validateAuthor(userId);
-        return applyRepository.findAllByPostIdWithApplicant(postId).stream()
-                .map(ApplyResponse::from)
-                .toList();
+        return applyQueryPort.findAllByPostId(postId);
     }
 
     @Transactional

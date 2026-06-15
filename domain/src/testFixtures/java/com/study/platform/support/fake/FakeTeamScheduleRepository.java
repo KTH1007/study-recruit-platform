@@ -35,8 +35,7 @@ public class FakeTeamScheduleRepository implements TeamScheduleRepository {
         store.remove(schedule.getId());
     }
 
-    @Override
-    public List<TeamSchedule> findAllByTeamIdOrderByScheduledAtAsc(UUID teamId) {
+    public List<TeamSchedule> findAllByTeamId(UUID teamId) {
         return store.values().stream()
                 .filter(s -> s.getTeam().getId().equals(teamId))
                 .sorted(Comparator.comparing(TeamSchedule::getScheduledAt))

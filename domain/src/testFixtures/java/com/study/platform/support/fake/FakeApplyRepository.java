@@ -52,8 +52,7 @@ public class FakeApplyRepository implements ApplyRepository {
                 );
     }
 
-    @Override
-    public List<Apply> findAllByPostIdWithApplicant(UUID postId) {
+    public List<Apply> findAllByPostId(UUID postId) {
         return store.values().stream()
                 .filter(a -> a.getPost().getId().equals(postId))
                 .toList();

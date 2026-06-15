@@ -4,8 +4,6 @@ import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.post.model.StudyPostStatus;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -37,11 +35,6 @@ public class StudyPostRepositoryAdapter implements StudyPostRepository {
     @Override
     public Optional<StudyPost> findById(UUID id) {
         return studyPostJpaRepository.findById(id);
-    }
-
-    @Override
-    public Page<StudyPost> findAllWithFilter(String techStack, StudyPostStatus status, Pageable pageable) {
-        return studyPostJpaRepository.findAllWithFilter(techStack, status, pageable);
     }
 
     @Override

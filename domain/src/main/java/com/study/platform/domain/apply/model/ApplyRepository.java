@@ -1,6 +1,5 @@
 package com.study.platform.domain.apply.model;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,7 +10,6 @@ public interface ApplyRepository {
     Optional<Apply> findById(UUID id);
 
     boolean existsByPostIdAndApplicantId(UUID postId, UUID applicantId);
-    List<Apply> findAllByPostIdWithApplicant(UUID postId);
     Optional<Apply> findByIdWithPostAndApplicant(UUID applyId);
     Optional<Apply> findByPostIdAndApplicantId(UUID postId, UUID applicantId);
     long countByPostIdAndStatus(UUID postId, ApplyStatus status);

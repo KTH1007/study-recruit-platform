@@ -14,6 +14,7 @@ import com.study.platform.support.fake.FakeNotificationPublisher;
 import com.study.platform.support.fake.FakeOutboxEventRepository;
 import com.study.platform.support.fake.FakeStudyTeamRepository;
 import com.study.platform.support.fake.FakeTeamMemberRepository;
+import com.study.platform.support.fake.FakeTeamScheduleQueryPort;
 import com.study.platform.support.fake.FakeTeamScheduleRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,7 +53,8 @@ class TeamScheduleServiceTest {
         notificationPublisher = new FakeNotificationPublisher();
         outboxEventService = new OutboxEventService(new FakeOutboxEventRepository());
         teamScheduleService = new TeamScheduleService(
-                teamScheduleRepository, teamMemberRepository, studyTeamRepository,
+                teamScheduleRepository, new FakeTeamScheduleQueryPort(teamScheduleRepository),
+                teamMemberRepository, studyTeamRepository,
                 notificationPublisher, outboxEventService, new ObjectMapper());
 
         userId = UUID.randomUUID();

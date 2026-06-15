@@ -3,8 +3,6 @@ package com.study.platform.domain.comment.infrastructure;
 import com.study.platform.domain.comment.model.Comment;
 import com.study.platform.domain.comment.model.CommentRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -24,11 +22,6 @@ public class CommentRepositoryAdapter implements CommentRepository {
     @Override
     public void delete(Comment comment) {
         commentJpaRepository.delete(comment);
-    }
-
-    @Override
-    public Page<Comment> findAllByPostIdWithAuthor(UUID postId, Pageable pageable) {
-        return commentJpaRepository.findAllByPostIdWithAuthor(postId, pageable);
     }
 
     @Override

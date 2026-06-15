@@ -11,8 +11,6 @@ import java.util.UUID;
 
 public interface TeamScheduleJpaRepository extends JpaRepository<TeamSchedule, UUID> {
 
-    List<TeamSchedule> findAllByTeamIdOrderByScheduledAtAsc(UUID teamId);
-
     @Query("SELECT s FROM TeamSchedule s JOIN FETCH s.team WHERE s.scheduledAt BETWEEN :start AND :end")
     List<TeamSchedule> findAllByScheduledAtBetweenWithTeam(@Param("start") LocalDateTime start,
                                                            @Param("end") LocalDateTime end);

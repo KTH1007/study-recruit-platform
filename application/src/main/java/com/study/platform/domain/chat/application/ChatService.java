@@ -1,9 +1,11 @@
 package com.study.platform.domain.chat.application;
 
 import com.study.platform.domain.chat.dto.request.ChatMessageRequest;
+import com.study.platform.domain.chat.dto.response.ChatMessageResponse;
 import com.study.platform.domain.chat.model.ChatMessage;
 import com.study.platform.domain.chat.model.ChatMessageRepository;
 import com.study.platform.domain.chat.model.ChatPublisher;
+import com.study.platform.domain.chat.port.ChatQueryPort;
 import com.study.platform.domain.team.model.StudyTeam;
 import com.study.platform.domain.team.model.StudyTeamRepository;
 import com.study.platform.domain.team.model.TeamMemberRepository;
@@ -25,6 +27,7 @@ import java.util.UUID;
 public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatQueryPort chatQueryPort;
     private final StudyTeamRepository studyTeamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
@@ -43,9 +46,9 @@ public class ChatService {
         chatPublisher.publish(message);
     }
 
-    public Slice<ChatMessage> findMessages(UUID userId, UUID teamId, Pageable pageable) {
+    public Slice<ChatMessageResponse> findMessages(UUID userId, UUID teamId, Pageable pageable) {
         validateTeamMember(teamId, userId);
-        return chatMessageRepository.findByTeamIdWithSender(teamId, pageable);
+        return chatQueryPort.findMessagesByTeamId(teamId, pageable);
     }
 
     private void validateTeamMember(UUID teamId, UUID userId) {

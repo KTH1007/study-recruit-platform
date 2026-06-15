@@ -32,11 +32,6 @@ public class TeamScheduleRepositoryAdapter implements TeamScheduleRepository {
     }
 
     @Override
-    public List<TeamSchedule> findAllByTeamIdOrderByScheduledAtAsc(UUID teamId) {
-        return teamScheduleJpaRepository.findAllByTeamIdOrderByScheduledAtAsc(teamId);
-    }
-
-    @Override
     public List<TeamSchedule> findAllByScheduledAtBetweenWithTeam(LocalDateTime start, LocalDateTime end) {
         return teamScheduleJpaRepository.findAllByScheduledAtBetweenWithTeam(start, end);
     }

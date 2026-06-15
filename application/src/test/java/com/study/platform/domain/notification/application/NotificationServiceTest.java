@@ -5,6 +5,7 @@ import com.study.platform.domain.notification.model.NotificationType;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
+import com.study.platform.support.fake.FakeNotificationQueryPort;
 import com.study.platform.support.fake.FakeNotificationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class NotificationServiceTest {
     @BeforeEach
     void setUp() {
         notificationRepository = new FakeNotificationRepository();
-        notificationService = new NotificationService(notificationRepository);
+        notificationService = new NotificationService(notificationRepository, new FakeNotificationQueryPort(notificationRepository));
 
         receiverId = UUID.randomUUID();
 
@@ -87,6 +88,7 @@ class NotificationServiceTest {
         notificationService.markAllAsRead(receiverId);
 
         // then
-        assertThat(notificationRepository.countByReceiverIdAndIsReadFalse(receiverId)).isZero();
+        assertThat(notificationRepository.findAllByReceiverId(receiverId)
+                .stream().filter(n -> !n.isRead()).count()).isZero();
     }
 }

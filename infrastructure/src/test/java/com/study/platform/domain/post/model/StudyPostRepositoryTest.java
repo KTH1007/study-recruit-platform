@@ -1,5 +1,7 @@
 package com.study.platform.domain.post.model;
 
+import com.study.platform.domain.post.dto.response.StudyPostSummaryResponse;
+import com.study.platform.domain.post.port.StudyPostQueryPort;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.domain.user.model.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +23,9 @@ class StudyPostRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private StudyPostRepository studyPostRepository;
+
+    @Autowired
+    private StudyPostQueryPort studyPostQueryPort;
 
     @Autowired
     private UserRepository userRepository;
@@ -76,12 +81,12 @@ class StudyPostRepositoryTest extends AbstractIntegrationTest {
         ));
 
         // when
-        Page<StudyPost> result = studyPostRepository.findAllWithFilter(
+        Page<StudyPostSummaryResponse> result = studyPostQueryPort.findAllWithFilter(
                 "Java", null, PageRequest.of(0, 10));
 
         // then
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getTechStack()).isEqualTo("Java");
+        assertThat(result.getContent().get(0).techStack()).isEqualTo("Java");
     }
 
     @Test
@@ -95,12 +100,12 @@ class StudyPostRepositoryTest extends AbstractIntegrationTest {
         studyPostRepository.save(closedPost);
 
         // when
-        Page<StudyPost> result = studyPostRepository.findAllWithFilter(
+        Page<StudyPostSummaryResponse> result = studyPostQueryPort.findAllWithFilter(
                 null, StudyPostStatus.OPEN, PageRequest.of(0, 10));
 
         // then
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getStatus()).isEqualTo(StudyPostStatus.OPEN);
+        assertThat(result.getContent().get(0).status()).isEqualTo(StudyPostStatus.OPEN);
     }
 
     @Test
@@ -112,7 +117,7 @@ class StudyPostRepositoryTest extends AbstractIntegrationTest {
         ));
 
         // when
-        Page<StudyPost> result = studyPostRepository.findAllWithFilter(
+        Page<StudyPostSummaryResponse> result = studyPostQueryPort.findAllWithFilter(
                 null, null, PageRequest.of(0, 10));
 
         // then

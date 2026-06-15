@@ -3,6 +3,7 @@ package com.study.platform.domain.notification.application;
 import com.study.platform.domain.notification.dto.response.NotificationResponse;
 import com.study.platform.domain.notification.model.Notification;
 import com.study.platform.domain.notification.model.NotificationRepository;
+import com.study.platform.domain.notification.port.NotificationQueryPort;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class NotificationService {
 //    private static final String NOTIFICATION_CHANNEL = "notification";
 
     private final NotificationRepository notificationRepository;
+    private final NotificationQueryPort notificationQueryPort;
 
 //    @Transactional(propagation = Propagation.REQUIRES_NEW)
 //    public void send(UUID receiverId, NotificationType type, String message, UUID targetId) {
@@ -34,12 +36,11 @@ public class NotificationService {
 //    }
 
     public Page<NotificationResponse> findNotifications(UUID userId, Pageable pageable) {
-        return notificationRepository.findAllByReceiverId(userId, pageable)
-                .map(NotificationResponse::from);
+        return notificationQueryPort.findAllByReceiverId(userId, pageable);
     }
 
     public long countUnread(UUID userId) {
-        return notificationRepository.countByReceiverIdAndIsReadFalse(userId);
+        return notificationQueryPort.countByReceiverIdAndIsReadFalse(userId);
     }
 
     @Transactional

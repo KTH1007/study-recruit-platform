@@ -11,6 +11,7 @@ import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
+import com.study.platform.support.fake.FakeApplyQueryPort;
 import com.study.platform.support.fake.FakeApplyRepository;
 import com.study.platform.support.fake.FakeDomainEventPublisher;
 import com.study.platform.support.fake.FakeStudyPostRepository;
@@ -47,7 +48,7 @@ class ApplyServiceTest {
         studyPostRepository = new FakeStudyPostRepository();
         userRepository = new FakeUserRepository();
         eventPublisher = new FakeDomainEventPublisher();
-        applyService = new ApplyService(applyRepository, studyPostRepository, userRepository, eventPublisher);
+        applyService = new ApplyService(applyRepository, new FakeApplyQueryPort(applyRepository), studyPostRepository, userRepository, eventPublisher);
 
         authorId = UUID.randomUUID();
         applicantId = UUID.randomUUID();

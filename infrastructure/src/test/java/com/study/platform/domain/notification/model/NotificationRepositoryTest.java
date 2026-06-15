@@ -1,5 +1,7 @@
 package com.study.platform.domain.notification.model;
 
+import com.study.platform.domain.notification.dto.response.NotificationResponse;
+import com.study.platform.domain.notification.port.NotificationQueryPort;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.domain.user.model.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +23,9 @@ class NotificationRepositoryTest extends AbstractIntegrationTest {
     private NotificationRepository notificationRepository;
 
     @Autowired
+    private NotificationQueryPort notificationQueryPort;
+
+    @Autowired
     private UserRepository userRepository;
 
     private User receiver;
@@ -30,6 +35,7 @@ class NotificationRepositoryTest extends AbstractIntegrationTest {
     void setUp() {
         receiver = userRepository.save(User.create("kakao-1", "수신자", "receiver@test.com"));
         other = userRepository.save(User.create("kakao-2", "다른유저", "other@test.com"));
+        em.flush();
     }
 
     @Test
@@ -38,19 +44,20 @@ class NotificationRepositoryTest extends AbstractIntegrationTest {
         notificationRepository.save(Notification.create(receiver, NotificationType.APPLY_RECEIVED, "지원이 왔습니다", UUID.randomUUID()));
         notificationRepository.save(Notification.create(receiver, NotificationType.APPLY_APPROVED, "승인되었습니다", UUID.randomUUID()));
         notificationRepository.save(Notification.create(other, NotificationType.APPLY_RECEIVED, "다른 유저 알림", UUID.randomUUID()));
+        em.flush();
 
         // when
-        Page<Notification> result = notificationRepository.findAllByReceiverId(receiver.getId(), PageRequest.of(0, 20));
+        Page<NotificationResponse> result = notificationQueryPort.findAllByReceiverId(receiver.getId(), PageRequest.of(0, 20));
 
         // then
         assertThat(result.getContent()).hasSize(2);
-        assertThat(result.getContent()).allMatch(n -> n.getReceiver().getId().equals(receiver.getId()));
+        assertThat(result.getContent()).allMatch(n -> n.receiverId().equals(receiver.getId()));
     }
 
     @Test
     void findAllByReceiverId_알림없음_빈페이지() {
         // when
-        Page<Notification> result = notificationRepository.findAllByReceiverId(receiver.getId(), PageRequest.of(0, 20));
+        Page<NotificationResponse> result = notificationQueryPort.findAllByReceiverId(receiver.getId(), PageRequest.of(0, 20));
 
         // then
         assertThat(result.getContent()).isEmpty();
@@ -63,9 +70,10 @@ class NotificationRepositoryTest extends AbstractIntegrationTest {
         read.markAsRead();
         notificationRepository.save(read);
         notificationRepository.save(Notification.create(receiver, NotificationType.APPLY_APPROVED, "안 읽은 알림", UUID.randomUUID()));
+        em.flush();
 
         // when
-        long count = notificationRepository.countByReceiverIdAndIsReadFalse(receiver.getId());
+        long count = notificationQueryPort.countByReceiverIdAndIsReadFalse(receiver.getId());
 
         // then
         assertThat(count).isEqualTo(1);
@@ -79,7 +87,7 @@ class NotificationRepositoryTest extends AbstractIntegrationTest {
         notificationRepository.save(n);
 
         // when
-        long count = notificationRepository.countByReceiverIdAndIsReadFalse(receiver.getId());
+        long count = notificationQueryPort.countByReceiverIdAndIsReadFalse(receiver.getId());
 
         // then
         assertThat(count).isZero();
@@ -90,12 +98,13 @@ class NotificationRepositoryTest extends AbstractIntegrationTest {
         // given
         notificationRepository.save(Notification.create(receiver, NotificationType.APPLY_RECEIVED, "알림1", UUID.randomUUID()));
         notificationRepository.save(Notification.create(receiver, NotificationType.APPLY_APPROVED, "알림2", UUID.randomUUID()));
+        em.flush();
 
         // when
         notificationRepository.markAllAsRead(receiver.getId());
 
         // then
-        long unreadCount = notificationRepository.countByReceiverIdAndIsReadFalse(receiver.getId());
+        long unreadCount = notificationQueryPort.countByReceiverIdAndIsReadFalse(receiver.getId());
         assertThat(unreadCount).isZero();
     }
 
@@ -104,12 +113,13 @@ class NotificationRepositoryTest extends AbstractIntegrationTest {
         // given
         notificationRepository.save(Notification.create(receiver, NotificationType.APPLY_RECEIVED, "수신자 알림", UUID.randomUUID()));
         notificationRepository.save(Notification.create(other, NotificationType.APPLY_RECEIVED, "다른유저 알림", UUID.randomUUID()));
+        em.flush();
 
         // when
         notificationRepository.markAllAsRead(receiver.getId());
 
         // then
-        long otherUnreadCount = notificationRepository.countByReceiverIdAndIsReadFalse(other.getId());
+        long otherUnreadCount = notificationQueryPort.countByReceiverIdAndIsReadFalse(other.getId());
         assertThat(otherUnreadCount).isEqualTo(1);
     }
 }

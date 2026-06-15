@@ -10,6 +10,7 @@ import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
+import com.study.platform.support.fake.FakeCommentQueryPort;
 import com.study.platform.support.fake.FakeCommentRepository;
 import com.study.platform.support.fake.FakeDomainEventPublisher;
 import com.study.platform.support.fake.FakeStudyPostRepository;
@@ -45,7 +46,7 @@ class CommentServiceTest {
         studyPostRepository = new FakeStudyPostRepository();
         userRepository = new FakeUserRepository();
         eventPublisher = new FakeDomainEventPublisher();
-        commentService = new CommentService(commentRepository, studyPostRepository, userRepository, eventPublisher);
+        commentService = new CommentService(commentRepository, new FakeCommentQueryPort(commentRepository), studyPostRepository, userRepository, eventPublisher);
 
         authorId = UUID.randomUUID();
         commenterId = UUID.randomUUID();

@@ -1,5 +1,7 @@
 package com.study.platform.domain.comment.model;
 
+import com.study.platform.domain.comment.dto.response.CommentResponse;
+import com.study.platform.domain.comment.port.CommentQueryPort;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.user.model.User;
@@ -25,6 +27,9 @@ class CommentRepositoryTest extends AbstractIntegrationTest {
     private CommentRepository commentRepository;
 
     @Autowired
+    private CommentQueryPort commentQueryPort;
+
+    @Autowired
     private StudyPostRepository studyPostRepository;
 
     @Autowired
@@ -42,21 +47,22 @@ class CommentRepositoryTest extends AbstractIntegrationTest {
                 LocalDateTime.now().plusDays(7)
         ));
         comment = commentRepository.save(Comment.create(post, author, "좋은 스터디네요", e -> {}));
+        em.flush();
     }
 
     @Test
-    void findAllByPostIdWithAuthor_성공() {
+    void findAllByPostId_성공() {
         // when
-        Page<Comment> result = commentRepository.findAllByPostIdWithAuthor(post.getId(), PageRequest.of(0, 20));
+        Page<CommentResponse> result = commentQueryPort.findAllByPostId(post.getId(), PageRequest.of(0, 20));
 
         // then
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getContent()).isEqualTo("좋은 스터디네요");
-        assertThat(result.getContent().get(0).getAuthor().getNickname()).isEqualTo("작성자");
+        assertThat(result.getContent().get(0).content()).isEqualTo("좋은 스터디네요");
+        assertThat(result.getContent().get(0).authorNickname()).isEqualTo("작성자");
     }
 
     @Test
-    void findAllByPostIdWithAuthor_댓글없음_빈페이지() {
+    void findAllByPostId_댓글없음_빈페이지() {
         // given
         StudyPost otherPost = studyPostRepository.save(StudyPost.create(
                 author, "다른 스터디", "열심히 합니다", "Kotlin", 3,
@@ -64,7 +70,7 @@ class CommentRepositoryTest extends AbstractIntegrationTest {
         ));
 
         // when
-        Page<Comment> result = commentRepository.findAllByPostIdWithAuthor(otherPost.getId(), PageRequest.of(0, 20));
+        Page<CommentResponse> result = commentQueryPort.findAllByPostId(otherPost.getId(), PageRequest.of(0, 20));
 
         // then
         assertThat(result.getContent()).isEmpty();
@@ -72,14 +78,15 @@ class CommentRepositoryTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void findAllByPostIdWithAuthor_페이징_성공() {
+    void findAllByPostId_페이징_성공() {
         // given
         commentRepository.save(Comment.create(post, author, "두 번째 댓글", e -> {}));
         commentRepository.save(Comment.create(post, author, "세 번째 댓글", e -> {}));
+        em.flush();
 
         // when
-        Page<Comment> firstPage = commentRepository.findAllByPostIdWithAuthor(post.getId(), PageRequest.of(0, 2));
-        Page<Comment> secondPage = commentRepository.findAllByPostIdWithAuthor(post.getId(), PageRequest.of(1, 2));
+        Page<CommentResponse> firstPage = commentQueryPort.findAllByPostId(post.getId(), PageRequest.of(0, 2));
+        Page<CommentResponse> secondPage = commentQueryPort.findAllByPostId(post.getId(), PageRequest.of(1, 2));
 
         // then
         assertThat(firstPage.getContent()).hasSize(2);

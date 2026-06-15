@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -41,11 +40,6 @@ public class ApplyRepositoryAdapter implements ApplyRepository {
     @Override
     public boolean existsByPostIdAndApplicantId(UUID postId, UUID applicantId) {
         return applyJpaRepository.existsByPostIdAndApplicantId(postId, applicantId);
-    }
-
-    @Override
-    public List<Apply> findAllByPostIdWithApplicant(UUID postId) {
-        return applyJpaRepository.findAllByPostIdWithApplicant(postId);
     }
 
     @Override

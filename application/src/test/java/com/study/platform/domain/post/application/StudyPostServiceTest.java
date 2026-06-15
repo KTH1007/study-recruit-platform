@@ -12,6 +12,7 @@ import com.study.platform.global.exception.ErrorCode;
 import com.study.platform.global.outbox.application.OutboxEventService;
 import com.study.platform.support.fake.FakeDomainEventPublisher;
 import com.study.platform.support.fake.FakeOutboxEventRepository;
+import com.study.platform.support.fake.FakeStudyPostQueryPort;
 import com.study.platform.support.fake.FakeStudyPostRepository;
 import com.study.platform.support.fake.FakeUserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +46,7 @@ class StudyPostServiceTest {
         eventPublisher = new FakeDomainEventPublisher();
         outboxEventService = new OutboxEventService(new FakeOutboxEventRepository());
         studyPostService = new StudyPostService(
-                studyPostRepository, userRepository, eventPublisher, outboxEventService, new ObjectMapper());
+                studyPostRepository, new FakeStudyPostQueryPort(), userRepository, eventPublisher, outboxEventService, new ObjectMapper());
 
         authorId = UUID.randomUUID();
         postId = UUID.randomUUID();

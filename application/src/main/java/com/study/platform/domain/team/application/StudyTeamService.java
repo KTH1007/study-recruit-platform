@@ -6,6 +6,7 @@ import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.team.dto.response.StudyTeamResponse;
 import com.study.platform.domain.team.dto.response.TeamMemberResponse;
 import com.study.platform.domain.team.model.*;
+import com.study.platform.domain.team.port.TeamMemberQueryPort;
 import com.study.platform.domain.user.model.User;
 import com.study.platform.domain.user.model.UserRepository;
 import com.study.platform.global.exception.CustomException;
@@ -27,6 +28,7 @@ public class StudyTeamService {
 
     private final StudyTeamRepository studyTeamRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final TeamMemberQueryPort teamMemberQueryPort;
     private final StudyPostRepository studyPostRepository;
     private final UserRepository userRepository;
 
@@ -59,9 +61,7 @@ public class StudyTeamService {
     }
 
     public List<TeamMemberResponse> findMembers(UUID teamId) {
-        return teamMemberRepository.findAllByTeamId(teamId).stream()
-                .map(TeamMemberResponse::from)
-                .toList();
+        return teamMemberQueryPort.findAllByTeamId(teamId);
     }
 
     @Transactional

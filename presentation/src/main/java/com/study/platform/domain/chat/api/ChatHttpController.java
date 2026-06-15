@@ -32,6 +32,6 @@ public class ChatHttpController implements ChatHttpControllerDoc {
             @PageableDefault(size = 30) Pageable pageable
     ) {
         return ApiResponse.success(SuccessCode.CHAT_MESSAGE_LIST,
-                chatService.findMessages(userId, teamId, pageable).map(ChatMessageResponse::from));
+                chatService.findMessages(userId, teamId, pageable));
     }
 }

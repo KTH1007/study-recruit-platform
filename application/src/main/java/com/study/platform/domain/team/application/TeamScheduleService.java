@@ -7,6 +7,7 @@ import com.study.platform.domain.team.dto.request.TeamScheduleCreateRequest;
 import com.study.platform.domain.team.dto.request.TeamScheduleUpdateRequest;
 import com.study.platform.domain.team.dto.response.TeamScheduleResponse;
 import com.study.platform.domain.team.model.*;
+import com.study.platform.domain.team.port.TeamScheduleQueryPort;
 import com.study.platform.global.constant.KafkaConstants;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class TeamScheduleService {
 
     private final TeamScheduleRepository teamScheduleRepository;
+    private final TeamScheduleQueryPort teamScheduleQueryPort;
     private final TeamMemberRepository teamMemberRepository;
     private final StudyTeamRepository studyTeamRepository;
     private final NotificationPublisher notificationPublisher;
@@ -44,9 +46,7 @@ public class TeamScheduleService {
 
     public List<TeamScheduleResponse> findSchedules(UUID userId, UUID teamId) {
         validateTeamMember(teamId, userId);
-        return teamScheduleRepository.findAllByTeamIdOrderByScheduledAtAsc(teamId).stream()
-                .map(TeamScheduleResponse::from)
-                .toList();
+        return teamScheduleQueryPort.findAllByTeamId(teamId);
     }
 
     @Transactional

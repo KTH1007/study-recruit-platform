@@ -6,6 +6,7 @@ import com.study.platform.domain.comment.dto.response.CommentResponse;
 import com.study.platform.domain.comment.event.MentionEvent;
 import com.study.platform.domain.comment.model.Comment;
 import com.study.platform.domain.comment.model.CommentRepository;
+import com.study.platform.domain.comment.port.CommentQueryPort;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.user.model.User;
@@ -33,13 +34,13 @@ public class CommentService {
     private static final Pattern MENTION_PATTERN = Pattern.compile("@(\\S+)");
 
     private final CommentRepository commentRepository;
+    private final CommentQueryPort commentQueryPort;
     private final StudyPostRepository studyPostRepository;
     private final UserRepository userRepository;
     private final DomainEventPublisher eventPublisher;
 
     public Page<CommentResponse> findComments(UUID postId, Pageable pageable) {
-        return commentRepository.findAllByPostIdWithAuthor(postId, pageable)
-                .map(CommentResponse::from);
+        return commentQueryPort.findAllByPostId(postId, pageable);
     }
 
     @Transactional

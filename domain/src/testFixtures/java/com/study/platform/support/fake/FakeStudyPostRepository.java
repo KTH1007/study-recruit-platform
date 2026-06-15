@@ -3,8 +3,6 @@ package com.study.platform.support.fake;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.post.model.StudyPostStatus;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
@@ -51,11 +49,6 @@ public class FakeStudyPostRepository implements StudyPostRepository {
     @Override
     public Optional<StudyPost> findByIdWithAuthorForUpdate(UUID postId) {
         return Optional.ofNullable(store.get(postId));
-    }
-
-    @Override
-    public Page<StudyPost> findAllWithFilter(String techStack, StudyPostStatus status, Pageable pageable) {
-        throw new UnsupportedOperationException("필요 시 구현");
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.study.platform.domain.apply.model;
 
+import com.study.platform.domain.apply.dto.response.ApplyResponse;
+import com.study.platform.domain.apply.port.ApplyQueryPort;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.post.model.StudyPostRepository;
 import com.study.platform.domain.user.model.User;
@@ -21,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ApplyRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired private ApplyRepository applyRepository;
+    @Autowired private ApplyQueryPort applyQueryPort;
     @Autowired private StudyPostRepository studyPostRepository;
     @Autowired private UserRepository userRepository;
 
@@ -38,25 +41,26 @@ class ApplyRepositoryTest extends AbstractIntegrationTest {
                 LocalDateTime.now().plusDays(7)
         ));
         apply = applyRepository.save(Apply.create(post, applicant, "지원합니다", e -> {}));
+        em.flush();
     }
 
     @Test
-    void findAllByPostIdWithApplicant_성공() {
-        List<Apply> result = applyRepository.findAllByPostIdWithApplicant(post.getId());
+    void findAllByPostId_성공() {
+        List<ApplyResponse> result = applyQueryPort.findAllByPostId(post.getId());
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getApplicant().getNickname()).isEqualTo("지원자");
-        assertThat(result.get(0).getMessage()).isEqualTo("지원합니다");
+        assertThat(result.get(0).applicantNickname()).isEqualTo("지원자");
+        assertThat(result.get(0).message()).isEqualTo("지원합니다");
     }
 
     @Test
-    void findAllByPostIdWithApplicant_지원없음_빈리스트() {
+    void findAllByPostId_지원없음_빈리스트() {
         StudyPost otherPost = studyPostRepository.save(StudyPost.create(
                 author, "다른 스터디", "열심히 합니다", "Kotlin", 3,
                 LocalDateTime.now().plusDays(7)
         ));
 
-        List<Apply> result = applyRepository.findAllByPostIdWithApplicant(otherPost.getId());
+        List<ApplyResponse> result = applyQueryPort.findAllByPostId(otherPost.getId());
 
         assertThat(result).isEmpty();
     }

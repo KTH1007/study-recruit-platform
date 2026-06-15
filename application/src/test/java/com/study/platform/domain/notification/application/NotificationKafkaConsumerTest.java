@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.test.util.ReflectionTestUtils;
 import tools.jackson.databind.ObjectMapper;
@@ -76,7 +75,7 @@ class NotificationKafkaConsumerTest {
         notificationKafkaConsumer.consume(objectMapper.writeValueAsString(event), ack);
 
         // then
-        assertThat(notificationRepository.findAllByReceiverId(receiverId, Pageable.unpaged())).isNotEmpty();
+        assertThat(notificationRepository.findAllByReceiverId(receiverId)).isNotEmpty();
         assertThat(failedNotificationRepository.getSaved()).isEmpty();
         assertThat(redisMessagePublisher.wasPublishedTo("notification")).isTrue();
         then(ack).should().acknowledge();

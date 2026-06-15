@@ -10,6 +10,7 @@ import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import com.study.platform.support.fake.FakeStudyPostRepository;
 import com.study.platform.support.fake.FakeStudyTeamRepository;
+import com.study.platform.support.fake.FakeTeamMemberQueryPort;
 import com.study.platform.support.fake.FakeTeamMemberRepository;
 import com.study.platform.support.fake.FakeUserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,7 +50,8 @@ class StudyTeamServiceTest {
         studyPostRepository = new FakeStudyPostRepository();
         userRepository = new FakeUserRepository();
         studyTeamService = new StudyTeamService(
-                studyTeamRepository, teamMemberRepository, studyPostRepository, userRepository);
+                studyTeamRepository, teamMemberRepository, new FakeTeamMemberQueryPort(teamMemberRepository),
+                studyPostRepository, userRepository);
 
         leaderId = UUID.randomUUID();
         memberId = UUID.randomUUID();
