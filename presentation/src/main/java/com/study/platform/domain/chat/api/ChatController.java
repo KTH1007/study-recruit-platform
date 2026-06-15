@@ -1,7 +1,7 @@
 package com.study.platform.domain.chat.api;
 
-import com.study.platform.domain.chat.application.ChatService;
 import com.study.platform.domain.chat.dto.request.ChatMessageRequest;
+import com.study.platform.domain.chat.usecase.SaveAndPublishChatMessageUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -15,15 +15,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ChatController {
 
-    private final ChatService chatService;
+    private final SaveAndPublishChatMessageUseCase saveAndPublishChatMessageUseCase;
 
     @MessageMapping("/chat/{teamId}")
     public void sendMessage(
             @DestinationVariable UUID teamId,
             ChatMessageRequest request,
-            Principal principal
-    ) {
+            Principal principal) {
         UUID userId = (UUID) ((UsernamePasswordAuthenticationToken) principal).getPrincipal();
-        chatService.saveAndPublish(userId, teamId, request);
+        saveAndPublishChatMessageUseCase.execute(userId, teamId, request);
     }
 }

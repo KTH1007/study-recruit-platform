@@ -3,10 +3,14 @@ import com.study.platform.global.idempotency.IdempotencyObjectStoragePort;
 import com.study.platform.global.idempotency.IdempotencyStoragePort;
 import com.study.platform.global.ratelimit.RateLimitStoragePort;
 
-import com.study.platform.domain.team.application.StudyTeamService;
 import com.study.platform.domain.team.dto.response.StudyTeamResponse;
 import com.study.platform.domain.team.dto.response.TeamMemberResponse;
 import com.study.platform.domain.team.model.TeamMemberRole;
+import com.study.platform.domain.team.usecase.DelegateLeaderUseCase;
+import com.study.platform.domain.team.usecase.FindStudyTeamUseCase;
+import com.study.platform.domain.team.usecase.FindTeamMembersUseCase;
+import com.study.platform.domain.team.usecase.LeaveTeamUseCase;
+import com.study.platform.domain.team.usecase.RemoveTeamMemberUseCase;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import com.study.platform.global.jwt.JwtProvider;
@@ -39,7 +43,19 @@ class StudyTeamControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private StudyTeamService studyTeamService;
+    private FindStudyTeamUseCase findStudyTeamUseCase;
+
+    @MockitoBean
+    private FindTeamMembersUseCase findTeamMembersUseCase;
+
+    @MockitoBean
+    private DelegateLeaderUseCase delegateLeaderUseCase;
+
+    @MockitoBean
+    private RemoveTeamMemberUseCase removeTeamMemberUseCase;
+
+    @MockitoBean
+    private LeaveTeamUseCase leaveTeamUseCase;
 
     @MockitoBean
     private JwtProvider jwtProvider;
@@ -74,7 +90,7 @@ class StudyTeamControllerTest {
     @Test
     void findTeam_성공() throws Exception {
         // given
-        given(studyTeamService.findTeam(any())).willReturn(teamResponse);
+        given(findStudyTeamUseCase.execute(any())).willReturn(teamResponse);
 
         // when & then
         mockMvc.perform(get("/api/teams/{teamId}", teamId))
@@ -86,7 +102,7 @@ class StudyTeamControllerTest {
     @Test
     void findTeam_존재하지않음_404() throws Exception {
         // given
-        given(studyTeamService.findTeam(any()))
+        given(findStudyTeamUseCase.execute(any()))
                 .willThrow(new CustomException(ErrorCode.TEAM_NOT_FOUND));
 
         // when & then
@@ -102,7 +118,7 @@ class StudyTeamControllerTest {
                 new TeamMemberResponse(UUID.randomUUID(), userId, "팀장", TeamMemberRole.LEADER),
                 new TeamMemberResponse(UUID.randomUUID(), targetUserId, "팀원", TeamMemberRole.MEMBER)
         );
-        given(studyTeamService.findMembers(any())).willReturn(members);
+        given(findTeamMembersUseCase.execute(any())).willReturn(members);
 
         // when & then
         mockMvc.perform(get("/api/teams/{teamId}/members", teamId))
@@ -114,7 +130,7 @@ class StudyTeamControllerTest {
     @Test
     void delegateLeader_성공() throws Exception {
         // given
-        willDoNothing().given(studyTeamService).delegateLeader(any(), any(), any());
+        willDoNothing().given(delegateLeaderUseCase).execute(any(), any(), any());
 
         // when & then
         mockMvc.perform(patch("/api/teams/{teamId}/members/{targetUserId}/delegate", teamId, targetUserId)
@@ -127,7 +143,7 @@ class StudyTeamControllerTest {
     void delegateLeader_권한없음_403() throws Exception {
         // given
         willThrow(new CustomException(ErrorCode.FORBIDDEN))
-                .given(studyTeamService).delegateLeader(any(), any(), any());
+                .given(delegateLeaderUseCase).execute(any(), any(), any());
 
         // when & then
         mockMvc.perform(patch("/api/teams/{teamId}/members/{targetUserId}/delegate", teamId, targetUserId)
@@ -139,7 +155,7 @@ class StudyTeamControllerTest {
     @Test
     void removeMember_성공() throws Exception {
         // given
-        willDoNothing().given(studyTeamService).removeMember(any(), any(), any());
+        willDoNothing().given(removeTeamMemberUseCase).execute(any(), any(), any());
 
         // when & then
         mockMvc.perform(delete("/api/teams/{teamId}/members/{targetUserId}", teamId, targetUserId)
@@ -151,7 +167,7 @@ class StudyTeamControllerTest {
     @Test
     void leaveTeam_성공() throws Exception {
         // given
-        willDoNothing().given(studyTeamService).leaveTeam(any(), any());
+        willDoNothing().given(leaveTeamUseCase).execute(any(), any());
 
         // when & then
         mockMvc.perform(delete("/api/teams/{teamId}/members/me", teamId)
@@ -164,7 +180,7 @@ class StudyTeamControllerTest {
     void leaveTeam_리더위임필요_400() throws Exception {
         // given
         willThrow(new CustomException(ErrorCode.LEADER_MUST_DELEGATE))
-                .given(studyTeamService).leaveTeam(any(), any());
+                .given(leaveTeamUseCase).execute(any(), any());
 
         // when & then
         mockMvc.perform(delete("/api/teams/{teamId}/members/me", teamId)

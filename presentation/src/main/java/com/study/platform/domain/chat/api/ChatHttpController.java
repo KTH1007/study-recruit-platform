@@ -1,8 +1,8 @@
 package com.study.platform.domain.chat.api;
 
 import com.study.platform.domain.chat.api.doc.ChatHttpControllerDoc;
-import com.study.platform.domain.chat.application.ChatService;
 import com.study.platform.domain.chat.dto.response.ChatMessageResponse;
+import com.study.platform.domain.chat.usecase.FindChatMessagesUseCase;
 import com.study.platform.global.response.ApiResponse;
 import com.study.platform.global.response.SuccessCode;
 import lombok.RequiredArgsConstructor;
@@ -23,15 +23,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ChatHttpController implements ChatHttpControllerDoc {
 
-    private final ChatService chatService;
+    private final FindChatMessagesUseCase findChatMessagesUseCase;
 
     @GetMapping("/{teamId}/chat")
     public ResponseEntity<ApiResponse<Slice<ChatMessageResponse>>> findMessages(
             @PathVariable UUID teamId,
             @AuthenticationPrincipal UUID userId,
-            @PageableDefault(size = 30) Pageable pageable
-    ) {
+            @PageableDefault(size = 30) Pageable pageable) {
         return ApiResponse.success(SuccessCode.CHAT_MESSAGE_LIST,
-                chatService.findMessages(userId, teamId, pageable));
+                findChatMessagesUseCase.execute(userId, teamId, pageable));
     }
 }

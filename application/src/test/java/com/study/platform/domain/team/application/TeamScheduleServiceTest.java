@@ -1,6 +1,5 @@
 package com.study.platform.domain.team.application;
 
-import com.study.platform.domain.notification.model.NotificationType;
 import com.study.platform.domain.post.model.StudyPost;
 import com.study.platform.domain.team.dto.request.TeamScheduleCreateRequest;
 import com.study.platform.domain.team.dto.request.TeamScheduleUpdateRequest;
@@ -35,7 +34,11 @@ class TeamScheduleServiceTest {
     private FakeStudyTeamRepository studyTeamRepository;
     private FakeNotificationPublisher notificationPublisher;
     private OutboxEventService outboxEventService;
-    private TeamScheduleService teamScheduleService;
+
+    private CreateTeamScheduleService createTeamScheduleService;
+    private FindTeamSchedulesService findTeamSchedulesService;
+    private UpdateTeamScheduleService updateTeamScheduleService;
+    private DeleteTeamScheduleService deleteTeamScheduleService;
 
     private UUID userId;
     private UUID teamId;
@@ -52,10 +55,12 @@ class TeamScheduleServiceTest {
         studyTeamRepository = new FakeStudyTeamRepository();
         notificationPublisher = new FakeNotificationPublisher();
         outboxEventService = new OutboxEventService(new FakeOutboxEventRepository());
-        teamScheduleService = new TeamScheduleService(
-                teamScheduleRepository, new FakeTeamScheduleQueryPort(teamScheduleRepository),
-                teamMemberRepository, studyTeamRepository,
-                notificationPublisher, outboxEventService, new ObjectMapper());
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        createTeamScheduleService = new CreateTeamScheduleService(teamScheduleRepository, teamMemberRepository, studyTeamRepository, notificationPublisher, outboxEventService, objectMapper);
+        findTeamSchedulesService = new FindTeamSchedulesService(new FakeTeamScheduleQueryPort(teamScheduleRepository), teamMemberRepository);
+        updateTeamScheduleService = new UpdateTeamScheduleService(teamScheduleRepository, teamMemberRepository);
+        deleteTeamScheduleService = new DeleteTeamScheduleService(teamScheduleRepository, teamMemberRepository);
 
         userId = UUID.randomUUID();
         teamId = UUID.randomUUID();
@@ -86,8 +91,9 @@ class TeamScheduleServiceTest {
         // given
         TeamScheduleCreateRequest request = new TeamScheduleCreateRequest(
                 "1회차 미팅", "미팅 내용", LocalDateTime.now().plusDays(3));
+
         // when
-        TeamScheduleResponse response = teamScheduleService.createSchedule(userId, teamId, request);
+        TeamScheduleResponse response = createTeamScheduleService.execute(userId, teamId, request);
 
         // then
         assertThat(response.title()).isEqualTo("1회차 미팅");
@@ -101,7 +107,7 @@ class TeamScheduleServiceTest {
                 "1회차 미팅", "미팅 내용", LocalDateTime.now().plusDays(3));
 
         // when & then
-        assertThatThrownBy(() -> teamScheduleService.createSchedule(UUID.randomUUID(), teamId, request))
+        assertThatThrownBy(() -> createTeamScheduleService.execute(UUID.randomUUID(), teamId, request))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_TEAM_MEMBER);
     }
@@ -112,7 +118,7 @@ class TeamScheduleServiceTest {
         teamScheduleRepository.save(schedule);
 
         // when
-        List<TeamScheduleResponse> responses = teamScheduleService.findSchedules(userId, teamId);
+        List<TeamScheduleResponse> responses = findTeamSchedulesService.execute(userId, teamId);
 
         // then
         assertThat(responses).hasSize(1);
@@ -122,7 +128,7 @@ class TeamScheduleServiceTest {
     @Test
     void findSchedules_팀멤버아님_예외발생() {
         // when & then
-        assertThatThrownBy(() -> teamScheduleService.findSchedules(UUID.randomUUID(), teamId))
+        assertThatThrownBy(() -> findTeamSchedulesService.execute(UUID.randomUUID(), teamId))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_TEAM_MEMBER);
     }
@@ -135,7 +141,7 @@ class TeamScheduleServiceTest {
                 "2회차 미팅", "수정된 내용", LocalDateTime.now().plusDays(7));
 
         // when
-        TeamScheduleResponse response = teamScheduleService.updateSchedule(userId, teamId, scheduleId, request);
+        TeamScheduleResponse response = updateTeamScheduleService.execute(userId, teamId, scheduleId, request);
 
         // then
         assertThat(response.title()).isEqualTo("2회차 미팅");
@@ -149,7 +155,7 @@ class TeamScheduleServiceTest {
                 "2회차 미팅", "수정된 내용", LocalDateTime.now().plusDays(7));
 
         // when & then
-        assertThatThrownBy(() -> teamScheduleService.updateSchedule(userId, teamId, UUID.randomUUID(), request))
+        assertThatThrownBy(() -> updateTeamScheduleService.execute(userId, teamId, UUID.randomUUID(), request))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TEAM_SCHEDULE_NOT_FOUND);
     }
@@ -160,7 +166,7 @@ class TeamScheduleServiceTest {
         teamScheduleRepository.save(schedule);
 
         // when
-        teamScheduleService.deleteSchedule(userId, teamId, scheduleId);
+        deleteTeamScheduleService.execute(userId, teamId, scheduleId);
 
         // then
         assertThat(teamScheduleRepository.findById(scheduleId)).isEmpty();
@@ -169,7 +175,7 @@ class TeamScheduleServiceTest {
     @Test
     void deleteSchedule_팀멤버아님_예외발생() {
         // when & then
-        assertThatThrownBy(() -> teamScheduleService.deleteSchedule(UUID.randomUUID(), teamId, scheduleId))
+        assertThatThrownBy(() -> deleteTeamScheduleService.execute(UUID.randomUUID(), teamId, scheduleId))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_TEAM_MEMBER);
     }

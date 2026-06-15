@@ -30,7 +30,13 @@ class StudyTeamServiceTest {
     private FakeTeamMemberRepository teamMemberRepository;
     private FakeStudyPostRepository studyPostRepository;
     private FakeUserRepository userRepository;
-    private StudyTeamService studyTeamService;
+
+    private CreateStudyTeamService createStudyTeamService;
+    private FindStudyTeamService findStudyTeamService;
+    private FindTeamMembersService findTeamMembersService;
+    private DelegateLeaderService delegateLeaderService;
+    private RemoveTeamMemberService removeTeamMemberService;
+    private LeaveTeamService leaveTeamService;
 
     private UUID leaderId;
     private UUID memberId;
@@ -49,9 +55,13 @@ class StudyTeamServiceTest {
         teamMemberRepository = new FakeTeamMemberRepository();
         studyPostRepository = new FakeStudyPostRepository();
         userRepository = new FakeUserRepository();
-        studyTeamService = new StudyTeamService(
-                studyTeamRepository, teamMemberRepository, new FakeTeamMemberQueryPort(teamMemberRepository),
-                studyPostRepository, userRepository);
+
+        createStudyTeamService = new CreateStudyTeamService(studyTeamRepository, teamMemberRepository, studyPostRepository, userRepository);
+        findStudyTeamService = new FindStudyTeamService(studyTeamRepository);
+        findTeamMembersService = new FindTeamMembersService(new FakeTeamMemberQueryPort(teamMemberRepository));
+        delegateLeaderService = new DelegateLeaderService(teamMemberRepository);
+        removeTeamMemberService = new RemoveTeamMemberService(teamMemberRepository);
+        leaveTeamService = new LeaveTeamService(studyTeamRepository, teamMemberRepository);
 
         leaderId = UUID.randomUUID();
         memberId = UUID.randomUUID();
@@ -87,7 +97,7 @@ class StudyTeamServiceTest {
         ApplyApprovedEvent event = new ApplyApprovedEvent(postId, memberId, "스터디 모집");
 
         // when
-        studyTeamService.createTeam(event);
+        createStudyTeamService.execute(event);
 
         // then
         assertThat(studyTeamRepository.findByPostId(postId)).isPresent();
@@ -103,7 +113,7 @@ class StudyTeamServiceTest {
         ApplyApprovedEvent event = new ApplyApprovedEvent(postId, memberId, "스터디 모집");
 
         // when
-        studyTeamService.createTeam(event);
+        createStudyTeamService.execute(event);
 
         // then
         assertThat(teamMemberRepository.findAllByTeamId(teamId)).hasSize(2);
@@ -118,7 +128,7 @@ class StudyTeamServiceTest {
         ApplyApprovedEvent event = new ApplyApprovedEvent(postId, memberId, "스터디 모집");
 
         // when
-        studyTeamService.createTeam(event);
+        createStudyTeamService.execute(event);
 
         // then
         assertThat(teamMemberRepository.findAllByTeamId(teamId)).hasSize(2);
@@ -130,7 +140,7 @@ class StudyTeamServiceTest {
         studyTeamRepository.save(team);
 
         // when
-        StudyTeamResponse response = studyTeamService.findTeam(teamId);
+        StudyTeamResponse response = findStudyTeamService.execute(teamId);
 
         // then
         assertThat(response).isNotNull();
@@ -140,7 +150,7 @@ class StudyTeamServiceTest {
     @Test
     void findTeam_존재하지않음_예외발생() {
         // when & then
-        assertThatThrownBy(() -> studyTeamService.findTeam(UUID.randomUUID()))
+        assertThatThrownBy(() -> findStudyTeamService.execute(UUID.randomUUID()))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TEAM_NOT_FOUND);
     }
@@ -153,7 +163,7 @@ class StudyTeamServiceTest {
         teamMemberRepository.save(normalMember);
 
         // when
-        List<TeamMemberResponse> responses = studyTeamService.findMembers(teamId);
+        List<TeamMemberResponse> responses = findTeamMembersService.execute(teamId);
 
         // then
         assertThat(responses).hasSize(2);
@@ -167,7 +177,7 @@ class StudyTeamServiceTest {
         teamMemberRepository.save(normalMember);
 
         // when
-        studyTeamService.delegateLeader(leaderId, teamId, memberId);
+        delegateLeaderService.execute(leaderId, teamId, memberId);
 
         // then
         assertThat(leaderMember.getRole()).isEqualTo(TeamMemberRole.MEMBER);
@@ -182,7 +192,7 @@ class StudyTeamServiceTest {
         teamMemberRepository.save(normalMember);
 
         // when & then
-        assertThatThrownBy(() -> studyTeamService.delegateLeader(memberId, teamId, leaderId))
+        assertThatThrownBy(() -> delegateLeaderService.execute(memberId, teamId, leaderId))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
     }
@@ -195,7 +205,7 @@ class StudyTeamServiceTest {
         teamMemberRepository.save(normalMember);
 
         // when
-        studyTeamService.removeMember(leaderId, teamId, memberId);
+        removeTeamMemberService.execute(leaderId, teamId, memberId);
 
         // then
         assertThat(teamMemberRepository.existsByTeamIdAndUserId(teamId, memberId)).isFalse();
@@ -209,7 +219,7 @@ class StudyTeamServiceTest {
         teamMemberRepository.save(normalMember);
 
         // when & then
-        assertThatThrownBy(() -> studyTeamService.removeMember(memberId, teamId, leaderId))
+        assertThatThrownBy(() -> removeTeamMemberService.execute(memberId, teamId, leaderId))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
     }
@@ -222,7 +232,7 @@ class StudyTeamServiceTest {
         teamMemberRepository.save(normalMember);
 
         // when
-        studyTeamService.leaveTeam(memberId, teamId);
+        leaveTeamService.execute(memberId, teamId);
 
         // then
         assertThat(teamMemberRepository.existsByTeamIdAndUserId(teamId, memberId)).isFalse();
@@ -235,7 +245,7 @@ class StudyTeamServiceTest {
         teamMemberRepository.save(leaderMember);
 
         // when
-        studyTeamService.leaveTeam(leaderId, teamId);
+        leaveTeamService.execute(leaderId, teamId);
 
         // then
         assertThat(studyTeamRepository.findById(teamId)).isEmpty();
@@ -250,7 +260,7 @@ class StudyTeamServiceTest {
         teamMemberRepository.save(normalMember);
 
         // when & then
-        assertThatThrownBy(() -> studyTeamService.leaveTeam(leaderId, teamId))
+        assertThatThrownBy(() -> leaveTeamService.execute(leaderId, teamId))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.LEADER_MUST_DELEGATE);
     }

@@ -3,10 +3,13 @@ import com.study.platform.global.idempotency.IdempotencyObjectStoragePort;
 import com.study.platform.global.idempotency.IdempotencyStoragePort;
 import com.study.platform.global.ratelimit.RateLimitStoragePort;
 
-import com.study.platform.domain.comment.application.CommentService;
 import com.study.platform.domain.comment.dto.request.CommentCreateRequest;
 import com.study.platform.domain.comment.dto.request.CommentUpdateRequest;
 import com.study.platform.domain.comment.dto.response.CommentResponse;
+import com.study.platform.domain.comment.usecase.CreateCommentUseCase;
+import com.study.platform.domain.comment.usecase.DeleteCommentUseCase;
+import com.study.platform.domain.comment.usecase.FindCommentsUseCase;
+import com.study.platform.domain.comment.usecase.UpdateCommentUseCase;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import com.study.platform.global.jwt.JwtProvider;
@@ -41,7 +44,16 @@ class CommentControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private CommentService commentService;
+    private FindCommentsUseCase findCommentsUseCase;
+
+    @MockitoBean
+    private CreateCommentUseCase createCommentUseCase;
+
+    @MockitoBean
+    private UpdateCommentUseCase updateCommentUseCase;
+
+    @MockitoBean
+    private DeleteCommentUseCase deleteCommentUseCase;
 
     @MockitoBean
     private JwtProvider jwtProvider;
@@ -79,7 +91,7 @@ class CommentControllerTest {
     @Test
     void findComments_성공() throws Exception {
         // given
-        given(commentService.findComments(any(), any()))
+        given(findCommentsUseCase.execute(any(), any()))
                 .willReturn(new PageImpl<>(List.of(commentResponse), PageRequest.of(0, 20), 1));
 
         // when & then
@@ -93,7 +105,7 @@ class CommentControllerTest {
     void createComment_성공() throws Exception {
         // given
         CommentCreateRequest request = new CommentCreateRequest("좋은 스터디네요");
-        given(commentService.createComment(any(), any(), any())).willReturn(commentResponse);
+        given(createCommentUseCase.execute(any(), any(), any())).willReturn(commentResponse);
 
         // when & then
         mockMvc.perform(post("/api/posts/{postId}/comments", postId)
@@ -136,7 +148,7 @@ class CommentControllerTest {
         // given
         CommentUpdateRequest request = new CommentUpdateRequest("수정된 댓글");
         CommentResponse updated = new CommentResponse(commentId, userId, "작성자", "수정된 댓글", LocalDateTime.now());
-        given(commentService.updateComment(any(), any(), any())).willReturn(updated);
+        given(updateCommentUseCase.execute(any(), any(), any())).willReturn(updated);
 
         // when & then
         mockMvc.perform(patch("/api/posts/{postId}/comments/{commentId}", postId, commentId)
@@ -151,7 +163,7 @@ class CommentControllerTest {
     void updateComment_작성자아님_403() throws Exception {
         // given
         CommentUpdateRequest request = new CommentUpdateRequest("수정된 댓글");
-        given(commentService.updateComment(any(), any(), any()))
+        given(updateCommentUseCase.execute(any(), any(), any()))
                 .willThrow(new CustomException(ErrorCode.NOT_COMMENT_AUTHOR));
 
         // when & then
@@ -166,7 +178,7 @@ class CommentControllerTest {
     @Test
     void deleteComment_성공() throws Exception {
         // given
-        willDoNothing().given(commentService).deleteComment(any(), any());
+        willDoNothing().given(deleteCommentUseCase).execute(any(), any());
 
         // when & then
         mockMvc.perform(delete("/api/posts/{postId}/comments/{commentId}", postId, commentId)
@@ -179,7 +191,7 @@ class CommentControllerTest {
     void deleteComment_작성자아님_403() throws Exception {
         // given
         willThrow(new CustomException(ErrorCode.NOT_COMMENT_AUTHOR))
-                .given(commentService).deleteComment(any(), any());
+                .given(deleteCommentUseCase).execute(any(), any());
 
         // when & then
         mockMvc.perform(delete("/api/posts/{postId}/comments/{commentId}", postId, commentId)

@@ -32,7 +32,12 @@ class StudyPostServiceTest {
     private FakeUserRepository userRepository;
     private FakeDomainEventPublisher eventPublisher;
     private OutboxEventService outboxEventService;
-    private StudyPostService studyPostService;
+
+    private FindStudyPostService findStudyPostService;
+    private CreateStudyPostService createStudyPostService;
+    private UpdateStudyPostService updateStudyPostService;
+    private DeleteStudyPostService deleteStudyPostService;
+    private CloseStudyPostService closeStudyPostService;
 
     private UUID authorId;
     private UUID postId;
@@ -45,8 +50,13 @@ class StudyPostServiceTest {
         userRepository = new FakeUserRepository();
         eventPublisher = new FakeDomainEventPublisher();
         outboxEventService = new OutboxEventService(new FakeOutboxEventRepository());
-        studyPostService = new StudyPostService(
-                studyPostRepository, new FakeStudyPostQueryPort(), userRepository, eventPublisher, outboxEventService, new ObjectMapper());
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        findStudyPostService = new FindStudyPostService(studyPostRepository);
+        createStudyPostService = new CreateStudyPostService(studyPostRepository, userRepository, eventPublisher, outboxEventService, objectMapper);
+        updateStudyPostService = new UpdateStudyPostService(studyPostRepository, eventPublisher, outboxEventService, objectMapper);
+        deleteStudyPostService = new DeleteStudyPostService(studyPostRepository, eventPublisher, outboxEventService, objectMapper);
+        closeStudyPostService = new CloseStudyPostService(studyPostRepository, eventPublisher, outboxEventService, objectMapper);
 
         authorId = UUID.randomUUID();
         postId = UUID.randomUUID();
@@ -64,7 +74,7 @@ class StudyPostServiceTest {
     @Test
     void findPost_성공() {
         // when
-        StudyPostResponse response = studyPostService.findPost(postId);
+        StudyPostResponse response = findStudyPostService.execute(postId);
 
         // then
         assertThat(response.id()).isEqualTo(postId);
@@ -74,7 +84,7 @@ class StudyPostServiceTest {
     @Test
     void findPost_게시글없음_예외발생() {
         // when & then
-        assertThatThrownBy(() -> studyPostService.findPost(UUID.randomUUID()))
+        assertThatThrownBy(() -> findStudyPostService.execute(UUID.randomUUID()))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.POST_NOT_FOUND);
     }
@@ -86,7 +96,7 @@ class StudyPostServiceTest {
                 "새 스터디", "열심히 합니다", "Java", 3, LocalDateTime.now().plusDays(7));
 
         // when
-        StudyPostResponse response = studyPostService.createPost(authorId, request);
+        StudyPostResponse response = createStudyPostService.execute(authorId, request);
 
         // then
         assertThat(response.title()).isEqualTo("새 스터디");
@@ -100,7 +110,7 @@ class StudyPostServiceTest {
                 "새 스터디", "열심히 합니다", "Java", 3, LocalDateTime.now().plusDays(7));
 
         // when & then
-        assertThatThrownBy(() -> studyPostService.createPost(UUID.randomUUID(), request))
+        assertThatThrownBy(() -> createStudyPostService.execute(UUID.randomUUID(), request))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
     }
@@ -112,7 +122,7 @@ class StudyPostServiceTest {
                 "수정된 제목", "수정된 내용", "Kotlin", 5, LocalDateTime.now().plusDays(14));
 
         // when
-        StudyPostResponse response = studyPostService.updatePost(authorId, postId, request);
+        StudyPostResponse response = updateStudyPostService.execute(authorId, postId, request);
 
         // then
         assertThat(response.title()).isEqualTo("수정된 제목");
@@ -126,7 +136,7 @@ class StudyPostServiceTest {
                 "수정된 제목", "수정된 내용", "Kotlin", 5, LocalDateTime.now().plusDays(14));
 
         // when & then
-        assertThatThrownBy(() -> studyPostService.updatePost(UUID.randomUUID(), postId, request))
+        assertThatThrownBy(() -> updateStudyPostService.execute(UUID.randomUUID(), postId, request))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
     }
@@ -134,7 +144,7 @@ class StudyPostServiceTest {
     @Test
     void deletePost_성공() {
         // when
-        studyPostService.deletePost(authorId, postId);
+        deleteStudyPostService.execute(authorId, postId);
 
         // then
         assertThat(studyPostRepository.findById(postId)).isEmpty();
@@ -144,7 +154,7 @@ class StudyPostServiceTest {
     @Test
     void deletePost_작성자아님_예외발생() {
         // when & then
-        assertThatThrownBy(() -> studyPostService.deletePost(UUID.randomUUID(), postId))
+        assertThatThrownBy(() -> deleteStudyPostService.execute(UUID.randomUUID(), postId))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
     }
@@ -152,7 +162,7 @@ class StudyPostServiceTest {
     @Test
     void closePost_성공() {
         // when
-        StudyPostResponse response = studyPostService.closePost(authorId, postId);
+        StudyPostResponse response = closeStudyPostService.execute(authorId, postId);
 
         // then
         assertThat(response.status()).isEqualTo(StudyPostStatus.CLOSED);
@@ -162,7 +172,7 @@ class StudyPostServiceTest {
     @Test
     void closePost_작성자아님_예외발생() {
         // when & then
-        assertThatThrownBy(() -> studyPostService.closePost(UUID.randomUUID(), postId))
+        assertThatThrownBy(() -> closeStudyPostService.execute(UUID.randomUUID(), postId))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
     }

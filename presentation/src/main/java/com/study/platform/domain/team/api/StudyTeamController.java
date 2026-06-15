@@ -1,9 +1,9 @@
 package com.study.platform.domain.team.api;
 
 import com.study.platform.domain.team.api.doc.StudyTeamControllerDoc;
-import com.study.platform.domain.team.application.StudyTeamService;
 import com.study.platform.domain.team.dto.response.StudyTeamResponse;
 import com.study.platform.domain.team.dto.response.TeamMemberResponse;
+import com.study.platform.domain.team.usecase.*;
 import com.study.platform.global.response.ApiResponse;
 import com.study.platform.global.response.SuccessCode;
 import lombok.RequiredArgsConstructor;
@@ -19,16 +19,20 @@ import java.util.UUID;
 @RequestMapping("/api/teams")
 public class StudyTeamController implements StudyTeamControllerDoc {
 
-    private final StudyTeamService studyTeamService;
+    private final FindStudyTeamUseCase findStudyTeamUseCase;
+    private final FindTeamMembersUseCase findTeamMembersUseCase;
+    private final DelegateLeaderUseCase delegateLeaderUseCase;
+    private final RemoveTeamMemberUseCase removeTeamMemberUseCase;
+    private final LeaveTeamUseCase leaveTeamUseCase;
 
     @GetMapping("/{teamId}")
     public ResponseEntity<ApiResponse<StudyTeamResponse>> findTeam(@PathVariable UUID teamId) {
-        return ApiResponse.success(SuccessCode.TEAM_FOUND, studyTeamService.findTeam(teamId));
+        return ApiResponse.success(SuccessCode.TEAM_FOUND, findStudyTeamUseCase.execute(teamId));
     }
 
     @GetMapping("/{teamId}/members")
     public ResponseEntity<ApiResponse<List<TeamMemberResponse>>> findMembers(@PathVariable UUID teamId) {
-        return ApiResponse.success(SuccessCode.TEAM_MEMBER_LIST, studyTeamService.findMembers(teamId));
+        return ApiResponse.success(SuccessCode.TEAM_MEMBER_LIST, findTeamMembersUseCase.execute(teamId));
     }
 
     @PatchMapping("/{teamId}/members/{targetUserId}/delegate")
@@ -36,7 +40,7 @@ public class StudyTeamController implements StudyTeamControllerDoc {
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID teamId,
             @PathVariable UUID targetUserId) {
-        studyTeamService.delegateLeader(userId, teamId, targetUserId);
+        delegateLeaderUseCase.execute(userId, teamId, targetUserId);
         return ApiResponse.success(SuccessCode.LEADER_DELEGATED);
     }
 
@@ -45,7 +49,7 @@ public class StudyTeamController implements StudyTeamControllerDoc {
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID teamId,
             @PathVariable UUID targetUserId) {
-        studyTeamService.removeMember(userId, teamId, targetUserId);
+        removeTeamMemberUseCase.execute(userId, teamId, targetUserId);
         return ApiResponse.success(SuccessCode.TEAM_MEMBER_REMOVED);
     }
 
@@ -53,7 +57,7 @@ public class StudyTeamController implements StudyTeamControllerDoc {
     public ResponseEntity<ApiResponse<Void>> leaveTeam(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID teamId) {
-        studyTeamService.leaveTeam(userId, teamId);
+        leaveTeamUseCase.execute(userId, teamId);
         return ApiResponse.success(SuccessCode.TEAM_LEFT);
     }
 }

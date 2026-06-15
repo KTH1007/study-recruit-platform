@@ -1,10 +1,10 @@
 package com.study.platform.domain.team.api;
 
 import com.study.platform.domain.team.api.doc.TeamScheduleControllerDoc;
-import com.study.platform.domain.team.application.TeamScheduleService;
 import com.study.platform.domain.team.dto.request.TeamScheduleCreateRequest;
 import com.study.platform.domain.team.dto.request.TeamScheduleUpdateRequest;
 import com.study.platform.domain.team.dto.response.TeamScheduleResponse;
+import com.study.platform.domain.team.usecase.*;
 import com.study.platform.global.idempotency.Idempotent;
 import com.study.platform.global.ratelimit.RateLimit;
 import com.study.platform.global.response.ApiResponse;
@@ -23,7 +23,10 @@ import java.util.UUID;
 @RequestMapping("/api/teams/{teamId}/schedules")
 public class TeamScheduleController implements TeamScheduleControllerDoc {
 
-    private final TeamScheduleService teamScheduleService;
+    private final CreateTeamScheduleUseCase createTeamScheduleUseCase;
+    private final FindTeamSchedulesUseCase findTeamSchedulesUseCase;
+    private final UpdateTeamScheduleUseCase updateTeamScheduleUseCase;
+    private final DeleteTeamScheduleUseCase deleteTeamScheduleUseCase;
 
     @Idempotent
     @RateLimit(limit = 5, windowSeconds = 60)
@@ -32,14 +35,14 @@ public class TeamScheduleController implements TeamScheduleControllerDoc {
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID teamId,
             @Valid @RequestBody TeamScheduleCreateRequest request) {
-        return ApiResponse.success(SuccessCode.TEAM_SCHEDULE_CREATED, teamScheduleService.createSchedule(userId, teamId, request));
+        return ApiResponse.success(SuccessCode.TEAM_SCHEDULE_CREATED, createTeamScheduleUseCase.execute(userId, teamId, request));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<TeamScheduleResponse>>> findSchedules(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID teamId) {
-        return ApiResponse.success(SuccessCode.TEAM_SCHEDULE_LIST, teamScheduleService.findSchedules(userId, teamId));
+        return ApiResponse.success(SuccessCode.TEAM_SCHEDULE_LIST, findTeamSchedulesUseCase.execute(userId, teamId));
     }
 
     @PatchMapping("/{scheduleId}")
@@ -48,7 +51,7 @@ public class TeamScheduleController implements TeamScheduleControllerDoc {
             @PathVariable UUID teamId,
             @PathVariable UUID scheduleId,
             @Valid @RequestBody TeamScheduleUpdateRequest request) {
-        return ApiResponse.success(SuccessCode.TEAM_SCHEDULE_UPDATED, teamScheduleService.updateSchedule(userId, teamId, scheduleId, request));
+        return ApiResponse.success(SuccessCode.TEAM_SCHEDULE_UPDATED, updateTeamScheduleUseCase.execute(userId, teamId, scheduleId, request));
     }
 
     @DeleteMapping("/{scheduleId}")
@@ -56,7 +59,7 @@ public class TeamScheduleController implements TeamScheduleControllerDoc {
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID teamId,
             @PathVariable UUID scheduleId) {
-        teamScheduleService.deleteSchedule(userId, teamId, scheduleId);
+        deleteTeamScheduleUseCase.execute(userId, teamId, scheduleId);
         return ApiResponse.success(SuccessCode.TEAM_SCHEDULE_DELETED);
     }
 }

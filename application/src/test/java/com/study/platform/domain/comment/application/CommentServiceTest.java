@@ -31,7 +31,10 @@ class CommentServiceTest {
     private FakeStudyPostRepository studyPostRepository;
     private FakeUserRepository userRepository;
     private FakeDomainEventPublisher eventPublisher;
-    private CommentService commentService;
+
+    private CreateCommentService createCommentService;
+    private UpdateCommentService updateCommentService;
+    private DeleteCommentService deleteCommentService;
 
     private UUID authorId;
     private UUID commenterId;
@@ -46,7 +49,10 @@ class CommentServiceTest {
         studyPostRepository = new FakeStudyPostRepository();
         userRepository = new FakeUserRepository();
         eventPublisher = new FakeDomainEventPublisher();
-        commentService = new CommentService(commentRepository, new FakeCommentQueryPort(commentRepository), studyPostRepository, userRepository, eventPublisher);
+
+        createCommentService = new CreateCommentService(commentRepository, studyPostRepository, userRepository, eventPublisher);
+        updateCommentService = new UpdateCommentService(commentRepository);
+        deleteCommentService = new DeleteCommentService(commentRepository);
 
         authorId = UUID.randomUUID();
         commenterId = UUID.randomUUID();
@@ -72,7 +78,7 @@ class CommentServiceTest {
         CommentCreateRequest request = new CommentCreateRequest("좋은 스터디네요");
 
         // when
-        CommentResponse response = commentService.createComment(commenterId, postId, request);
+        CommentResponse response = createCommentService.execute(commenterId, postId, request);
 
         // then
         assertThat(response.content()).isEqualTo("좋은 스터디네요");
@@ -85,7 +91,7 @@ class CommentServiceTest {
         CommentCreateRequest request = new CommentCreateRequest("좋은 스터디네요");
 
         // when & then
-        assertThatThrownBy(() -> commentService.createComment(commenterId, UUID.randomUUID(), request))
+        assertThatThrownBy(() -> createCommentService.execute(commenterId, UUID.randomUUID(), request))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.POST_NOT_FOUND);
     }
@@ -96,7 +102,7 @@ class CommentServiceTest {
         CommentCreateRequest request = new CommentCreateRequest("좋은 스터디네요");
 
         // when & then
-        assertThatThrownBy(() -> commentService.createComment(UUID.randomUUID(), postId, request))
+        assertThatThrownBy(() -> createCommentService.execute(UUID.randomUUID(), postId, request))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
     }
@@ -107,7 +113,7 @@ class CommentServiceTest {
         CommentCreateRequest request = new CommentCreateRequest("제 글에 댓글 달아요");
 
         // when
-        commentService.createComment(authorId, postId, request);
+        createCommentService.execute(authorId, postId, request);
 
         // then
         assertThat(eventPublisher.hasEventOf(CommentCreatedEvent.class)).isFalse();
@@ -122,7 +128,7 @@ class CommentServiceTest {
         CommentCreateRequest request = new CommentCreateRequest("@멘션대상 확인해주세요");
 
         // when
-        commentService.createComment(commenterId, postId, request);
+        createCommentService.execute(commenterId, postId, request);
 
         // then
         assertThat(eventPublisher.hasEventOf(MentionEvent.class)).isTrue();
@@ -134,7 +140,7 @@ class CommentServiceTest {
         CommentCreateRequest request = new CommentCreateRequest("@댓글작성자 본인 멘션");
 
         // when
-        commentService.createComment(commenterId, postId, request);
+        createCommentService.execute(commenterId, postId, request);
 
         // then
         assertThat(eventPublisher.hasEventOf(MentionEvent.class)).isFalse();
@@ -150,7 +156,7 @@ class CommentServiceTest {
         CommentUpdateRequest request = new CommentUpdateRequest("수정된 댓글");
 
         // when
-        CommentResponse response = commentService.updateComment(commenterId, commentId, request);
+        CommentResponse response = updateCommentService.execute(commenterId, commentId, request);
 
         // then
         assertThat(response.content()).isEqualTo("수정된 댓글");
@@ -166,7 +172,7 @@ class CommentServiceTest {
         CommentUpdateRequest request = new CommentUpdateRequest("수정된 댓글");
 
         // when & then
-        assertThatThrownBy(() -> commentService.updateComment(UUID.randomUUID(), commentId, request))
+        assertThatThrownBy(() -> updateCommentService.execute(UUID.randomUUID(), commentId, request))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_COMMENT_AUTHOR);
     }
@@ -177,7 +183,7 @@ class CommentServiceTest {
         CommentUpdateRequest request = new CommentUpdateRequest("수정된 댓글");
 
         // when & then
-        assertThatThrownBy(() -> commentService.updateComment(commenterId, UUID.randomUUID(), request))
+        assertThatThrownBy(() -> updateCommentService.execute(commenterId, UUID.randomUUID(), request))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.COMMENT_NOT_FOUND);
     }
@@ -191,7 +197,7 @@ class CommentServiceTest {
         commentRepository.save(comment);
 
         // when
-        commentService.deleteComment(commenterId, commentId);
+        deleteCommentService.execute(commenterId, commentId);
 
         // then
         assertThat(commentRepository.findByIdWithAuthor(commentId)).isEmpty();
@@ -206,7 +212,7 @@ class CommentServiceTest {
         commentRepository.save(comment);
 
         // when & then
-        assertThatThrownBy(() -> commentService.deleteComment(UUID.randomUUID(), commentId))
+        assertThatThrownBy(() -> deleteCommentService.execute(UUID.randomUUID(), commentId))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_COMMENT_AUTHOR);
     }
@@ -214,7 +220,7 @@ class CommentServiceTest {
     @Test
     void deleteComment_댓글없음_예외발생() {
         // when & then
-        assertThatThrownBy(() -> commentService.deleteComment(commenterId, UUID.randomUUID()))
+        assertThatThrownBy(() -> deleteCommentService.execute(commenterId, UUID.randomUUID()))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.COMMENT_NOT_FOUND);
     }

@@ -3,9 +3,12 @@ import com.study.platform.global.idempotency.IdempotencyObjectStoragePort;
 import com.study.platform.global.idempotency.IdempotencyStoragePort;
 import com.study.platform.global.ratelimit.RateLimitStoragePort;
 
-import com.study.platform.domain.notification.application.NotificationService;
 import com.study.platform.domain.notification.dto.response.NotificationResponse;
 import com.study.platform.domain.notification.model.NotificationType;
+import com.study.platform.domain.notification.usecase.CountUnreadNotificationsUseCase;
+import com.study.platform.domain.notification.usecase.FindNotificationsUseCase;
+import com.study.platform.domain.notification.usecase.MarkAllNotificationsAsReadUseCase;
+import com.study.platform.domain.notification.usecase.MarkNotificationAsReadUseCase;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import com.study.platform.global.jwt.JwtProvider;
@@ -38,7 +41,16 @@ class NotificationControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private NotificationService notificationService;
+    private FindNotificationsUseCase findNotificationsUseCase;
+
+    @MockitoBean
+    private CountUnreadNotificationsUseCase countUnreadNotificationsUseCase;
+
+    @MockitoBean
+    private MarkNotificationAsReadUseCase markNotificationAsReadUseCase;
+
+    @MockitoBean
+    private MarkAllNotificationsAsReadUseCase markAllNotificationsAsReadUseCase;
 
     @MockitoBean
     private JwtProvider jwtProvider;
@@ -74,7 +86,7 @@ class NotificationControllerTest {
     @Test
     void findNotifications_성공() throws Exception {
         // given
-        given(notificationService.findNotifications(any(), any()))
+        given(findNotificationsUseCase.execute(any(), any()))
                 .willReturn(new PageImpl<>(List.of(notificationResponse), PageRequest.of(0, 20), 1));
 
         // when & then
@@ -88,7 +100,7 @@ class NotificationControllerTest {
     @Test
     void countUnread_성공() throws Exception {
         // given
-        given(notificationService.countUnread(any())).willReturn(5L);
+        given(countUnreadNotificationsUseCase.execute(any())).willReturn(5L);
 
         // when & then
         mockMvc.perform(get("/api/notifications/unread-count")
@@ -101,7 +113,7 @@ class NotificationControllerTest {
     @Test
     void markAsRead_성공() throws Exception {
         // given
-        willDoNothing().given(notificationService).markAsRead(any(), any());
+        willDoNothing().given(markNotificationAsReadUseCase).execute(any(), any());
 
         // when & then
         mockMvc.perform(patch("/api/notifications/{notificationId}/read", notificationId)
@@ -114,7 +126,7 @@ class NotificationControllerTest {
     void markAsRead_알림없음_404() throws Exception {
         // given
         willThrow(new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND))
-                .given(notificationService).markAsRead(any(), any());
+                .given(markNotificationAsReadUseCase).execute(any(), any());
 
         // when & then
         mockMvc.perform(patch("/api/notifications/{notificationId}/read", notificationId)
@@ -127,7 +139,7 @@ class NotificationControllerTest {
     void markAsRead_본인알림아님_403() throws Exception {
         // given
         willThrow(new CustomException(ErrorCode.FORBIDDEN))
-                .given(notificationService).markAsRead(any(), any());
+                .given(markNotificationAsReadUseCase).execute(any(), any());
 
         // when & then
         mockMvc.perform(patch("/api/notifications/{notificationId}/read", notificationId)
@@ -139,7 +151,7 @@ class NotificationControllerTest {
     @Test
     void markAllAsRead_성공() throws Exception {
         // given
-        willDoNothing().given(notificationService).markAllAsRead(any());
+        willDoNothing().given(markAllNotificationsAsReadUseCase).execute(any());
 
         // when & then
         mockMvc.perform(patch("/api/notifications/read-all")

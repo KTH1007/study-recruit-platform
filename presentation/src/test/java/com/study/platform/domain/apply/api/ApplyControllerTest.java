@@ -3,10 +3,14 @@ import com.study.platform.global.idempotency.IdempotencyObjectStoragePort;
 import com.study.platform.global.idempotency.IdempotencyStoragePort;
 import com.study.platform.global.ratelimit.RateLimitStoragePort;
 
-import com.study.platform.domain.apply.application.ApplyService;
 import com.study.platform.domain.apply.dto.request.ApplyCreateRequest;
 import com.study.platform.domain.apply.dto.response.ApplyResponse;
 import com.study.platform.domain.apply.model.ApplyStatus;
+import com.study.platform.domain.apply.usecase.ApplyStudyPostUseCase;
+import com.study.platform.domain.apply.usecase.ApproveApplyUseCase;
+import com.study.platform.domain.apply.usecase.CancelApplyUseCase;
+import com.study.platform.domain.apply.usecase.FindAppliesUseCase;
+import com.study.platform.domain.apply.usecase.RejectApplyUseCase;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import com.study.platform.global.jwt.JwtProvider;
@@ -40,7 +44,19 @@ class ApplyControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ApplyService applyService;
+    private FindAppliesUseCase findAppliesUseCase;
+
+    @MockitoBean
+    private ApplyStudyPostUseCase applyStudyPostUseCase;
+
+    @MockitoBean
+    private CancelApplyUseCase cancelApplyUseCase;
+
+    @MockitoBean
+    private ApproveApplyUseCase approveApplyUseCase;
+
+    @MockitoBean
+    private RejectApplyUseCase rejectApplyUseCase;
 
     @MockitoBean
     private JwtProvider jwtProvider;
@@ -78,7 +94,7 @@ class ApplyControllerTest {
     @Test
     void findApplies_성공() throws Exception {
         // given
-        given(applyService.findApplies(any(), any())).willReturn(List.of(applyResponse));
+        given(findAppliesUseCase.execute(any(), any())).willReturn(List.of(applyResponse));
 
         // when & then
         mockMvc.perform(get("/api/posts/{postId}/applies", postId)
@@ -92,7 +108,7 @@ class ApplyControllerTest {
     void apply_성공() throws Exception {
         // given
         ApplyCreateRequest request = new ApplyCreateRequest("지원합니다");
-        given(applyService.apply(any(), any(), any())).willReturn(applyResponse);
+        given(applyStudyPostUseCase.execute(any(), any(), any())).willReturn(applyResponse);
 
         // when & then
         mockMvc.perform(post("/api/posts/{postId}/applies", postId)
@@ -119,7 +135,7 @@ class ApplyControllerTest {
     @Test
     void cancel_성공() throws Exception {
         // given
-        willDoNothing().given(applyService).cancel(any(), any());
+        willDoNothing().given(cancelApplyUseCase).execute(any(), any());
 
         // when & then
         mockMvc.perform(delete("/api/posts/{postId}/applies", postId)
@@ -132,7 +148,7 @@ class ApplyControllerTest {
     void approve_성공() throws Exception {
         // given
         ApplyResponse approvedResponse = new ApplyResponse(applyId, "지원자", "Java", "지원합니다", ApplyStatus.APPROVED, LocalDateTime.now());
-        given(applyService.approve(any(), any())).willReturn(approvedResponse);
+        given(approveApplyUseCase.execute(any(), any())).willReturn(approvedResponse);
 
         // when & then
         mockMvc.perform(patch("/api/applies/{applyId}/approve", applyId)
@@ -144,7 +160,7 @@ class ApplyControllerTest {
     @Test
     void approve_권한없음_403() throws Exception {
         // given
-        willThrow(new CustomException(ErrorCode.FORBIDDEN)).given(applyService).approve(any(), any());
+        willThrow(new CustomException(ErrorCode.FORBIDDEN)).given(approveApplyUseCase).execute(any(), any());
 
         // when & then
         mockMvc.perform(patch("/api/applies/{applyId}/approve", applyId)
@@ -157,7 +173,7 @@ class ApplyControllerTest {
     void reject_성공() throws Exception {
         // given
         ApplyResponse rejectedResponse = new ApplyResponse(applyId, "지원자", "Java", "지원합니다", ApplyStatus.REJECTED, LocalDateTime.now());
-        given(applyService.reject(any(), any())).willReturn(rejectedResponse);
+        given(rejectApplyUseCase.execute(any(), any())).willReturn(rejectedResponse);
 
         // when & then
         mockMvc.perform(patch("/api/applies/{applyId}/reject", applyId)
@@ -170,7 +186,7 @@ class ApplyControllerTest {
     void approve_락충돌_409() throws Exception {
         // given
         willThrow(new PessimisticLockingFailureException("lock timeout"))
-                .given(applyService).approve(any(), any());
+                .given(approveApplyUseCase).execute(any(), any());
 
         // when & then
         mockMvc.perform(patch("/api/applies/{applyId}/approve", applyId)

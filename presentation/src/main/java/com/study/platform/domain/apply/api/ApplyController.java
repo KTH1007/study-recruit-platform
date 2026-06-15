@@ -1,9 +1,9 @@
 package com.study.platform.domain.apply.api;
 
 import com.study.platform.domain.apply.api.doc.ApplyControllerDoc;
-import com.study.platform.domain.apply.application.ApplyService;
 import com.study.platform.domain.apply.dto.request.ApplyCreateRequest;
 import com.study.platform.domain.apply.dto.response.ApplyResponse;
+import com.study.platform.domain.apply.usecase.*;
 import com.study.platform.global.idempotency.Idempotent;
 import com.study.platform.global.ratelimit.RateLimit;
 import com.study.platform.global.response.ApiResponse;
@@ -22,13 +22,17 @@ import java.util.UUID;
 @RequestMapping("/api")
 public class ApplyController implements ApplyControllerDoc {
 
-    private final ApplyService applyService;
+    private final FindAppliesUseCase findAppliesUseCase;
+    private final ApplyStudyPostUseCase applyStudyPostUseCase;
+    private final CancelApplyUseCase cancelApplyUseCase;
+    private final ApproveApplyUseCase approveApplyUseCase;
+    private final RejectApplyUseCase rejectApplyUseCase;
 
     @GetMapping("/posts/{postId}/applies")
     public ResponseEntity<ApiResponse<List<ApplyResponse>>> findApplies(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId) {
-        return ApiResponse.success(SuccessCode.APPLY_LIST, applyService.findApplies(userId, postId));
+        return ApiResponse.success(SuccessCode.APPLY_LIST, findAppliesUseCase.execute(userId, postId));
     }
 
     @Idempotent
@@ -38,14 +42,14 @@ public class ApplyController implements ApplyControllerDoc {
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId,
             @Valid @RequestBody ApplyCreateRequest request) {
-        return ApiResponse.success(SuccessCode.APPLY_CREATED, applyService.apply(userId, postId, request));
+        return ApiResponse.success(SuccessCode.APPLY_CREATED, applyStudyPostUseCase.execute(userId, postId, request));
     }
 
     @DeleteMapping("/posts/{postId}/applies")
     public ResponseEntity<ApiResponse<Void>> cancel(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId) {
-        applyService.cancel(userId, postId);
+        cancelApplyUseCase.execute(userId, postId);
         return ApiResponse.success(SuccessCode.APPLY_CANCELED, null);
     }
 
@@ -54,7 +58,7 @@ public class ApplyController implements ApplyControllerDoc {
     public ResponseEntity<ApiResponse<ApplyResponse>> approve(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID applyId) {
-        return ApiResponse.success(SuccessCode.APPLY_APPROVED, applyService.approve(userId, applyId));
+        return ApiResponse.success(SuccessCode.APPLY_APPROVED, approveApplyUseCase.execute(userId, applyId));
     }
 
     @RateLimit(limit = 5, windowSeconds = 60)
@@ -62,6 +66,6 @@ public class ApplyController implements ApplyControllerDoc {
     public ResponseEntity<ApiResponse<ApplyResponse>> reject(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID applyId) {
-        return ApiResponse.success(SuccessCode.APPLY_REJECTED, applyService.reject(userId, applyId));
+        return ApiResponse.success(SuccessCode.APPLY_REJECTED, rejectApplyUseCase.execute(userId, applyId));
     }
 }

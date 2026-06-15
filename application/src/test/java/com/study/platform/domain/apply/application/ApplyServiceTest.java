@@ -33,7 +33,12 @@ class ApplyServiceTest {
     private FakeStudyPostRepository studyPostRepository;
     private FakeUserRepository userRepository;
     private FakeDomainEventPublisher eventPublisher;
-    private ApplyService applyService;
+
+    private FindAppliesService findAppliesService;
+    private ApplyStudyPostService applyStudyPostService;
+    private CancelApplyService cancelApplyService;
+    private ApproveApplyService approveApplyService;
+    private RejectApplyService rejectApplyService;
 
     private UUID authorId;
     private UUID applicantId;
@@ -48,7 +53,12 @@ class ApplyServiceTest {
         studyPostRepository = new FakeStudyPostRepository();
         userRepository = new FakeUserRepository();
         eventPublisher = new FakeDomainEventPublisher();
-        applyService = new ApplyService(applyRepository, new FakeApplyQueryPort(applyRepository), studyPostRepository, userRepository, eventPublisher);
+
+        findAppliesService = new FindAppliesService(new FakeApplyQueryPort(applyRepository), studyPostRepository);
+        applyStudyPostService = new ApplyStudyPostService(applyRepository, studyPostRepository, userRepository, eventPublisher);
+        cancelApplyService = new CancelApplyService(applyRepository);
+        approveApplyService = new ApproveApplyService(applyRepository, studyPostRepository, eventPublisher);
+        rejectApplyService = new RejectApplyService(applyRepository, eventPublisher);
 
         authorId = UUID.randomUUID();
         applicantId = UUID.randomUUID();
@@ -73,7 +83,7 @@ class ApplyServiceTest {
         ApplyCreateRequest request = new ApplyCreateRequest("지원합니다");
 
         // when
-        ApplyResponse response = applyService.apply(applicantId, postId, request);
+        ApplyResponse response = applyStudyPostService.execute(applicantId, postId, request);
 
         // then
         assertThat(response.status()).isEqualTo(ApplyStatus.PENDING);
@@ -87,7 +97,7 @@ class ApplyServiceTest {
         ApplyCreateRequest request = new ApplyCreateRequest("지원합니다");
 
         // when & then
-        assertThatThrownBy(() -> applyService.apply(applicantId, UUID.randomUUID(), request))
+        assertThatThrownBy(() -> applyStudyPostService.execute(applicantId, UUID.randomUUID(), request))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.POST_NOT_FOUND);
     }
@@ -99,7 +109,7 @@ class ApplyServiceTest {
         ApplyCreateRequest request = new ApplyCreateRequest("지원합니다");
 
         // when & then
-        assertThatThrownBy(() -> applyService.apply(applicantId, postId, request))
+        assertThatThrownBy(() -> applyStudyPostService.execute(applicantId, postId, request))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.POST_CLOSED);
     }
@@ -110,7 +120,7 @@ class ApplyServiceTest {
         ApplyCreateRequest request = new ApplyCreateRequest("지원합니다");
 
         // when & then
-        assertThatThrownBy(() -> applyService.apply(authorId, postId, request))
+        assertThatThrownBy(() -> applyStudyPostService.execute(authorId, postId, request))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CANNOT_APPLY_OWN_POST);
     }
@@ -124,7 +134,7 @@ class ApplyServiceTest {
         ApplyCreateRequest request = new ApplyCreateRequest("두 번째 지원");
 
         // when & then
-        assertThatThrownBy(() -> applyService.apply(applicantId, postId, request))
+        assertThatThrownBy(() -> applyStudyPostService.execute(applicantId, postId, request))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ALREADY_APPLIED);
     }
@@ -138,7 +148,7 @@ class ApplyServiceTest {
         applyRepository.save(apply);
 
         // when
-        ApplyResponse response = applyService.approve(authorId, applyId);
+        ApplyResponse response = approveApplyService.execute(authorId, applyId);
 
         // then
         assertThat(response.status()).isEqualTo(ApplyStatus.APPROVED);
@@ -162,7 +172,7 @@ class ApplyServiceTest {
         applyRepository.save(apply);
 
         // when
-        applyService.approve(authorId, applyId);
+        approveApplyService.execute(authorId, applyId);
 
         // then
         assertThat(post.isOpen()).isFalse();
@@ -177,7 +187,7 @@ class ApplyServiceTest {
         applyRepository.save(apply);
 
         // when
-        ApplyResponse response = applyService.reject(authorId, applyId);
+        ApplyResponse response = rejectApplyService.execute(authorId, applyId);
 
         // then
         assertThat(response.status()).isEqualTo(ApplyStatus.REJECTED);
@@ -193,7 +203,7 @@ class ApplyServiceTest {
         applyRepository.save(apply);
 
         // when
-        applyService.cancel(applicantId, postId);
+        cancelApplyService.execute(applicantId, postId);
 
         // then
         assertThat(applyRepository.findById(applyId)).isEmpty();
@@ -208,7 +218,7 @@ class ApplyServiceTest {
         applyRepository.save(apply);
 
         // when
-        List<ApplyResponse> responses = applyService.findApplies(authorId, postId);
+        List<ApplyResponse> responses = findAppliesService.execute(authorId, postId);
 
         // then
         assertThat(responses).hasSize(1);
@@ -220,7 +230,7 @@ class ApplyServiceTest {
         UUID otherId = UUID.randomUUID();
 
         // when & then
-        assertThatThrownBy(() -> applyService.findApplies(otherId, postId))
+        assertThatThrownBy(() -> findAppliesService.execute(otherId, postId))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
     }

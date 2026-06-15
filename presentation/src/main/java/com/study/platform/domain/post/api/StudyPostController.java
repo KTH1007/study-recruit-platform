@@ -2,14 +2,14 @@ package com.study.platform.domain.post.api;
 
 import com.study.platform.domain.post.api.doc.StudyPostControllerDoc;
 import com.study.platform.domain.post.application.PostSearchService;
-import com.study.platform.domain.post.application.StudyPostService;
 import com.study.platform.domain.post.dto.request.StudyPostCreateRequest;
 import com.study.platform.domain.post.dto.request.StudyPostUpdateRequest;
 import com.study.platform.domain.post.dto.response.StudyPostResponse;
 import com.study.platform.domain.post.dto.response.StudyPostSummaryResponse;
 import com.study.platform.domain.post.model.StudyPostStatus;
-import com.study.platform.domain.team.application.StudyTeamService;
+import com.study.platform.domain.post.usecase.*;
 import com.study.platform.domain.team.dto.response.StudyTeamResponse;
+import com.study.platform.domain.team.usecase.FindStudyTeamUseCase;
 import com.study.platform.global.idempotency.Idempotent;
 import com.study.platform.global.ratelimit.RateLimit;
 import com.study.platform.global.response.ApiResponse;
@@ -31,22 +31,27 @@ import java.util.UUID;
 @RequestMapping("/api/posts")
 public class StudyPostController implements StudyPostControllerDoc {
 
-    private final StudyPostService studyPostService;
-    private final StudyTeamService studyTeamService;
+    private final FindStudyPostsUseCase findStudyPostsUseCase;
+    private final FindStudyPostUseCase findStudyPostUseCase;
+    private final CreateStudyPostUseCase createStudyPostUseCase;
+    private final UpdateStudyPostUseCase updateStudyPostUseCase;
+    private final DeleteStudyPostUseCase deleteStudyPostUseCase;
+    private final CloseStudyPostUseCase closeStudyPostUseCase;
+    private final FindStudyTeamUseCase findStudyTeamUseCase;
     private final PostSearchService postSearchService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<StudyPostSummaryResponse>>> findPosts(
             @RequestParam(required = false) String techStack,
-            @RequestParam(required = false)StudyPostStatus status,
+            @RequestParam(required = false) StudyPostStatus status,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ApiResponse.success(SuccessCode.POST_LIST, studyPostService.findPosts(techStack, status, pageable));
+        return ApiResponse.success(SuccessCode.POST_LIST, findStudyPostsUseCase.execute(techStack, status, pageable));
     }
 
     @GetMapping("/{postId}")
     public ResponseEntity<ApiResponse<StudyPostResponse>> findPost(
             @PathVariable UUID postId) {
-        return ApiResponse.success(SuccessCode.POST_DETAIL, studyPostService.findPost(postId));
+        return ApiResponse.success(SuccessCode.POST_DETAIL, findStudyPostUseCase.execute(postId));
     }
 
     @Idempotent
@@ -55,7 +60,7 @@ public class StudyPostController implements StudyPostControllerDoc {
     public ResponseEntity<ApiResponse<StudyPostResponse>> createPost(
             @AuthenticationPrincipal UUID userId,
             @Valid @RequestBody StudyPostCreateRequest request) {
-        return ApiResponse.success(SuccessCode.POST_CREATED, studyPostService.createPost(userId, request));
+        return ApiResponse.success(SuccessCode.POST_CREATED, createStudyPostUseCase.execute(userId, request));
     }
 
     @PatchMapping("/{postId}")
@@ -63,14 +68,14 @@ public class StudyPostController implements StudyPostControllerDoc {
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId,
             @Valid @RequestBody StudyPostUpdateRequest request) {
-        return ApiResponse.success(SuccessCode.POST_UPDATED, studyPostService.updatePost(userId, postId, request));
+        return ApiResponse.success(SuccessCode.POST_UPDATED, updateStudyPostUseCase.execute(userId, postId, request));
     }
 
     @DeleteMapping("/{postId}")
     public ResponseEntity<ApiResponse<Void>> deletePost(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId) {
-        studyPostService.deletePost(userId, postId);
+        deleteStudyPostUseCase.execute(userId, postId);
         return ApiResponse.success(SuccessCode.POST_DELETED, null);
     }
 
@@ -78,13 +83,13 @@ public class StudyPostController implements StudyPostControllerDoc {
     public ResponseEntity<ApiResponse<StudyPostResponse>> closePost(
             @AuthenticationPrincipal UUID userId,
             @PathVariable UUID postId) {
-        return ApiResponse.success(SuccessCode.POST_UPDATED, studyPostService.closePost(userId, postId));
+        return ApiResponse.success(SuccessCode.POST_UPDATED, closeStudyPostUseCase.execute(userId, postId));
     }
 
     @GetMapping("/{postId}/team")
     public ResponseEntity<ApiResponse<StudyTeamResponse>> findTeamByPostId(
             @PathVariable UUID postId) {
-        return ApiResponse.success(SuccessCode.TEAM_FOUND, studyTeamService.findTeamByPostId(postId));
+        return ApiResponse.success(SuccessCode.TEAM_FOUND, findStudyTeamUseCase.executeByPostId(postId));
     }
 
     @GetMapping("/search")

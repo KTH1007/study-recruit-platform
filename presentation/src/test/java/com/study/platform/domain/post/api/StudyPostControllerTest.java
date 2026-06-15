@@ -4,12 +4,17 @@ import com.study.platform.global.idempotency.IdempotencyStoragePort;
 import com.study.platform.global.ratelimit.RateLimitStoragePort;
 
 import com.study.platform.domain.post.application.PostSearchService;
-import com.study.platform.domain.post.application.StudyPostService;
 import com.study.platform.domain.post.dto.request.StudyPostCreateRequest;
 import com.study.platform.domain.post.dto.request.StudyPostUpdateRequest;
 import com.study.platform.domain.post.dto.response.StudyPostResponse;
 import com.study.platform.domain.post.model.StudyPostStatus;
-import com.study.platform.domain.team.application.StudyTeamService;
+import com.study.platform.domain.post.usecase.CloseStudyPostUseCase;
+import com.study.platform.domain.post.usecase.CreateStudyPostUseCase;
+import com.study.platform.domain.post.usecase.DeleteStudyPostUseCase;
+import com.study.platform.domain.post.usecase.FindStudyPostUseCase;
+import com.study.platform.domain.post.usecase.FindStudyPostsUseCase;
+import com.study.platform.domain.post.usecase.UpdateStudyPostUseCase;
+import com.study.platform.domain.team.usecase.FindStudyTeamUseCase;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import com.study.platform.global.jwt.JwtProvider;
@@ -41,10 +46,25 @@ class StudyPostControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private StudyPostService studyPostService;
+    private FindStudyPostsUseCase findStudyPostsUseCase;
 
     @MockitoBean
-    private StudyTeamService studyTeamService;
+    private FindStudyPostUseCase findStudyPostUseCase;
+
+    @MockitoBean
+    private CreateStudyPostUseCase createStudyPostUseCase;
+
+    @MockitoBean
+    private UpdateStudyPostUseCase updateStudyPostUseCase;
+
+    @MockitoBean
+    private DeleteStudyPostUseCase deleteStudyPostUseCase;
+
+    @MockitoBean
+    private CloseStudyPostUseCase closeStudyPostUseCase;
+
+    @MockitoBean
+    private FindStudyTeamUseCase findStudyTeamUseCase;
 
     @MockitoBean
     private PostSearchService postSearchService;
@@ -88,7 +108,7 @@ class StudyPostControllerTest {
     @Test
     void findPost_성공() throws Exception {
         // given
-        given(studyPostService.findPost(any())).willReturn(postResponse);
+        given(findStudyPostUseCase.execute(any())).willReturn(postResponse);
 
         // when & then
         mockMvc.perform(get("/api/posts/{postId}", postId))
@@ -100,7 +120,7 @@ class StudyPostControllerTest {
     @Test
     void findPost_없는게시글_404() throws Exception {
         // given
-        given(studyPostService.findPost(any()))
+        given(findStudyPostUseCase.execute(any()))
                 .willThrow(new CustomException(ErrorCode.POST_NOT_FOUND));
 
         // when & then
@@ -114,7 +134,7 @@ class StudyPostControllerTest {
         // given
         StudyPostCreateRequest request = new StudyPostCreateRequest(
                 "스터디 모집", "열심히 합니다", "Java", 3, LocalDateTime.now().plusDays(7));
-        given(studyPostService.createPost(any(), any())).willReturn(postResponse);
+        given(createStudyPostUseCase.execute(any(), any())).willReturn(postResponse);
 
         // when & then
         mockMvc.perform(post("/api/posts")
@@ -164,7 +184,7 @@ class StudyPostControllerTest {
                 LocalDateTime.now().plusDays(14), StudyPostStatus.OPEN,
                 LocalDateTime.now(), LocalDateTime.now()
         );
-        given(studyPostService.updatePost(any(), any(), any())).willReturn(updated);
+        given(updateStudyPostUseCase.execute(any(), any(), any())).willReturn(updated);
 
         // when & then
         mockMvc.perform(patch("/api/posts/{postId}", postId)
@@ -180,7 +200,7 @@ class StudyPostControllerTest {
         // given
         StudyPostUpdateRequest request = new StudyPostUpdateRequest(
                 "수정된 제목", "수정된 내용", "Kotlin", 5, LocalDateTime.now().plusDays(14));
-        given(studyPostService.updatePost(any(), any(), any()))
+        given(updateStudyPostUseCase.execute(any(), any(), any()))
                 .willThrow(new CustomException(ErrorCode.FORBIDDEN));
 
         // when & then
@@ -195,7 +215,7 @@ class StudyPostControllerTest {
     @Test
     void deletePost_성공() throws Exception {
         // given
-        willDoNothing().given(studyPostService).deletePost(any(), any());
+        willDoNothing().given(deleteStudyPostUseCase).execute(any(), any());
 
         // when & then
         mockMvc.perform(delete("/api/posts/{postId}", postId)
@@ -212,7 +232,7 @@ class StudyPostControllerTest {
                 LocalDateTime.now().plusDays(7), StudyPostStatus.CLOSED,
                 LocalDateTime.now(), LocalDateTime.now()
         );
-        given(studyPostService.closePost(any(), any())).willReturn(closed);
+        given(closeStudyPostUseCase.execute(any(), any())).willReturn(closed);
 
         // when & then
         mockMvc.perform(patch("/api/posts/{postId}/close", postId)

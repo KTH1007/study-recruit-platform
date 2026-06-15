@@ -3,10 +3,13 @@ import com.study.platform.global.idempotency.IdempotencyObjectStoragePort;
 import com.study.platform.global.idempotency.IdempotencyStoragePort;
 import com.study.platform.global.ratelimit.RateLimitStoragePort;
 
-import com.study.platform.domain.team.application.TeamScheduleService;
 import com.study.platform.domain.team.dto.request.TeamScheduleCreateRequest;
 import com.study.platform.domain.team.dto.request.TeamScheduleUpdateRequest;
 import com.study.platform.domain.team.dto.response.TeamScheduleResponse;
+import com.study.platform.domain.team.usecase.CreateTeamScheduleUseCase;
+import com.study.platform.domain.team.usecase.DeleteTeamScheduleUseCase;
+import com.study.platform.domain.team.usecase.FindTeamSchedulesUseCase;
+import com.study.platform.domain.team.usecase.UpdateTeamScheduleUseCase;
 import com.study.platform.global.exception.CustomException;
 import com.study.platform.global.exception.ErrorCode;
 import com.study.platform.global.jwt.JwtProvider;
@@ -43,7 +46,16 @@ class TeamScheduleControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private TeamScheduleService teamScheduleService;
+    private CreateTeamScheduleUseCase createTeamScheduleUseCase;
+
+    @MockitoBean
+    private FindTeamSchedulesUseCase findTeamSchedulesUseCase;
+
+    @MockitoBean
+    private UpdateTeamScheduleUseCase updateTeamScheduleUseCase;
+
+    @MockitoBean
+    private DeleteTeamScheduleUseCase deleteTeamScheduleUseCase;
 
     @MockitoBean
     private JwtProvider jwtProvider;
@@ -86,7 +98,7 @@ class TeamScheduleControllerTest {
         // given
         TeamScheduleCreateRequest request = new TeamScheduleCreateRequest(
                 "1회차 미팅", "미팅 내용", LocalDateTime.now().plusDays(3));
-        given(teamScheduleService.createSchedule(any(), any(), any())).willReturn(scheduleResponse);
+        given(createTeamScheduleUseCase.execute(any(), any(), any())).willReturn(scheduleResponse);
 
         // when & then
         mockMvc.perform(post("/api/teams/{teamId}/schedules", teamId)
@@ -130,7 +142,7 @@ class TeamScheduleControllerTest {
         // given
         TeamScheduleCreateRequest request = new TeamScheduleCreateRequest(
                 "1회차 미팅", "미팅 내용", LocalDateTime.now().plusDays(3));
-        given(teamScheduleService.createSchedule(any(), any(), any()))
+        given(createTeamScheduleUseCase.execute(any(), any(), any()))
                 .willThrow(new CustomException(ErrorCode.NOT_TEAM_MEMBER));
 
         // when & then
@@ -145,7 +157,7 @@ class TeamScheduleControllerTest {
     @Test
     void findSchedules_성공() throws Exception {
         // given
-        given(teamScheduleService.findSchedules(any(), any())).willReturn(List.of(scheduleResponse));
+        given(findTeamSchedulesUseCase.execute(any(), any())).willReturn(List.of(scheduleResponse));
 
         // when & then
         mockMvc.perform(get("/api/teams/{teamId}/schedules", teamId)
@@ -164,7 +176,7 @@ class TeamScheduleControllerTest {
                 scheduleId, teamId, "2회차 미팅", "수정된 내용",
                 LocalDateTime.now().plusDays(7), LocalDateTime.now()
         );
-        given(teamScheduleService.updateSchedule(any(), any(), any(), any())).willReturn(updated);
+        given(updateTeamScheduleUseCase.execute(any(), any(), any(), any())).willReturn(updated);
 
         // when & then
         mockMvc.perform(patch("/api/teams/{teamId}/schedules/{scheduleId}", teamId, scheduleId)
@@ -178,7 +190,7 @@ class TeamScheduleControllerTest {
     @Test
     void deleteSchedule_성공() throws Exception {
         // given
-        willDoNothing().given(teamScheduleService).deleteSchedule(any(), any(), any());
+        willDoNothing().given(deleteTeamScheduleUseCase).execute(any(), any(), any());
 
         // when & then
         mockMvc.perform(delete("/api/teams/{teamId}/schedules/{scheduleId}", teamId, scheduleId)
@@ -191,7 +203,7 @@ class TeamScheduleControllerTest {
     void deleteSchedule_일정없음_404() throws Exception {
         // given
         willThrow(new CustomException(ErrorCode.TEAM_SCHEDULE_NOT_FOUND))
-                .given(teamScheduleService).deleteSchedule(any(), any(), any());
+                .given(deleteTeamScheduleUseCase).execute(any(), any(), any());
 
         // when & then
         mockMvc.perform(delete("/api/teams/{teamId}/schedules/{scheduleId}", teamId, scheduleId)

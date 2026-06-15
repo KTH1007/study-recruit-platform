@@ -19,7 +19,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class NotificationServiceTest {
 
     private FakeNotificationRepository notificationRepository;
-    private NotificationService notificationService;
+
+    private CountUnreadNotificationsService countUnreadNotificationsService;
+    private MarkNotificationAsReadService markNotificationAsReadService;
+    private MarkAllNotificationsAsReadService markAllNotificationsAsReadService;
 
     private UUID receiverId;
     private User receiver;
@@ -28,7 +31,10 @@ class NotificationServiceTest {
     @BeforeEach
     void setUp() {
         notificationRepository = new FakeNotificationRepository();
-        notificationService = new NotificationService(notificationRepository, new FakeNotificationQueryPort(notificationRepository));
+
+        countUnreadNotificationsService = new CountUnreadNotificationsService(new FakeNotificationQueryPort(notificationRepository));
+        markNotificationAsReadService = new MarkNotificationAsReadService(notificationRepository);
+        markAllNotificationsAsReadService = new MarkAllNotificationsAsReadService(notificationRepository);
 
         receiverId = UUID.randomUUID();
 
@@ -43,7 +49,7 @@ class NotificationServiceTest {
     @Test
     void countUnread_성공() {
         // when
-        long count = notificationService.countUnread(receiverId);
+        long count = countUnreadNotificationsService.execute(receiverId);
 
         // then
         assertThat(count).isEqualTo(1L);
@@ -52,7 +58,7 @@ class NotificationServiceTest {
     @Test
     void markAsRead_성공() {
         // when
-        notificationService.markAsRead(receiverId, notification.getId());
+        markNotificationAsReadService.execute(receiverId, notification.getId());
 
         // then
         assertThat(notification.isRead()).isTrue();
@@ -61,7 +67,7 @@ class NotificationServiceTest {
     @Test
     void markAsRead_알림없음_예외발생() {
         // when & then
-        assertThatThrownBy(() -> notificationService.markAsRead(receiverId, UUID.randomUUID()))
+        assertThatThrownBy(() -> markNotificationAsReadService.execute(receiverId, UUID.randomUUID()))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOTIFICATION_NOT_FOUND);
     }
@@ -72,7 +78,7 @@ class NotificationServiceTest {
         UUID otherId = UUID.randomUUID();
 
         // when & then
-        assertThatThrownBy(() -> notificationService.markAsRead(otherId, notification.getId()))
+        assertThatThrownBy(() -> markNotificationAsReadService.execute(otherId, notification.getId()))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
     }
@@ -85,7 +91,7 @@ class NotificationServiceTest {
         notificationRepository.save(another);
 
         // when
-        notificationService.markAllAsRead(receiverId);
+        markAllNotificationsAsReadService.execute(receiverId);
 
         // then
         assertThat(notificationRepository.findAllByReceiverId(receiverId)
