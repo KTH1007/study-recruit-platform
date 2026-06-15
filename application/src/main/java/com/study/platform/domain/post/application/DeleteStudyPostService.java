@@ -1,0 +1,48 @@
+package com.study.platform.domain.post.application;
+
+import com.study.platform.domain.post.event.PostSyncEvent;
+import com.study.platform.domain.post.event.PostSyncOperationType;
+import com.study.platform.domain.post.model.StudyPost;
+import com.study.platform.domain.post.model.StudyPostRepository;
+import com.study.platform.domain.post.usecase.DeleteStudyPostUseCase;
+import com.study.platform.global.constant.CacheConstants;
+import com.study.platform.global.constant.KafkaConstants;
+import com.study.platform.global.event.DomainEventPublisher;
+import com.study.platform.global.exception.CustomException;
+import com.study.platform.global.exception.ErrorCode;
+import com.study.platform.global.outbox.application.OutboxEventService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
+
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class DeleteStudyPostService implements DeleteStudyPostUseCase {
+
+    private final StudyPostRepository studyPostRepository;
+    private final DomainEventPublisher eventPublisher;
+    private final OutboxEventService outboxEventService;
+    private final ObjectMapper objectMapper;
+
+    @Override
+    @Transactional
+    @CacheEvict(cacheNames = CacheConstants.POST_CACHE, key = "#postId")
+    public void execute(UUID userId, UUID postId) {
+        StudyPost post = studyPostRepository.findByIdWithAuthor(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        post.validateAuthor(userId);
+        studyPostRepository.delete(post);
+        Long outboxEventId = saveOutboxEvent(postId, PostSyncOperationType.DELETE);
+        eventPublisher.publish(new PostSyncEvent(postId, PostSyncOperationType.DELETE, outboxEventId, 0));
+    }
+
+    private Long saveOutboxEvent(UUID postId, PostSyncOperationType operationType) {
+        PostSyncEvent event = new PostSyncEvent(postId, operationType, null, 0);
+        String payload = objectMapper.writeValueAsString(event);
+        return outboxEventService.save(KafkaConstants.POST_SYNC_TOPIC, postId.toString(), payload);
+    }
+}

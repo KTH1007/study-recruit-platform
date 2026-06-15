@@ -1,0 +1,191 @@
+package com.study.platform.domain.team.api;
+import com.study.platform.global.idempotency.IdempotencyObjectStoragePort;
+import com.study.platform.global.idempotency.IdempotencyStoragePort;
+import com.study.platform.global.ratelimit.RateLimitStoragePort;
+
+import com.study.platform.domain.team.dto.response.StudyTeamResponse;
+import com.study.platform.domain.team.dto.response.TeamMemberResponse;
+import com.study.platform.domain.team.model.TeamMemberRole;
+import com.study.platform.domain.team.usecase.DelegateLeaderUseCase;
+import com.study.platform.domain.team.usecase.FindStudyTeamUseCase;
+import com.study.platform.domain.team.usecase.FindTeamMembersUseCase;
+import com.study.platform.domain.team.usecase.LeaveTeamUseCase;
+import com.study.platform.domain.team.usecase.RemoveTeamMemberUseCase;
+import com.study.platform.global.exception.CustomException;
+import com.study.platform.global.exception.ErrorCode;
+import com.study.platform.global.jwt.JwtProvider;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willThrow;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(StudyTeamController.class)
+class StudyTeamControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private FindStudyTeamUseCase findStudyTeamUseCase;
+
+    @MockitoBean
+    private FindTeamMembersUseCase findTeamMembersUseCase;
+
+    @MockitoBean
+    private DelegateLeaderUseCase delegateLeaderUseCase;
+
+    @MockitoBean
+    private RemoveTeamMemberUseCase removeTeamMemberUseCase;
+
+    @MockitoBean
+    private LeaveTeamUseCase leaveTeamUseCase;
+
+    @MockitoBean
+    private JwtProvider jwtProvider;
+
+    @MockitoBean
+    private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
+    @MockitoBean
+    private IdempotencyObjectStoragePort idempotencyObjectStoragePort;
+
+    @MockitoBean
+    private IdempotencyStoragePort idempotencyStoragePort;
+
+    @MockitoBean
+    private RateLimitStoragePort rateLimitStoragePort;
+
+    private UUID userId;
+    private UUID teamId;
+    private UUID targetUserId;
+    private StudyTeamResponse teamResponse;
+
+    @BeforeEach
+    void setUp() {
+        userId = UUID.randomUUID();
+        teamId = UUID.randomUUID();
+        targetUserId = UUID.randomUUID();
+        teamResponse = new StudyTeamResponse(teamId, UUID.randomUUID(), "스터디 모집");
+
+        given(jwtProvider.getUserIdFromToken(anyString())).willReturn(userId);
+    }
+
+    @Test
+    void findTeam_성공() throws Exception {
+        // given
+        given(findStudyTeamUseCase.execute(any())).willReturn(teamResponse);
+
+        // when & then
+        mockMvc.perform(get("/api/teams/{teamId}", teamId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("스터디 모집"));
+    }
+
+    @Test
+    void findTeam_존재하지않음_404() throws Exception {
+        // given
+        given(findStudyTeamUseCase.execute(any()))
+                .willThrow(new CustomException(ErrorCode.TEAM_NOT_FOUND));
+
+        // when & then
+        mockMvc.perform(get("/api/teams/{teamId}", teamId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void findMembers_성공() throws Exception {
+        // given
+        List<TeamMemberResponse> members = List.of(
+                new TeamMemberResponse(UUID.randomUUID(), userId, "팀장", TeamMemberRole.LEADER),
+                new TeamMemberResponse(UUID.randomUUID(), targetUserId, "팀원", TeamMemberRole.MEMBER)
+        );
+        given(findTeamMembersUseCase.execute(any())).willReturn(members);
+
+        // when & then
+        mockMvc.perform(get("/api/teams/{teamId}/members", teamId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(2));
+    }
+
+    @Test
+    void delegateLeader_성공() throws Exception {
+        // given
+        willDoNothing().given(delegateLeaderUseCase).execute(any(), any(), any());
+
+        // when & then
+        mockMvc.perform(patch("/api/teams/{teamId}/members/{targetUserId}/delegate", teamId, targetUserId)
+                        .header("Authorization", "Bearer fake-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void delegateLeader_권한없음_403() throws Exception {
+        // given
+        willThrow(new CustomException(ErrorCode.FORBIDDEN))
+                .given(delegateLeaderUseCase).execute(any(), any(), any());
+
+        // when & then
+        mockMvc.perform(patch("/api/teams/{teamId}/members/{targetUserId}/delegate", teamId, targetUserId)
+                        .header("Authorization", "Bearer fake-token"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void removeMember_성공() throws Exception {
+        // given
+        willDoNothing().given(removeTeamMemberUseCase).execute(any(), any(), any());
+
+        // when & then
+        mockMvc.perform(delete("/api/teams/{teamId}/members/{targetUserId}", teamId, targetUserId)
+                        .header("Authorization", "Bearer fake-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void leaveTeam_성공() throws Exception {
+        // given
+        willDoNothing().given(leaveTeamUseCase).execute(any(), any());
+
+        // when & then
+        mockMvc.perform(delete("/api/teams/{teamId}/members/me", teamId)
+                        .header("Authorization", "Bearer fake-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void leaveTeam_리더위임필요_400() throws Exception {
+        // given
+        willThrow(new CustomException(ErrorCode.LEADER_MUST_DELEGATE))
+                .given(leaveTeamUseCase).execute(any(), any());
+
+        // when & then
+        mockMvc.perform(delete("/api/teams/{teamId}/members/me", teamId)
+                        .header("Authorization", "Bearer fake-token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+}

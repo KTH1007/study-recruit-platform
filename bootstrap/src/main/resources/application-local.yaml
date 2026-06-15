@@ -1,0 +1,57 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3307/study_platform?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: root
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-timeout: 3000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  kafka:
+    bootstrap-servers: localhost:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: notification-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      enable-auto-commit: false
+    listener:
+      ack-mode: manual
+  elasticsearch:
+    uris: http://localhost:9200
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        jdbc:
+          time_zone: Asia/Seoul
+    show-sql: true
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false  # 애플리케이션 시작 시 Job 자동 실행 방지
+
+jwt:
+  secret: c3R1ZHlyZWN1cml0c3R1ZHlyZWN1cml0c3R1ZHlyZWN1cml0c3R1ZHlyZWN1cml0c3R1ZHlyZWN1cml0
+  expiration:
+    access: 1800000
+    refresh: 604800000
+
+kakao:
+  client-id: f4110e4c2732215d1345a23b07d9b1cc
+  client-secret: NL3Cc1Tu14xzigYl56ksmw473mxOpXJa
+  redirect-uri: http://localhost:3000/oauth/kakao/callback

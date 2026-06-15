@@ -1,0 +1,49 @@
+package com.study.platform.domain.notification.application;
+
+import com.study.platform.domain.notification.model.NotificationEvent;
+import com.study.platform.domain.notification.model.FailedNotification;
+import com.study.platform.domain.notification.model.FailedNotificationRepository;
+import com.study.platform.global.constant.KafkaConstants;
+import com.study.platform.global.kafka.KafkaMessagePublisher;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class NotificationDltConsumer {
+
+    private final ObjectMapper objectMapper;
+    private final KafkaMessagePublisher kafkaMessagePublisher;
+    private final FailedNotificationRepository failedNotificationRepository;
+
+    @Transactional
+    @KafkaListener(topics = KafkaConstants.NOTIFICATION_DLT_TOPIC, groupId = KafkaConstants.NOTIFICATION_DLT_GROUP)
+    public void consume(String payload, Acknowledgment ack,
+                        @Header(name = KafkaHeaders.EXCEPTION_MESSAGE, required = false) String exceptionMessage) {
+        try {
+            NotificationEvent event = objectMapper.readValue(payload, NotificationEvent.class);
+            log.error("DLT 수신 - receiverId={}, type={}, retryCount={}, 원인={}",
+                    event.receiverId(), event.type(), event.retryCount(), exceptionMessage);
+
+            if (event.retryCount() < KafkaConstants.MAX_DLT_RETRY) {
+                kafkaMessagePublisher.publish(KafkaConstants.NOTIFICATION_TOPIC, objectMapper.writeValueAsString(event.withRetry())).get();
+                log.info("notification 토픽 재투입 - retryCount={}", event.retryCount() + 1);
+            } else {
+                failedNotificationRepository.save(FailedNotification.from(event, exceptionMessage));
+                log.error("최대 재시도 초과 - DB 영구 저장. receiverId={}", event.receiverId());
+            }
+        } catch (Exception e) {
+            log.error("DLT 페이로드 파싱 실패 - payload: {}", payload, e);
+        } finally {
+            ack.acknowledge();
+        }
+    }
+}
