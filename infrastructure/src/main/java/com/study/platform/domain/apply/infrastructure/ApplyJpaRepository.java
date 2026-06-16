@@ -11,24 +11,24 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ApplyJpaRepository extends JpaRepository<Apply, UUID> {
+public interface ApplyJpaRepository extends JpaRepository<ApplyJpaEntity, UUID> {
 
     boolean existsByPostIdAndApplicantId(UUID postId, UUID applicantId);
 
     @Query("SELECT a " +
-            "FROM Apply a JOIN FETCH a.post " +
+            "FROM ApplyJpaEntity a JOIN FETCH a.post " +
             "JOIN FETCH a.applicant " +
             "WHERE a.id = :applyId")
-    Optional<Apply> findByIdWithPostAndApplicant(@Param("applyId") UUID applyId);
+    Optional<ApplyJpaEntity> findByIdWithPostAndApplicant(@Param("applyId") UUID applyId);
 
-    Optional<Apply> findByPostIdAndApplicantId(UUID postId, UUID applicantId);
+    Optional<ApplyJpaEntity> findByPostIdAndApplicantId(UUID postId, UUID applicantId);
 
     long countByPostIdAndStatus(UUID postId, ApplyStatus status);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a " +
-            "FROM Apply a JOIN FETCH a.post " +
+            "FROM ApplyJpaEntity a JOIN FETCH a.post " +
             "JOIN FETCH a.applicant " +
             "WHERE a.id = :applyId")
-    Optional<Apply> findByIdWithPostAndApplicantForUpdate(@Param("applyId") UUID applyId);
+    Optional<ApplyJpaEntity> findByIdWithPostAndApplicantForUpdate(@Param("applyId") UUID applyId);
 }
