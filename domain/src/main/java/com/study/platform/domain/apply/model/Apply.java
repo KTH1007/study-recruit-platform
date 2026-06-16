@@ -15,56 +15,44 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Entity
-@Table(
-        name = "applies",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"post_id", "applicant_id"}),
-        indexes = {
-                @Index(name = "idx_apply_post_status_created", columnList = "post_id, status, created_at"),
-                @Index(name = "idx_apply_applicant_id", columnList = "applicant_id")
-        }
-)
-public class Apply extends BaseTimeEntity {
+public class Apply {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "BINARY(16)")
     private UUID id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false)
     private StudyPost post;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "applicant_id", nullable = false)
     private User applicant;
-
-    @Column(columnDefinition = "TEXT")
     private String message;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private ApplyStatus status;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
-    @Builder
-    private Apply(StudyPost post, User applicant, String message) {
+    private Apply(UUID id, StudyPost post, User applicant, String message, ApplyStatus status, LocalDateTime createdAt) {
+        this.id = id;
         this.post = post;
         this.applicant = applicant;
         this.message = message;
-        this.status = ApplyStatus.PENDING;
+        this.status = status;
+        this.createdAt = createdAt;
     }
 
     public static Apply create(StudyPost post, User applicant, String message, DomainEventPublisher publisher) {
-        Apply apply = Apply.builder()
-                .post(post)
-                .applicant(applicant)
-                .message(message)
-                .build();
+        Apply apply = new Apply(
+                UUID.randomUUID(), post, applicant, message,
+                ApplyStatus.PENDING, LocalDateTime.now()
+        );
         publisher.publish(new ApplyReceivedEvent(post.getId(), post.getAuthor().getId(), post.getTitle()));
+        return apply;
+    }
+
+    // 영속성 계층에서 복원할 때 사용
+    public static Apply reconstitute(UUID id, StudyPost post, User applicant,
+                                     String message, ApplyStatus status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        Apply apply = new Apply(id, post, applicant, message, status, createdAt);
+        apply.updatedAt = updatedAt;
         return apply;
     }
 

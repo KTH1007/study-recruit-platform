@@ -17,11 +17,13 @@ import java.util.UUID;
 public class ApplyRepositoryAdapter implements ApplyRepository {
 
     private final ApplyJpaRepository applyJpaRepository;
+    private final ApplyMapper applyMapper;
 
     @Override
     public Apply save(Apply apply) {
         try {
-            return applyJpaRepository.save(apply);
+            ApplyJpaEntity entity = applyMapper.toEntity(apply);
+            return applyMapper.toDomain(applyJpaRepository.save(entity));
         } catch (DataIntegrityViolationException e) {
             throw new CustomException(ErrorCode.ALREADY_APPLIED);
         }
@@ -29,12 +31,13 @@ public class ApplyRepositoryAdapter implements ApplyRepository {
 
     @Override
     public void delete(Apply apply) {
-        applyJpaRepository.delete(apply);
+        applyJpaRepository.deleteById(apply.getId());
     }
 
     @Override
     public Optional<Apply> findById(UUID id) {
-        return applyJpaRepository.findById(id);
+        return applyJpaRepository.findById(id)
+                .map(applyMapper::toDomain);
     }
 
     @Override
@@ -44,12 +47,14 @@ public class ApplyRepositoryAdapter implements ApplyRepository {
 
     @Override
     public Optional<Apply> findByIdWithPostAndApplicant(UUID applyId) {
-        return applyJpaRepository.findByIdWithPostAndApplicant(applyId);
+        return applyJpaRepository.findByIdWithPostAndApplicant(applyId)
+                .map(applyMapper::toDomain);
     }
 
     @Override
     public Optional<Apply> findByPostIdAndApplicantId(UUID postId, UUID applicantId) {
-        return applyJpaRepository.findByPostIdAndApplicantId(postId, applicantId);
+        return applyJpaRepository.findByPostIdAndApplicantId(postId, applicantId)
+                .map(applyMapper::toDomain);
     }
 
     @Override
@@ -59,6 +64,7 @@ public class ApplyRepositoryAdapter implements ApplyRepository {
 
     @Override
     public Optional<Apply> findByIdWithPostAndApplicantForUpdate(UUID applyId) {
-        return applyJpaRepository.findByIdWithPostAndApplicantForUpdate(applyId);
+        return applyJpaRepository.findByIdWithPostAndApplicantForUpdate(applyId)
+                .map(applyMapper::toDomain);
     }
 }

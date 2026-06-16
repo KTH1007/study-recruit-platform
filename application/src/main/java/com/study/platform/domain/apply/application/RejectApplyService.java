@@ -27,6 +27,7 @@ public class RejectApplyService implements RejectApplyUseCase {
                 .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
         apply.getPost().validateAuthor(userId);
         apply.reject(eventPublisher);
+        applyRepository.save(apply);
         return ApplyResponse.from(apply);
     }
 }

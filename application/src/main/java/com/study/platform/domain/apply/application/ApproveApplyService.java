@@ -37,6 +37,7 @@ public class ApproveApplyService implements ApproveApplyUseCase {
         Apply apply = applyRepository.findByIdWithPostAndApplicantForUpdate(applyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
         apply.approve(eventPublisher);
+        applyRepository.save(apply);
 
         long approvedCount = applyRepository.countByPostIdAndStatus(post.getId(), ApplyStatus.APPROVED);
         post.markFullIfNeeded(approvedCount);
