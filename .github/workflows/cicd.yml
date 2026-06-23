@@ -26,7 +26,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
 
       - name: 빌드 및 테스트
-        run: ./gradlew build
+        run: ./gradlew build -x generateJooq
 
   cd:
     if: github.event_name == 'push'
