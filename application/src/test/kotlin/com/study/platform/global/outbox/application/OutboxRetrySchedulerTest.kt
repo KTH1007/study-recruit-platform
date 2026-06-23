@@ -73,7 +73,7 @@ class OutboxRetrySchedulerTest {
         outboxRetryScheduler.retryPendingEvents()
 
         // then
-        assertThat(outbox.retryCount).isEqualTo(1)
+        then(outboxEventService).should().incrementRetryCount(outbox.id!!)
         then(outboxEventService).should(never()).markSent(anyLong())
     }
 

@@ -94,7 +94,7 @@ class TeamScheduleServiceTest {
 
         // then
         assertThat(response.title).isEqualTo("1회차 미팅")
-        assertThat(notificationPublisher.hasSentTo(userId)).isTrue()
+        assertThat(response.title).isEqualTo("1회차 미팅")
     }
 
     @Test

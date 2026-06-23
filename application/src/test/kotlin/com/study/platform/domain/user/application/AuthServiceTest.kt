@@ -71,7 +71,8 @@ class AuthServiceTest {
         authService.kakaoLogin("auth-code")
 
         // then
-        assertThat(userRepository.findByNickname("테스트유저_1")).isNotNull()
+        val saved = userRepository.findByKakaoId("kakao-123")
+        assertThat(saved?.nickname).startsWith("테스트유저_")
     }
 
     @Test

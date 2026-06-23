@@ -30,6 +30,9 @@ class FakeOutboxEventRepository : OutboxEventRepository {
                 1
             }
 
+    override fun findById(id: Long): OutboxEvent? =
+        store.find { it.id == id }
+
     override fun markFailedPermanently(id: Long) {
         store.filter { e -> e.id == id }
             .forEach { e -> ReflectionTestUtils.setField(e, "status", OutboxEventStatus.FAILED_PERMANENTLY) }
