@@ -6,7 +6,7 @@
 
 ## 시스템 아키텍처
 
-!Architecture
+![Architecture](https://github.com/user-attachments/assets/637b4536-bde0-4ea9-992c-4526fbcee34f)
 
 ---
 
@@ -34,7 +34,7 @@
 | Reverse Proxy | Nginx (로드밸런싱, SSL, gzip) |
 | Container | Docker, Docker Compose |
 | CI/CD | GitHub Actions |
-| HTTPS | Let`s Encrypt (Certbot) |
+| HTTPS | Let's Encrypt (Certbot) |
 | Domain | DuckDNS |
 | Log | ELK Stack (Logback -> Logstash -> Elasticsearch -> Kibana) |
 
