@@ -7,7 +7,10 @@ package com.study.platform.jooq.tables.references
 import com.study.platform.jooq.tables.Applies
 import com.study.platform.jooq.tables.ChatMessages
 import com.study.platform.jooq.tables.Comments
+import com.study.platform.jooq.tables.FailedNotifications
+import com.study.platform.jooq.tables.FailedPostSyncs
 import com.study.platform.jooq.tables.Notifications
+import com.study.platform.jooq.tables.OutboxEvent
 import com.study.platform.jooq.tables.StudyPosts
 import com.study.platform.jooq.tables.StudyTeams
 import com.study.platform.jooq.tables.TeamMembers
@@ -32,9 +35,24 @@ val CHAT_MESSAGES: ChatMessages = ChatMessages.CHAT_MESSAGES
 val COMMENTS: Comments = Comments.COMMENTS
 
 /**
+ * The table <code>failed_notifications</code>.
+ */
+val FAILED_NOTIFICATIONS: FailedNotifications = FailedNotifications.FAILED_NOTIFICATIONS
+
+/**
+ * The table <code>failed_post_syncs</code>.
+ */
+val FAILED_POST_SYNCS: FailedPostSyncs = FailedPostSyncs.FAILED_POST_SYNCS
+
+/**
  * The table <code>notifications</code>.
  */
 val NOTIFICATIONS: Notifications = Notifications.NOTIFICATIONS
+
+/**
+ * The table <code>outbox_event</code>.
+ */
+val OUTBOX_EVENT: OutboxEvent = OutboxEvent.OUTBOX_EVENT
 
 /**
  * The table <code>study_posts</code>.

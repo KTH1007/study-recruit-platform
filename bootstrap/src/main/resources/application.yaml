@@ -4,6 +4,9 @@ server:
     enabled: true
     mime-types: application/json
     min-response-size: 1024  # 1KB 이상일 때만 압축
+  tomcat:
+    accept-count: 200
+    max-connections: 8192
 
 spring:
   threads:

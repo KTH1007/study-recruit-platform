@@ -29,6 +29,7 @@ class ApplyStudyPostService(
         post.validateOpen()
         post.validateNotAuthor(userId)
 
+        post.validateNotDuplicateApply(applyRepository.existsByPostIdAndApplicantId(postId, userId))
         val applicant = userRepository.findById(userId)
             ?: throw CustomException(ErrorCode.USER_NOT_FOUND)
         val apply = Apply.create(post, applicant, request.message, eventPublisher)

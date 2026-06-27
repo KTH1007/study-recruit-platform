@@ -41,8 +41,12 @@ class IdempotencyFilter(
 
         val cached = idempotencyStoragePort.get(redisKey)
         if (cached != null && cached != IdempotencyConstants.PROCESSING) {
+            val delimiterIndex = cached.indexOf('|')
+            val status = cached.substring(0, delimiterIndex).toInt()
+            val body = cached.substring(delimiterIndex + 1)
+            response.status = status
             response.contentType = "application/json;charset=UTF-8"
-            response.writer.write(cached)
+            response.writer.write(body)
             return
         }
 
@@ -55,8 +59,12 @@ class IdempotencyFilter(
         val wrapper = IdempotencyResponseWrapper(response)
         try {
             filterChain.doFilter(request, wrapper)
-            wrapper.flushBuffer()
-            idempotencyStoragePort.set(redisKey, wrapper.capturedBody, TTL)
+            val capturedBody = wrapper.capturedBody
+            val capturedStatus = wrapper.statusCode
+            idempotencyStoragePort.set(redisKey, "$capturedStatus|$capturedBody", TTL)
+            response.status = capturedStatus
+            response.contentType = "application/json;charset=UTF-8"
+            response.writer.write(capturedBody)
         } catch (e: Exception) {
             idempotencyStoragePort.delete(redisKey)
             throw e

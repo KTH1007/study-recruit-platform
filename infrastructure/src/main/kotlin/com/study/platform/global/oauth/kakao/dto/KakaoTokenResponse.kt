@@ -1,8 +1,9 @@
 package com.study.platform.global.oauth.kakao.dto
 
+import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class KakaoTokenResponse(
+data class KakaoTokenResponse @JsonCreator constructor(
     @JsonProperty("access_token")
     val accessToken: String,
 
