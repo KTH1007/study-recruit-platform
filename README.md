@@ -6,7 +6,8 @@
 
 ## 시스템 아키텍처
 
-![Architecture](https://github.com/user-attachments/assets/637b4536-bde0-4ea9-992c-4526fbcee34f)
+<img width="2372" height="922" alt="study-recruit" src="https://github.com/user-attachments/assets/803cad0b-b091-4477-a080-65bb113e3361" />
+
 
 ---
 
