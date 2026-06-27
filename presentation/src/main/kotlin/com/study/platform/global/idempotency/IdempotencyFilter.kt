@@ -41,8 +41,23 @@ class IdempotencyFilter(
 
         val cached = idempotencyStoragePort.get(redisKey)
         if (cached != null && cached != IdempotencyConstants.PROCESSING) {
-            response.contentType = "application/json;charset=UTF-8"
-            response.writer.write(cached)
+            val delimiterIndex = cached.indexOf('|')
+            if (delimiterIndex == -1) {
+                // 레거시 포맷: 구분자 없는 단순 바디 → 200으로 처리
+                response.status = HttpServletResponse.SC_OK
+                if (cached.isNotEmpty()) {
+                    response.contentType = "application/json;charset=UTF-8"
+                    response.writer.write(cached)
+                }
+            } else {
+                val status = cached.substring(0, delimiterIndex).toInt()
+                val body = cached.substring(delimiterIndex + 1)
+                response.status = status
+                if (body.isNotEmpty()) {
+                    response.contentType = "application/json;charset=UTF-8"
+                    response.writer.write(body)
+                }
+            }
             return
         }
 
@@ -55,8 +70,22 @@ class IdempotencyFilter(
         val wrapper = IdempotencyResponseWrapper(response)
         try {
             filterChain.doFilter(request, wrapper)
-            wrapper.flushBuffer()
-            idempotencyStoragePort.set(redisKey, wrapper.capturedBody, TTL)
+            val capturedBody = wrapper.capturedBody
+            val capturedStatus = wrapper.statusCode
+
+            if (capturedStatus >= 500) {
+                // 5xx는 캐시하지 않고 키 삭제 → 클라이언트가 안전하게 재시도 가능
+                idempotencyStoragePort.delete(redisKey)
+            } else {
+                idempotencyStoragePort.set(redisKey, "$capturedStatus|$capturedBody", TTL)
+            }
+
+            response.status = capturedStatus
+            val contentType = wrapper.contentType
+            if (capturedBody.isNotEmpty()) {
+                response.contentType = contentType ?: "application/json;charset=UTF-8"
+                response.writer.write(capturedBody)
+            }
         } catch (e: Exception) {
             idempotencyStoragePort.delete(redisKey)
             throw e

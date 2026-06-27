@@ -1,0 +1,12 @@
+dependencies {
+    implementation(project(":domain"))
+    implementation(project(":common"))
+    implementation("org.springframework.boot:spring-boot-starter-kafka")
+    implementation("org.springframework.boot:spring-boot-starter-json")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-batch")
+    implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
+    compileOnly("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
+    testImplementation(testFixtures(project(":domain")))
+}

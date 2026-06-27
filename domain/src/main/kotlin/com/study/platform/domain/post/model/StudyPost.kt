@@ -84,6 +84,10 @@ class StudyPost : BaseTimeEntity() {
         if (isAuthor(userId)) throw CustomException(ErrorCode.CANNOT_APPLY_OWN_POST)
     }
 
+    fun validateNotDuplicateApply(alreadyApplied: Boolean) {
+        if (alreadyApplied) throw CustomException(ErrorCode.ALREADY_APPLIED)
+    }
+
     companion object {
         fun create(author: User, title: String, description: String, techStack: String?, maxMembers: Int, deadline: LocalDateTime?): StudyPost =
             StudyPost().also {

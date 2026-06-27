@@ -7,7 +7,10 @@ package com.study.platform.jooq
 import com.study.platform.jooq.tables.Applies
 import com.study.platform.jooq.tables.ChatMessages
 import com.study.platform.jooq.tables.Comments
+import com.study.platform.jooq.tables.FailedNotifications
+import com.study.platform.jooq.tables.FailedPostSyncs
 import com.study.platform.jooq.tables.Notifications
+import com.study.platform.jooq.tables.OutboxEvent
 import com.study.platform.jooq.tables.StudyPosts
 import com.study.platform.jooq.tables.StudyTeams
 import com.study.platform.jooq.tables.TeamMembers
@@ -50,9 +53,24 @@ open class DefaultSchema : SchemaImpl("", DefaultCatalog.DEFAULT_CATALOG) {
     val COMMENTS: Comments get() = Comments.COMMENTS
 
     /**
+     * The table <code>failed_notifications</code>.
+     */
+    val FAILED_NOTIFICATIONS: FailedNotifications get() = FailedNotifications.FAILED_NOTIFICATIONS
+
+    /**
+     * The table <code>failed_post_syncs</code>.
+     */
+    val FAILED_POST_SYNCS: FailedPostSyncs get() = FailedPostSyncs.FAILED_POST_SYNCS
+
+    /**
      * The table <code>notifications</code>.
      */
     val NOTIFICATIONS: Notifications get() = Notifications.NOTIFICATIONS
+
+    /**
+     * The table <code>outbox_event</code>.
+     */
+    val OUTBOX_EVENT: OutboxEvent get() = OutboxEvent.OUTBOX_EVENT
 
     /**
      * The table <code>study_posts</code>.
@@ -85,7 +103,10 @@ open class DefaultSchema : SchemaImpl("", DefaultCatalog.DEFAULT_CATALOG) {
         Applies.APPLIES,
         ChatMessages.CHAT_MESSAGES,
         Comments.COMMENTS,
+        FailedNotifications.FAILED_NOTIFICATIONS,
+        FailedPostSyncs.FAILED_POST_SYNCS,
         Notifications.NOTIFICATIONS,
+        OutboxEvent.OUTBOX_EVENT,
         StudyPosts.STUDY_POSTS,
         StudyTeams.STUDY_TEAMS,
         TeamMembers.TEAM_MEMBERS,

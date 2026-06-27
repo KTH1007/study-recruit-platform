@@ -14,6 +14,14 @@ class IdempotencyResponseWrapper(response: HttpServletResponse) : HttpServletRes
     private val buffer = ByteArrayOutputStream()
     private val outputStream: ServletOutputStream = WrappedOutputStream(buffer)
     private val writer: PrintWriter = PrintWriter(outputStream)
+    private var capturedStatus: Int = HttpServletResponse.SC_OK
+
+    override fun setStatus(sc: Int) {
+        capturedStatus = sc
+        super.setStatus(sc)
+    }
+
+    val statusCode: Int get() = capturedStatus
 
     override fun getOutputStream(): ServletOutputStream = outputStream
 
@@ -23,8 +31,6 @@ class IdempotencyResponseWrapper(response: HttpServletResponse) : HttpServletRes
     override fun flushBuffer() {
         writer.flush()
         outputStream.flush()
-        val bytes = buffer.toByteArray()
-        response.outputStream.write(bytes)
     }
 
     val capturedBody: String

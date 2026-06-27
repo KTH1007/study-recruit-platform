@@ -1,0 +1,2 @@
+rootProject.name = "study-recruit-platform"
+include(":common", ":domain", ":application", ":infrastructure", ":presentation", ":bootstrap")
