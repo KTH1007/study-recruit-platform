@@ -6,6 +6,7 @@ import com.study.platform.support.fake.FakeOutboxEventRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.data.domain.PageRequest
 import org.springframework.test.util.ReflectionTestUtils
 import java.time.LocalDateTime
 
@@ -32,7 +33,7 @@ class OutboxEventServiceTest {
 
         // then
         val events = outboxEventRepository.findAllByStatusAndCreatedAtBefore(
-            OutboxEventStatus.PENDING, LocalDateTime.MAX
+            OutboxEventStatus.PENDING, LocalDateTime.MAX, PageRequest.of(0, 100)
         )
         assertThat(events).hasSize(1)
         assertThat(events[0].topic).isEqualTo("post-sync")
@@ -50,7 +51,7 @@ class OutboxEventServiceTest {
 
         // then
         val sentEvents = outboxEventRepository.findAllByStatusAndCreatedAtBefore(
-            OutboxEventStatus.SENT, LocalDateTime.MAX
+            OutboxEventStatus.SENT, LocalDateTime.MAX, PageRequest.of(0, 100)
         )
         assertThat(sentEvents).hasSize(1)
     }

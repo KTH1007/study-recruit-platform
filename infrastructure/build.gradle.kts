@@ -3,6 +3,12 @@ plugins {
     id("nu.studer.jooq") version "9.0"
 }
 
+sourceSets {
+    main {
+        kotlin.srcDir("src/main/generated")
+    }
+}
+
 dependencies {
     implementation(project(":common"))
     implementation(project(":domain"))

@@ -29,7 +29,8 @@ class RecruitFlowAcceptanceTest : AbstractAcceptanceTest() {
         )
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        val applies = response.body!!["data"] as List<*>
+        val data = response.body!!["data"] as Map<*, *>
+        val applies = data["content"] as List<*>
         assertThat(applies).hasSize(1)
     }
 
@@ -98,7 +99,8 @@ class RecruitFlowAcceptanceTest : AbstractAcceptanceTest() {
             HttpEntity<Void>(authHeaders(leader)),
             Map::class.java
         )
-        val status = ((applies.body!!["data"] as List<*>)[0] as Map<*, *>)["status"]
+        val applyData = applies.body!!["data"] as Map<*, *>
+        val status = ((applyData["content"] as List<*>)[0] as Map<*, *>)["status"]
         assertThat(status).isEqualTo("REJECTED")
     }
 }

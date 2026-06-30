@@ -8,6 +8,9 @@ import com.study.platform.global.jooq.JooqUtils.uuidEq
 import com.study.platform.jooq.tables.references.APPLIES
 import com.study.platform.jooq.tables.references.USERS
 import org.jooq.DSLContext
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 import java.util.UUID
@@ -17,11 +20,11 @@ class ApplyQueryRepositoryAdapter(
     private val dsl: DSLContext
 ) : ApplyQueryPort {
 
-    override fun findAllByPostId(postId: UUID): List<ApplyResponse> {
+    override fun findAllByPostId(postId: UUID, pageable: Pageable): Page<ApplyResponse> {
         val a = APPLIES.`as`("a")
         val u = USERS.`as`("u")
 
-        return dsl.select(
+        val content = dsl.select(
             binToUuid(a.ID).`as`("id"),
             u.NICKNAME.`as`("applicantNickname"),
             u.TECH_STACK.`as`("applicantTechStack"),
@@ -32,6 +35,9 @@ class ApplyQueryRepositoryAdapter(
             .from(a)
             .join(u).on(a.APPLICANT_ID.eq(u.ID))
             .where(uuidEq(a.POST_ID, postId))
+            .orderBy(a.CREATED_AT.desc())
+            .limit(pageable.pageSize)
+            .offset(pageable.offset)
             .fetch { r ->
                 ApplyResponse(
                     id = UUID.fromString(r.get("id", String::class.java)),
@@ -42,5 +48,12 @@ class ApplyQueryRepositoryAdapter(
                     createdAt = r.get("createdAt", LocalDateTime::class.java)
                 )
             }
+
+        val total = dsl.selectCount()
+            .from(a)
+            .where(uuidEq(a.POST_ID, postId))
+            .fetchOne(0, Long::class.java) ?: 0L
+
+        return PageImpl(content, pageable, total)
     }
 }

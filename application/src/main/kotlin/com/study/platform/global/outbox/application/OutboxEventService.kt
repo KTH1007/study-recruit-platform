@@ -37,4 +37,9 @@ class OutboxEventService(
         outbox.incrementRetryCount()
         outboxEventRepository.save(outbox)
     }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun updatePayload(id: Long, payload: String) {
+        outboxEventRepository.updatePayload(id, payload)
+    }
 }

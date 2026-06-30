@@ -11,6 +11,7 @@ import com.study.platform.jooq.tables.FailedNotifications
 import com.study.platform.jooq.tables.FailedPostSyncs
 import com.study.platform.jooq.tables.Notifications
 import com.study.platform.jooq.tables.OutboxEvent
+import com.study.platform.jooq.tables.Shedlock
 import com.study.platform.jooq.tables.StudyPosts
 import com.study.platform.jooq.tables.StudyTeams
 import com.study.platform.jooq.tables.TeamMembers
@@ -53,6 +54,11 @@ val NOTIFICATIONS: Notifications = Notifications.NOTIFICATIONS
  * The table <code>outbox_event</code>.
  */
 val OUTBOX_EVENT: OutboxEvent = OutboxEvent.OUTBOX_EVENT
+
+/**
+ * The table <code>shedlock</code>.
+ */
+val SHEDLOCK: Shedlock = Shedlock.SHEDLOCK
 
 /**
  * The table <code>study_posts</code>.

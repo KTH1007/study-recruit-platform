@@ -10,6 +10,7 @@ import com.study.platform.domain.user.model.User
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
 import com.study.platform.global.outbox.application.OutboxEventService
+import com.study.platform.support.TestFixtures
 import com.study.platform.support.fake.FakeDomainEventPublisher
 import com.study.platform.support.fake.FakeOutboxEventRepository
 import com.study.platform.support.fake.FakeStudyPostQueryPort
@@ -19,7 +20,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.test.util.ReflectionTestUtils
 import tools.jackson.databind.ObjectMapper
 import java.time.LocalDateTime
 import java.util.UUID
@@ -59,11 +59,8 @@ class StudyPostServiceTest {
         authorId = UUID.randomUUID()
         postId = UUID.randomUUID()
 
-        author = User.create("kakao1", "작성자", "author@test.com")
-        ReflectionTestUtils.setField(author, "id", authorId)
-
-        post = StudyPost.create(author, "스터디 모집", "열심히 합니다", "Java", 3, LocalDateTime.now().plusDays(7))
-        ReflectionTestUtils.setField(post, "id", postId)
+        author = TestFixtures.createUser(id = authorId, kakaoId = "kakao1", nickname = "작성자", email = "author@test.com")
+        post = TestFixtures.createStudyPost(id = postId, author = author, techStack = "Java", maxMembers = 3)
 
         userRepository.save(author)
         studyPostRepository.save(post)

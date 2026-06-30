@@ -11,6 +11,7 @@ import com.study.platform.jooq.tables.FailedNotifications
 import com.study.platform.jooq.tables.FailedPostSyncs
 import com.study.platform.jooq.tables.Notifications
 import com.study.platform.jooq.tables.OutboxEvent
+import com.study.platform.jooq.tables.Shedlock
 import com.study.platform.jooq.tables.StudyPosts
 import com.study.platform.jooq.tables.StudyTeams
 import com.study.platform.jooq.tables.TeamMembers
@@ -73,6 +74,11 @@ open class DefaultSchema : SchemaImpl("", DefaultCatalog.DEFAULT_CATALOG) {
     val OUTBOX_EVENT: OutboxEvent get() = OutboxEvent.OUTBOX_EVENT
 
     /**
+     * The table <code>shedlock</code>.
+     */
+    val SHEDLOCK: Shedlock get() = Shedlock.SHEDLOCK
+
+    /**
      * The table <code>study_posts</code>.
      */
     val STUDY_POSTS: StudyPosts get() = StudyPosts.STUDY_POSTS
@@ -107,6 +113,7 @@ open class DefaultSchema : SchemaImpl("", DefaultCatalog.DEFAULT_CATALOG) {
         FailedPostSyncs.FAILED_POST_SYNCS,
         Notifications.NOTIFICATIONS,
         OutboxEvent.OUTBOX_EVENT,
+        Shedlock.SHEDLOCK,
         StudyPosts.STUDY_POSTS,
         StudyTeams.STUDY_TEAMS,
         TeamMembers.TEAM_MEMBERS,

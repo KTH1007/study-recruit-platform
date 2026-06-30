@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.http.ResponseEntity
 import java.util.UUID
 
@@ -16,8 +18,9 @@ interface ApplyControllerDoc {
     @Operation(summary = "지원 목록 조회", description = "방장이 본인 게시글의 지원 목록을 조회합니다.")
     fun findApplies(
         @Parameter(hidden = true) userId: UUID,
-        @Parameter(description = "게시글 ID") postId: UUID
-    ): ResponseEntity<ApiResponse<List<ApplyResponse>>>
+        @Parameter(description = "게시글 ID") postId: UUID,
+        pageable: Pageable
+    ): ResponseEntity<ApiResponse<Page<ApplyResponse>>>
 
     @Operation(summary = "지원", description = "스터디 모집글에 지원합니다.")
     fun apply(

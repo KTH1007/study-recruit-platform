@@ -5,13 +5,13 @@ import com.study.platform.domain.notification.model.NotificationType
 import com.study.platform.domain.user.model.User
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
+import com.study.platform.support.TestFixtures
 import com.study.platform.support.fake.FakeNotificationQueryPort
 import com.study.platform.support.fake.FakeNotificationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.test.util.ReflectionTestUtils
 import java.util.UUID
 
 class NotificationServiceTest {
@@ -36,11 +36,8 @@ class NotificationServiceTest {
 
         receiverId = UUID.randomUUID()
 
-        receiver = User.create("kakao1", "수신자", "receiver@test.com")
-        ReflectionTestUtils.setField(receiver, "id", receiverId)
-
-        notification = Notification.create(receiver, NotificationType.APPLY_RECEIVED, "새 지원이 있습니다", UUID.randomUUID())
-        ReflectionTestUtils.setField(notification, "id", UUID.randomUUID())
+        receiver = TestFixtures.createUser(id = receiverId, kakaoId = "kakao1", nickname = "수신자", email = "receiver@test.com")
+        notification = TestFixtures.createNotification(receiver = receiver, type = NotificationType.APPLY_RECEIVED, message = "새 지원이 있습니다")
         notificationRepository.save(notification)
     }
 
@@ -93,8 +90,7 @@ class NotificationServiceTest {
     @Test
     fun `markAllAsRead_성공`() {
         // given
-        val another = Notification.create(receiver, NotificationType.COMMENT_CREATED, "새 댓글이 있습니다", UUID.randomUUID())
-        ReflectionTestUtils.setField(another, "id", UUID.randomUUID())
+        val another = TestFixtures.createNotification(receiver = receiver, type = NotificationType.COMMENT_CREATED, message = "새 댓글이 있습니다")
         notificationRepository.save(another)
 
         // when

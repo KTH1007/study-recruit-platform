@@ -5,12 +5,12 @@ import com.study.platform.domain.apply.dto.response.ApplyResponse
 import com.study.platform.domain.apply.event.ApplyApprovedEvent
 import com.study.platform.domain.apply.event.ApplyReceivedEvent
 import com.study.platform.domain.apply.event.ApplyRejectedEvent
-import com.study.platform.domain.apply.model.Apply
 import com.study.platform.domain.apply.model.ApplyStatus
 import com.study.platform.domain.post.model.StudyPost
 import com.study.platform.domain.user.model.User
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
+import com.study.platform.support.TestFixtures
 import com.study.platform.support.fake.FakeApplyQueryPort
 import com.study.platform.support.fake.FakeApplyRepository
 import com.study.platform.support.fake.FakeDomainEventPublisher
@@ -20,8 +20,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.test.util.ReflectionTestUtils
-import java.time.LocalDateTime
+import org.springframework.data.domain.PageRequest
 import java.util.UUID
 
 class ApplyServiceTest {
@@ -61,14 +60,9 @@ class ApplyServiceTest {
         applicantId = UUID.randomUUID()
         postId = UUID.randomUUID()
 
-        author = User.create("kakao1", "작성자", "author@test.com")
-        ReflectionTestUtils.setField(author, "id", authorId)
-
-        applicant = User.create("kakao2", "지원자", "applicant@test.com")
-        ReflectionTestUtils.setField(applicant, "id", applicantId)
-
-        post = StudyPost.create(author, "스터디 모집", "열심히 합니다", "Java", 3, LocalDateTime.now().plusDays(7))
-        ReflectionTestUtils.setField(post, "id", postId)
+        author = TestFixtures.createUser(id = authorId, kakaoId = "kakao1", nickname = "작성자", email = "author@test.com")
+        applicant = TestFixtures.createUser(id = applicantId, kakaoId = "kakao2", nickname = "지원자", email = "applicant@test.com")
+        post = TestFixtures.createStudyPost(id = postId, author = author, techStack = "Java", maxMembers = 3)
 
         studyPostRepository.save(post)
         userRepository.save(applicant)
@@ -125,8 +119,7 @@ class ApplyServiceTest {
     @Test
     fun `apply_중복지원_예외발생`() {
         // given
-        val existing = Apply.create(post, applicant, "첫 번째 지원", eventPublisher)
-        ReflectionTestUtils.setField(existing, "id", UUID.randomUUID())
+        val existing = TestFixtures.createApply(post = post, applicant = applicant, message = "첫 번째 지원")
         applyRepository.save(existing)
         val request = ApplyCreateRequest("두 번째 지원")
 
@@ -139,9 +132,8 @@ class ApplyServiceTest {
     @Test
     fun `approve_성공`() {
         // given
-        val apply = Apply.create(post, applicant, "지원합니다", eventPublisher)
         val applyId = UUID.randomUUID()
-        ReflectionTestUtils.setField(apply, "id", applyId)
+        val apply = TestFixtures.createApply(id = applyId, post = post, applicant = applicant)
         applyRepository.save(apply)
 
         // when
@@ -156,16 +148,13 @@ class ApplyServiceTest {
     fun `approve_정원충족시_게시글마감`() {
         // given
         for (i in 0 until 2) {
-            val u = User.create("kakao$i", "user$i", "u$i@test.com")
-            ReflectionTestUtils.setField(u, "id", UUID.randomUUID())
-            val approved = Apply.create(post, u, "지원", eventPublisher)
-            ReflectionTestUtils.setField(approved, "id", UUID.randomUUID())
+            val u = TestFixtures.createUser(kakaoId = "kakao$i", nickname = "user$i", email = "u$i@test.com")
+            val approved = TestFixtures.createApply(post = post, applicant = u, message = "지원")
             applyRepository.save(approved)
             approved.approve(eventPublisher)
         }
-        val apply = Apply.create(post, applicant, "지원합니다", eventPublisher)
         val applyId = UUID.randomUUID()
-        ReflectionTestUtils.setField(apply, "id", applyId)
+        val apply = TestFixtures.createApply(id = applyId, post = post, applicant = applicant)
         applyRepository.save(apply)
 
         // when
@@ -178,9 +167,8 @@ class ApplyServiceTest {
     @Test
     fun `reject_성공`() {
         // given
-        val apply = Apply.create(post, applicant, "지원합니다", eventPublisher)
         val applyId = UUID.randomUUID()
-        ReflectionTestUtils.setField(apply, "id", applyId)
+        val apply = TestFixtures.createApply(id = applyId, post = post, applicant = applicant)
         applyRepository.save(apply)
 
         // when
@@ -194,9 +182,8 @@ class ApplyServiceTest {
     @Test
     fun `cancel_성공`() {
         // given
-        val apply = Apply.create(post, applicant, "지원합니다", eventPublisher)
         val applyId = UUID.randomUUID()
-        ReflectionTestUtils.setField(apply, "id", applyId)
+        val apply = TestFixtures.createApply(id = applyId, post = post, applicant = applicant)
         applyRepository.save(apply)
 
         // when
@@ -210,15 +197,14 @@ class ApplyServiceTest {
     fun `findApplies_성공`() {
         // given
         userRepository.save(author)
-        val apply = Apply.create(post, applicant, "지원합니다", eventPublisher)
-        ReflectionTestUtils.setField(apply, "id", UUID.randomUUID())
+        val apply = TestFixtures.createApply(post = post, applicant = applicant)
         applyRepository.save(apply)
 
         // when
-        val responses: List<ApplyResponse> = findAppliesService.execute(authorId, postId)
+        val responses = findAppliesService.execute(authorId, postId, PageRequest.of(0, 20))
 
         // then
-        assertThat(responses).hasSize(1)
+        assertThat(responses.content).hasSize(1)
     }
 
     @Test
@@ -227,7 +213,7 @@ class ApplyServiceTest {
         val otherId = UUID.randomUUID()
 
         // when & then
-        assertThatThrownBy { findAppliesService.execute(otherId, postId) }
+        assertThatThrownBy { findAppliesService.execute(otherId, postId, PageRequest.of(0, 20)) }
             .isInstanceOf(CustomException::class.java)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN)
     }

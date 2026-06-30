@@ -10,6 +10,7 @@ import com.study.platform.domain.team.model.TeamMemberRole
 import com.study.platform.domain.user.model.User
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
+import com.study.platform.support.TestFixtures
 import com.study.platform.support.fake.FakeStudyPostRepository
 import com.study.platform.support.fake.FakeStudyTeamRepository
 import com.study.platform.support.fake.FakeTeamMemberQueryPort
@@ -19,8 +20,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.test.util.ReflectionTestUtils
-import java.time.LocalDateTime
 import java.util.UUID
 
 class StudyTeamServiceTest {
@@ -67,23 +66,12 @@ class StudyTeamServiceTest {
         postId = UUID.randomUUID()
         teamId = UUID.randomUUID()
 
-        leader = User.create("kakao-1", "팀장", "leader@test.com")
-        ReflectionTestUtils.setField(leader, "id", leaderId)
-
-        member = User.create("kakao-2", "팀원", "member@test.com")
-        ReflectionTestUtils.setField(member, "id", memberId)
-
-        post = StudyPost.create(leader, "스터디 모집", "열심히", "Java", 5, LocalDateTime.now().plusDays(7))
-        ReflectionTestUtils.setField(post, "id", postId)
-
-        team = StudyTeam.create(post)
-        ReflectionTestUtils.setField(team, "id", teamId)
-
-        leaderMember = TeamMember.createLeader(team, leader)
-        ReflectionTestUtils.setField(leaderMember, "id", UUID.randomUUID())
-
-        normalMember = TeamMember.createMember(team, member)
-        ReflectionTestUtils.setField(normalMember, "id", UUID.randomUUID())
+        leader = TestFixtures.createUser(id = leaderId, kakaoId = "kakao-1", nickname = "팀장", email = "leader@test.com")
+        member = TestFixtures.createUser(id = memberId, kakaoId = "kakao-2", nickname = "팀원", email = "member@test.com")
+        post = TestFixtures.createStudyPost(id = postId, author = leader, techStack = "Java")
+        team = TestFixtures.createStudyTeam(id = teamId, post = post)
+        leaderMember = TestFixtures.createLeaderMember(team = team, user = leader)
+        normalMember = TestFixtures.createNormalMember(team = team, user = member)
 
         studyPostRepository.save(post)
         userRepository.save(leader)

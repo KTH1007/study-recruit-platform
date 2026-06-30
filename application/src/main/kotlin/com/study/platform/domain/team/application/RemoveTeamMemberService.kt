@@ -15,6 +15,8 @@ class RemoveTeamMemberService(
 
     @Transactional
     override fun execute(userId: UUID, teamId: UUID, targetUserId: UUID) {
+        if (userId == targetUserId) throw CustomException(ErrorCode.CANNOT_REMOVE_SELF)
+
         val currentLeader = teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
             ?: throw CustomException(ErrorCode.TEAM_MEMBER_NOT_FOUND)
         currentLeader.validateIsLeader()

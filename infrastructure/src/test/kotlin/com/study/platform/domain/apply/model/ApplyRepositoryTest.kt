@@ -12,6 +12,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.util.UUID
@@ -42,22 +44,22 @@ class ApplyRepositoryTest : AbstractIntegrationTest() {
 
     @Test
     fun `findAllByPostId_성공`() {
-        val result: List<ApplyResponse> = applyQueryPort.findAllByPostId(post.id!!)
+        val result: Page<ApplyResponse> = applyQueryPort.findAllByPostId(post.id!!, PageRequest.of(0, 20))
 
-        assertThat(result).hasSize(1)
-        assertThat(result[0].applicantNickname).isEqualTo("지원자")
-        assertThat(result[0].message).isEqualTo("지원합니다")
+        assertThat(result.content).hasSize(1)
+        assertThat(result.content[0].applicantNickname).isEqualTo("지원자")
+        assertThat(result.content[0].message).isEqualTo("지원합니다")
     }
 
     @Test
-    fun `findAllByPostId_지원없음_빈리스트`() {
+    fun `findAllByPostId_지원없음_빈페이지`() {
         val otherPost = studyPostRepository.save(
             StudyPost.create(author, "다른 스터디", "열심히 합니다", "Kotlin", 3, LocalDateTime.now().plusDays(7))
         )
 
-        val result: List<ApplyResponse> = applyQueryPort.findAllByPostId(otherPost.id!!)
+        val result: Page<ApplyResponse> = applyQueryPort.findAllByPostId(otherPost.id!!, PageRequest.of(0, 20))
 
-        assertThat(result).isEmpty()
+        assertThat(result.content).isEmpty()
     }
 
     @Test

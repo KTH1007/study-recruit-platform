@@ -11,6 +11,7 @@ import com.study.platform.jooq.tables.FailedNotifications
 import com.study.platform.jooq.tables.FailedPostSyncs
 import com.study.platform.jooq.tables.Notifications
 import com.study.platform.jooq.tables.OutboxEvent
+import com.study.platform.jooq.tables.Shedlock
 import com.study.platform.jooq.tables.StudyPosts
 import com.study.platform.jooq.tables.StudyTeams
 import com.study.platform.jooq.tables.TeamMembers
@@ -23,6 +24,7 @@ import com.study.platform.jooq.tables.records.FailedNotificationsRecord
 import com.study.platform.jooq.tables.records.FailedPostSyncsRecord
 import com.study.platform.jooq.tables.records.NotificationsRecord
 import com.study.platform.jooq.tables.records.OutboxEventRecord
+import com.study.platform.jooq.tables.records.ShedlockRecord
 import com.study.platform.jooq.tables.records.StudyPostsRecord
 import com.study.platform.jooq.tables.records.StudyTeamsRecord
 import com.study.platform.jooq.tables.records.TeamMembersRecord
@@ -48,6 +50,7 @@ val KEY_FAILED_NOTIFICATIONS_PRIMARY: UniqueKey<FailedNotificationsRecord> = Int
 val KEY_FAILED_POST_SYNCS_PRIMARY: UniqueKey<FailedPostSyncsRecord> = Internal.createUniqueKey(FailedPostSyncs.FAILED_POST_SYNCS, DSL.name("KEY_failed_post_syncs_PRIMARY"), arrayOf(FailedPostSyncs.FAILED_POST_SYNCS.ID), true)
 val KEY_NOTIFICATIONS_PRIMARY: UniqueKey<NotificationsRecord> = Internal.createUniqueKey(Notifications.NOTIFICATIONS, DSL.name("KEY_notifications_PRIMARY"), arrayOf(Notifications.NOTIFICATIONS.ID), true)
 val KEY_OUTBOX_EVENT_PRIMARY: UniqueKey<OutboxEventRecord> = Internal.createUniqueKey(OutboxEvent.OUTBOX_EVENT, DSL.name("KEY_outbox_event_PRIMARY"), arrayOf(OutboxEvent.OUTBOX_EVENT.ID), true)
+val KEY_SHEDLOCK_PRIMARY: UniqueKey<ShedlockRecord> = Internal.createUniqueKey(Shedlock.SHEDLOCK, DSL.name("KEY_shedlock_PRIMARY"), arrayOf(Shedlock.SHEDLOCK.NAME), true)
 val KEY_STUDY_POSTS_PRIMARY: UniqueKey<StudyPostsRecord> = Internal.createUniqueKey(StudyPosts.STUDY_POSTS, DSL.name("KEY_study_posts_PRIMARY"), arrayOf(StudyPosts.STUDY_POSTS.ID), true)
 val KEY_STUDY_TEAMS_PRIMARY: UniqueKey<StudyTeamsRecord> = Internal.createUniqueKey(StudyTeams.STUDY_TEAMS, DSL.name("KEY_study_teams_PRIMARY"), arrayOf(StudyTeams.STUDY_TEAMS.ID), true)
 val KEY_STUDY_TEAMS_UKLH1MYLOOAWNXTIHCLRXJ178NE: UniqueKey<StudyTeamsRecord> = Internal.createUniqueKey(StudyTeams.STUDY_TEAMS, DSL.name("KEY_study_teams_UKlh1mylooawnxtihclrxj178ne"), arrayOf(StudyTeams.STUDY_TEAMS.POST_ID), true)

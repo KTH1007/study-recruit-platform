@@ -12,12 +12,17 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
+import org.mockito.ArgumentMatchers.any
+import org.mockito.BDDMockito.given
 import org.mockito.BDDMockito.then
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.springframework.data.redis.core.StringRedisTemplate
+import org.springframework.data.redis.core.ValueOperations
 import org.springframework.kafka.support.Acknowledgment
-import org.springframework.test.util.ReflectionTestUtils
+import com.study.platform.support.TestFixtures
 import tools.jackson.databind.ObjectMapper
+import java.time.Duration
 import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
@@ -25,6 +30,12 @@ class NotificationKafkaConsumerTest {
 
     @Mock
     private lateinit var ack: Acknowledgment
+
+    @Mock
+    private lateinit var stringRedisTemplate: StringRedisTemplate
+
+    @Mock
+    private lateinit var valueOperations: ValueOperations<String, String>
 
     private lateinit var userRepository: FakeUserRepository
     private lateinit var notificationRepository: FakeNotificationRepository
@@ -42,8 +53,10 @@ class NotificationKafkaConsumerTest {
         notificationRepository = FakeNotificationRepository()
         redisMessagePublisher = FakeRedisMessagePublisher()
         failedNotificationRepository = FakeFailedNotificationRepository()
+        given(stringRedisTemplate.opsForValue()).willReturn(valueOperations)
+        given(valueOperations.setIfAbsent(any(String::class.java), any(String::class.java), any(Duration::class.java))).willReturn(true)
         notificationKafkaConsumer = NotificationKafkaConsumer(
-            objectMapper, userRepository, notificationRepository, redisMessagePublisher, failedNotificationRepository
+            objectMapper, userRepository, notificationRepository, redisMessagePublisher, failedNotificationRepository, stringRedisTemplate
         )
         receiverId = UUID.randomUUID()
     }
@@ -66,8 +79,7 @@ class NotificationKafkaConsumerTest {
     fun `consume_정상처리`() {
         // given
         val event = NotificationEvent(receiverId, NotificationType.APPLY_APPROVED, "승인됐습니다", UUID.randomUUID(), 0)
-        val receiver = User.create("kakao1", "수신자", "receiver@test.com")
-        ReflectionTestUtils.setField(receiver, "id", receiverId)
+        val receiver = TestFixtures.createUser(id = receiverId, kakaoId = "kakao1", nickname = "수신자", email = "receiver@test.com")
         userRepository.save(receiver)
 
         // when

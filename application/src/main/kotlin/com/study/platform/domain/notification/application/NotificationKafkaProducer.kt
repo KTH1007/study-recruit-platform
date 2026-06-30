@@ -20,8 +20,9 @@ class NotificationKafkaProducer(
 ) : com.study.platform.domain.notification.model.NotificationPublisher {
 
     override fun send(outboxEventId: Long, receiverId: UUID, type: NotificationType, message: String, targetId: UUID?) {
-        val event = NotificationEvent(receiverId, type, message, targetId, 0)
+        val event = NotificationEvent(receiverId, type, message, targetId, 0, outboxEventId)
         val payload = objectMapper.writeValueAsString(event)
+        outboxEventService.updatePayload(outboxEventId, payload)
         kafkaMessagePublisher.publish(KafkaConstants.NOTIFICATION_TOPIC, receiverId.toString(), payload)
             .whenComplete { _, ex ->
                 if (ex == null) {
