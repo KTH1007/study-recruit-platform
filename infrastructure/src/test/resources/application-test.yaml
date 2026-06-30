@@ -49,6 +49,9 @@ kakao:
   client-secret: test-client-secret
   redirect-uri: http://localhost:3000/oauth/kakao/callback
 
+cors:
+  allowed-origins: "*"
+
 logging:
   level:
     org.hibernate.SQL: DEBUG
