@@ -5,11 +5,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.UUID
 
 data class NotificationEvent @JsonCreator constructor(
-    @JsonProperty("receiverId") val receiverId: UUID,
-    @JsonProperty("type") val type: NotificationType,
-    @JsonProperty("message") val message: String,
-    @JsonProperty("targetId") val targetId: UUID?,
-    @JsonProperty("retryCount") val retryCount: Int
+    @param:JsonProperty("receiverId") val receiverId: UUID,
+    @param:JsonProperty("type") val type: NotificationType,
+    @param:JsonProperty("message") val message: String,
+    @param:JsonProperty("targetId") val targetId: UUID?,
+    @param:JsonProperty("retryCount") val retryCount: Int
 ) {
     fun withRetry(): NotificationEvent = copy(retryCount = retryCount + 1)
 }

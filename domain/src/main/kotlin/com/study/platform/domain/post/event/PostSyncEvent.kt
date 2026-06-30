@@ -5,10 +5,10 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.UUID
 
 data class PostSyncEvent @JsonCreator constructor(
-    @JsonProperty("postId") val postId: UUID,
-    @JsonProperty("operationType") val operationType: PostSyncOperationType,
-    @JsonProperty("outboxEventId") val outboxEventId: Long,
-    @JsonProperty("retryCount") val retryCount: Int
+    @param:JsonProperty("postId") val postId: UUID,
+    @param:JsonProperty("operationType") val operationType: PostSyncOperationType,
+    @param:JsonProperty("outboxEventId") val outboxEventId: Long,
+    @param:JsonProperty("retryCount") val retryCount: Int
 ) {
     fun withRetry(): PostSyncEvent = copy(retryCount = retryCount + 1)
 }
