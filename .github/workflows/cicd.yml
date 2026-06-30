@@ -73,6 +73,7 @@ jobs:
             KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
             KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
             KAKAO_REDIRECT_URI=${{ secrets.KAKAO_REDIRECT_URI }}
+            ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
             EOF
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d

@@ -32,7 +32,7 @@ spring:
     uris: http://${ES_HOST}:9200
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -55,3 +55,6 @@ kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret: ${KAKAO_CLIENT_SECRET}
   redirect-uri: ${KAKAO_REDIRECT_URI}
+
+cors:
+  allowed-origins: ${ALLOWED_ORIGINS}

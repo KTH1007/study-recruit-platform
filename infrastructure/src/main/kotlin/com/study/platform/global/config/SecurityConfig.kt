@@ -3,6 +3,7 @@ package com.study.platform.global.config
 import com.study.platform.global.filter.JwtAuthenticationFilter
 import com.study.platform.global.filter.MdcFilter
 import com.study.platform.global.jwt.JwtProvider
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -21,7 +22,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 @EnableWebSecurity
 class SecurityConfig(
     private val jwtProvider: JwtProvider,
-    private val mdcFilter: MdcFilter
+    private val mdcFilter: MdcFilter,
+    @Value("\${cors.allowed-origins}") private val allowedOrigins: String
 ) {
 
     companion object {
@@ -58,7 +60,7 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val config = CorsConfiguration()
-        config.allowedOriginPatterns = listOf("*")
+        config.allowedOriginPatterns = allowedOrigins.split(",")
         config.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         config.allowedHeaders = listOf("*")
         config.allowCredentials = true

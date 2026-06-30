@@ -75,6 +75,7 @@ Thumbs.db
 *.pem
 *.key
 src/main/resources/application-local.yaml
+bootstrap/src/main/resources/application-local.yaml
 
 # k6 Test
 k6-test/*

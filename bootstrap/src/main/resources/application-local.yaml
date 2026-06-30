@@ -55,3 +55,6 @@ kakao:
   client-id: f4110e4c2732215d1345a23b07d9b1cc
   client-secret: NL3Cc1Tu14xzigYl56ksmw473mxOpXJa
   redirect-uri: http://localhost:3000/oauth/kakao/callback
+
+cors:
+  allowed-origins: "*"
