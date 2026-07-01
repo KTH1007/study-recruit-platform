@@ -21,7 +21,4 @@ interface OutboxEventJpaRepository : JpaRepository<OutboxEvent, Long> {
     @Query("UPDATE OutboxEvent o SET o.status = 'FAILED_PERMANENTLY' WHERE o.id = :id")
     fun markFailedPermanently(@Param("id") id: Long)
 
-    @Modifying
-    @Query("UPDATE OutboxEvent o SET o.payload = :payload WHERE o.id = :id")
-    fun updatePayload(@Param("id") id: Long, @Param("payload") payload: String)
 }

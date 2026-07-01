@@ -41,10 +41,9 @@ class TeamScheduleReminderScheduler(
             val message = "$teamName ${NotificationType.SCHEDULE_REMINDER.description}"
             teamMemberRepository.findAllByTeamId(teamId).forEach { member ->
                 val userId = member.user!!.id!!
-                val payload = objectMapper.writeValueAsString(
-                    NotificationEvent(userId, NotificationType.SCHEDULE_REMINDER, message, scheduleId, 0)
-                )
-                val outboxEventId = outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, userId.toString(), payload)
+                val outboxEventId = outboxEventService.saveWithIdEmbedded(KafkaConstants.NOTIFICATION_TOPIC, userId.toString()) { id ->
+                    objectMapper.writeValueAsString(NotificationEvent(userId, NotificationType.SCHEDULE_REMINDER, message, scheduleId, 0, id))
+                }
                 kafkaProducer.send(outboxEventId, userId, NotificationType.SCHEDULE_REMINDER, message, scheduleId)
             }
         }

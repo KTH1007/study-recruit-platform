@@ -20,10 +20,9 @@ class PostDeadlineHandler(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     override fun handle(event: PostDeadlineReminderEvent) {
         val message = "${event.postTitle} 게시글 모집 마감이 내일입니다."
-        val payload = objectMapper.writeValueAsString(
-            NotificationEvent(event.authorId, NotificationType.POST_DEADLINE, message, event.postId, 0)
-        )
-        val outboxEventId = outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.authorId.toString(), payload)
+        val outboxEventId = outboxEventService.saveWithIdEmbedded(KafkaConstants.NOTIFICATION_TOPIC, event.authorId.toString()) { id ->
+            objectMapper.writeValueAsString(NotificationEvent(event.authorId, NotificationType.POST_DEADLINE, message, event.postId, 0, id))
+        }
         kafkaProducer.send(outboxEventId, event.authorId, NotificationType.POST_DEADLINE, message, event.postId)
     }
 }

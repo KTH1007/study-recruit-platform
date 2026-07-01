@@ -2,8 +2,8 @@ package com.study.platform.domain.notification.application
 
 import com.study.platform.domain.notification.model.NotificationEvent
 import com.study.platform.domain.notification.model.NotificationType
-import com.study.platform.domain.user.model.User
 import com.study.platform.global.constant.KafkaConstants
+import com.study.platform.support.TestFixtures
 import com.study.platform.support.fake.FakeFailedNotificationRepository
 import com.study.platform.support.fake.FakeNotificationRepository
 import com.study.platform.support.fake.FakeRedisMessagePublisher
@@ -15,12 +15,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentMatchers.any
 import org.mockito.BDDMockito.given
 import org.mockito.BDDMockito.then
+import org.mockito.Mockito.lenient
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import org.springframework.kafka.support.Acknowledgment
-import com.study.platform.support.TestFixtures
 import tools.jackson.databind.ObjectMapper
 import java.time.Duration
 import java.util.UUID
@@ -42,6 +42,7 @@ class NotificationKafkaConsumerTest {
     private lateinit var redisMessagePublisher: FakeRedisMessagePublisher
     private lateinit var failedNotificationRepository: FakeFailedNotificationRepository
     private lateinit var notificationKafkaConsumer: NotificationKafkaConsumer
+    private lateinit var notificationProcessor: NotificationProcessor
     private lateinit var objectMapper: ObjectMapper
 
     private lateinit var receiverId: UUID
@@ -53,10 +54,11 @@ class NotificationKafkaConsumerTest {
         notificationRepository = FakeNotificationRepository()
         redisMessagePublisher = FakeRedisMessagePublisher()
         failedNotificationRepository = FakeFailedNotificationRepository()
-        given(stringRedisTemplate.opsForValue()).willReturn(valueOperations)
-        given(valueOperations.setIfAbsent(any(String::class.java), any(String::class.java), any(Duration::class.java))).willReturn(true)
+        notificationProcessor = NotificationProcessor(userRepository, notificationRepository, failedNotificationRepository)
+        lenient().`when`(stringRedisTemplate.opsForValue()).thenReturn(valueOperations)
+        lenient().`when`(valueOperations.setIfAbsent(any(String::class.java), any(String::class.java), any(Duration::class.java))).thenReturn(true)
         notificationKafkaConsumer = NotificationKafkaConsumer(
-            objectMapper, userRepository, notificationRepository, redisMessagePublisher, failedNotificationRepository, stringRedisTemplate
+            objectMapper, notificationProcessor, redisMessagePublisher, stringRedisTemplate
         )
         receiverId = UUID.randomUUID()
     }
@@ -89,6 +91,20 @@ class NotificationKafkaConsumerTest {
         assertThat(notificationRepository.findAllByReceiverId(receiverId)).isNotEmpty()
         assertThat(failedNotificationRepository.getSaved()).isEmpty()
         assertThat(redisMessagePublisher.wasPublishedTo("notification")).isTrue()
+        then(ack).should().acknowledge()
+    }
+
+    @Test
+    fun `consume_중복메시지_skip`() {
+        // given
+        val event = NotificationEvent(receiverId, NotificationType.APPLY_APPROVED, "승인됐습니다", UUID.randomUUID(), 0, 1L)
+        given(valueOperations.setIfAbsent(any(String::class.java), any(String::class.java), any(Duration::class.java))).willReturn(false)
+
+        // when
+        notificationKafkaConsumer.consume(objectMapper.writeValueAsString(event), ack)
+
+        // then
+        assertThat(notificationRepository.findAllByReceiverId(receiverId)).isEmpty()
         then(ack).should().acknowledge()
     }
 }

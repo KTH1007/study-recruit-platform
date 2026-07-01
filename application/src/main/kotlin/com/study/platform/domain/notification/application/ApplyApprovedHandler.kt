@@ -22,9 +22,9 @@ class ApplyApprovedHandler(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     override fun handle(event: ApplyApprovedEvent) {
         val message = "${event.postTitle} 스터디 지원이 승인되었습니다."
-        val notificationEvent = NotificationEvent(event.applicantId, NotificationType.APPLY_APPROVED, message, event.postId, 0)
-        val payload = objectMapper.writeValueAsString(notificationEvent)
-        val outboxEventId = outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.applicantId.toString(), payload)
+        val outboxEventId = outboxEventService.saveWithIdEmbedded(KafkaConstants.NOTIFICATION_TOPIC, event.applicantId.toString()) { id ->
+            objectMapper.writeValueAsString(NotificationEvent(event.applicantId, NotificationType.APPLY_APPROVED, message, event.postId, 0, id))
+        }
         kafkaProducer.send(outboxEventId, event.applicantId, NotificationType.APPLY_APPROVED, message, event.postId)
     }
 }

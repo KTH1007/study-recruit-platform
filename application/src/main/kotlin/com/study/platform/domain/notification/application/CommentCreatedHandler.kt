@@ -22,10 +22,9 @@ class CommentCreatedHandler(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     override fun handle(event: CommentCreatedEvent) {
         val message = "${event.postTitle} 게시글에 댓글이 달렸습니다."
-        val payload = objectMapper.writeValueAsString(
-            NotificationEvent(event.authorId, NotificationType.COMMENT_CREATED, message, event.postId, 0)
-        )
-        val outboxEventId = outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.authorId.toString(), payload)
+        val outboxEventId = outboxEventService.saveWithIdEmbedded(KafkaConstants.NOTIFICATION_TOPIC, event.authorId.toString()) { id ->
+            objectMapper.writeValueAsString(NotificationEvent(event.authorId, NotificationType.COMMENT_CREATED, message, event.postId, 0, id))
+        }
         kafkaProducer.send(outboxEventId, event.authorId, NotificationType.COMMENT_CREATED, message, event.postId)
     }
 }

@@ -39,7 +39,18 @@ class OutboxEventService(
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    fun updatePayload(id: Long, payload: String) {
-        outboxEventRepository.updatePayload(id, payload)
+    fun saveWithIdEmbedded(topic: String, key: String, buildPayload: (Long) -> String): Long {
+        val outbox = outboxEventRepository.save(OutboxEvent.pending(topic, key, "{}"))
+        val id = outbox.id!!
+        outbox.payload = buildPayload(id)
+        return id
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    fun saveWithIdEmbeddedInTx(topic: String, key: String, buildPayload: (Long) -> String): Long {
+        val outbox = outboxEventRepository.save(OutboxEvent.pending(topic, key, "{}"))
+        val id = outbox.id!!
+        outbox.payload = buildPayload(id)
+        return id
     }
 }

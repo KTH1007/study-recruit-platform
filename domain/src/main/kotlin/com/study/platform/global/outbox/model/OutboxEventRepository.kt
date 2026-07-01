@@ -10,5 +10,4 @@ interface OutboxEventRepository {
     fun findAllByStatusAndCreatedAtBefore(status: OutboxEventStatus, createdAt: LocalDateTime, pageable: Pageable): List<OutboxEvent>
     fun markSentById(id: Long): Int
     fun markFailedPermanently(id: Long)
-    fun updatePayload(id: Long, payload: String)
 }

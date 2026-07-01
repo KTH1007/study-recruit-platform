@@ -28,7 +28,4 @@ class OutboxEventRepositoryAdapter(
         outboxEventJpaRepository.markFailedPermanently(id)
     }
 
-    override fun updatePayload(id: Long, payload: String) {
-        outboxEventJpaRepository.updatePayload(id, payload)
-    }
 }

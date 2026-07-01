@@ -39,9 +39,4 @@ class FakeOutboxEventRepository : OutboxEventRepository {
             .forEach { e -> ReflectionTestUtils.setField(e, "status", OutboxEventStatus.FAILED_PERMANENTLY) }
     }
 
-    override fun updatePayload(id: Long, payload: String) {
-        store.find { it.id == id }?.let {
-            ReflectionTestUtils.setField(it, "payload", payload)
-        }
-    }
 }
