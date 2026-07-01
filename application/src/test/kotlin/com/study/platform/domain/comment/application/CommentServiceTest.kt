@@ -10,6 +10,7 @@ import com.study.platform.domain.post.model.StudyPost
 import com.study.platform.domain.user.model.User
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
+import com.study.platform.support.TestFixtures
 import com.study.platform.support.fake.FakeCommentQueryPort
 import com.study.platform.support.fake.FakeCommentRepository
 import com.study.platform.support.fake.FakeDomainEventPublisher
@@ -19,8 +20,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.test.util.ReflectionTestUtils
-import java.time.LocalDateTime
 import java.util.UUID
 
 class CommentServiceTest {
@@ -56,14 +55,9 @@ class CommentServiceTest {
         commenterId = UUID.randomUUID()
         postId = UUID.randomUUID()
 
-        author = User.create("kakao1", "작성자", "author@test.com")
-        ReflectionTestUtils.setField(author, "id", authorId)
-
-        commenter = User.create("kakao2", "댓글작성자", "commenter@test.com")
-        ReflectionTestUtils.setField(commenter, "id", commenterId)
-
-        post = StudyPost.create(author, "스터디 모집", "열심히 합니다", "Java", 3, LocalDateTime.now().plusDays(7))
-        ReflectionTestUtils.setField(post, "id", postId)
+        author = TestFixtures.createUser(id = authorId, kakaoId = "kakao1", nickname = "작성자", email = "author@test.com")
+        commenter = TestFixtures.createUser(id = commenterId, kakaoId = "kakao2", nickname = "댓글작성자", email = "commenter@test.com")
+        post = TestFixtures.createStudyPost(id = postId, author = author, techStack = "Java", maxMembers = 3)
 
         studyPostRepository.save(post)
         userRepository.save(author)
@@ -120,8 +114,7 @@ class CommentServiceTest {
     @Test
     fun `createComment_멘션포함시_멘션알림발행`() {
         // given
-        val mentionedUser = User.create("kakao3", "멘션대상", "mentioned@test.com")
-        ReflectionTestUtils.setField(mentionedUser, "id", UUID.randomUUID())
+        val mentionedUser = TestFixtures.createUser(kakaoId = "kakao3", nickname = "멘션대상", email = "mentioned@test.com")
         userRepository.save(mentionedUser)
         val request = CommentCreateRequest("@멘션대상 확인해주세요")
 
@@ -147,9 +140,8 @@ class CommentServiceTest {
     @Test
     fun `updateComment_성공`() {
         // given
-        val comment = Comment.create(post, commenter, "원본 댓글", eventPublisher)
         val commentId = UUID.randomUUID()
-        ReflectionTestUtils.setField(comment, "id", commentId)
+        val comment = TestFixtures.createComment(id = commentId, post = post, author = commenter, content = "원본 댓글")
         commentRepository.save(comment)
         val request = CommentUpdateRequest("수정된 댓글")
 
@@ -163,9 +155,8 @@ class CommentServiceTest {
     @Test
     fun `updateComment_작성자아님_예외발생`() {
         // given
-        val comment = Comment.create(post, commenter, "원본 댓글", eventPublisher)
         val commentId = UUID.randomUUID()
-        ReflectionTestUtils.setField(comment, "id", commentId)
+        val comment = TestFixtures.createComment(id = commentId, post = post, author = commenter, content = "원본 댓글")
         commentRepository.save(comment)
         val request = CommentUpdateRequest("수정된 댓글")
 
@@ -189,9 +180,8 @@ class CommentServiceTest {
     @Test
     fun `deleteComment_성공`() {
         // given
-        val comment = Comment.create(post, commenter, "삭제할 댓글", eventPublisher)
         val commentId = UUID.randomUUID()
-        ReflectionTestUtils.setField(comment, "id", commentId)
+        val comment = TestFixtures.createComment(id = commentId, post = post, author = commenter, content = "삭제할 댓글")
         commentRepository.save(comment)
 
         // when
@@ -204,9 +194,8 @@ class CommentServiceTest {
     @Test
     fun `deleteComment_작성자아님_예외발생`() {
         // given
-        val comment = Comment.create(post, commenter, "삭제할 댓글", eventPublisher)
         val commentId = UUID.randomUUID()
-        ReflectionTestUtils.setField(comment, "id", commentId)
+        val comment = TestFixtures.createComment(id = commentId, post = post, author = commenter, content = "삭제할 댓글")
         commentRepository.save(comment)
 
         // when & then

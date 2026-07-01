@@ -22,10 +22,9 @@ class ApplyRejectedHandler(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     override fun handle(event: ApplyRejectedEvent) {
         val message = "${event.postTitle} 스터디 지원이 거절되었습니다."
-        val payload = objectMapper.writeValueAsString(
-            NotificationEvent(event.applicantId, NotificationType.APPLY_REJECTED, message, event.postId, 0)
-        )
-        val outboxEventId = outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.applicantId.toString(), payload)
+        val outboxEventId = outboxEventService.saveWithIdEmbedded(KafkaConstants.NOTIFICATION_TOPIC, event.applicantId.toString()) { id ->
+            objectMapper.writeValueAsString(NotificationEvent(event.applicantId, NotificationType.APPLY_REJECTED, message, event.postId, 0, id))
+        }
         kafkaProducer.send(outboxEventId, event.applicantId, NotificationType.APPLY_REJECTED, message, event.postId)
     }
 }

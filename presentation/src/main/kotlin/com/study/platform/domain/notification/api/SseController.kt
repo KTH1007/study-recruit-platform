@@ -31,6 +31,13 @@ class SseController(
         emitter.onTimeout { sseEmitterPort.delete(userId) }
         emitter.onError { sseEmitterPort.delete(userId) }
 
+        try {
+            emitter.send(SseEmitter.event().name("connect").data("connected"))
+        } catch (e: java.io.IOException) {
+            sseEmitterPort.delete(userId)
+            throw e
+        }
+
         return emitter
     }
 }

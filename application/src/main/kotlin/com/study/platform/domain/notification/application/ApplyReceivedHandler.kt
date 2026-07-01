@@ -22,10 +22,9 @@ class ApplyReceivedHandler(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     override fun handle(event: ApplyReceivedEvent) {
         val message = "${event.postTitle} 게시글에 새로운 지원서가 도착했습니다."
-        val payload = objectMapper.writeValueAsString(
-            NotificationEvent(event.authorId, NotificationType.APPLY_RECEIVED, message, event.postId, 0)
-        )
-        val outboxEventId = outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.authorId.toString(), payload)
+        val outboxEventId = outboxEventService.saveWithIdEmbedded(KafkaConstants.NOTIFICATION_TOPIC, event.authorId.toString()) { id ->
+            objectMapper.writeValueAsString(NotificationEvent(event.authorId, NotificationType.APPLY_RECEIVED, message, event.postId, 0, id))
+        }
         kafkaProducer.send(outboxEventId, event.authorId, NotificationType.APPLY_RECEIVED, message, event.postId)
     }
 }

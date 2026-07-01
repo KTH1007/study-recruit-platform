@@ -9,6 +9,10 @@ import com.study.platform.global.ratelimit.RateLimit
 import com.study.platform.global.response.ApiResponse
 import com.study.platform.global.response.SuccessCode
 import jakarta.validation.Valid
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
+import org.springframework.data.web.PageableDefault
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
@@ -27,9 +31,10 @@ class ApplyController(
     @GetMapping("/posts/{postId}/applies")
     override fun findApplies(
         @AuthenticationPrincipal userId: UUID,
-        @PathVariable postId: UUID
-    ): ResponseEntity<ApiResponse<List<ApplyResponse>>> =
-        ApiResponse.success(SuccessCode.APPLY_LIST, findAppliesUseCase.execute(userId, postId))
+        @PathVariable postId: UUID,
+        @PageableDefault(size = 20, sort = ["createdAt"], direction = Sort.Direction.DESC) pageable: Pageable
+    ): ResponseEntity<ApiResponse<Page<ApplyResponse>>> =
+        ApiResponse.success(SuccessCode.APPLY_LIST, findAppliesUseCase.execute(userId, postId, pageable))
 
     @Idempotent
     @RateLimit(limit = 5, windowSeconds = 60)

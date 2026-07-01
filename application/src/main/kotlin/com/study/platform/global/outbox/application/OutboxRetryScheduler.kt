@@ -8,7 +8,9 @@ import com.study.platform.global.kafka.KafkaMessagePublisher
 import com.study.platform.global.outbox.model.OutboxEvent
 import com.study.platform.global.outbox.model.OutboxEventRepository
 import com.study.platform.global.outbox.model.OutboxEventStatus
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.PageRequest
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -31,9 +33,10 @@ class OutboxRetryScheduler(
     }
 
     @Scheduled(fixedDelay = 30_000)
+    @SchedulerLock(name = "OutboxRetryScheduler", lockAtMostFor = "25s")
     fun retryPendingEvents() {
         val pendingEvents = outboxEventRepository
-            .findAllByStatusAndCreatedAtBefore(OutboxEventStatus.PENDING, LocalDateTime.now().minusSeconds(30))
+            .findAllByStatusAndCreatedAtBefore(OutboxEventStatus.PENDING, LocalDateTime.now().minusSeconds(30), PageRequest.of(0, 100))
 
         for (outbox in pendingEvents) {
             retry(outbox)

@@ -2,8 +2,8 @@ package com.study.platform.domain.notification.application
 
 import com.study.platform.domain.notification.model.NotificationEvent
 import com.study.platform.domain.notification.model.NotificationType
-import com.study.platform.domain.user.model.User
 import com.study.platform.global.constant.KafkaConstants
+import com.study.platform.support.TestFixtures
 import com.study.platform.support.fake.FakeFailedNotificationRepository
 import com.study.platform.support.fake.FakeNotificationRepository
 import com.study.platform.support.fake.FakeRedisMessagePublisher
@@ -12,12 +12,17 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
+import org.mockito.ArgumentMatchers.any
+import org.mockito.BDDMockito.given
 import org.mockito.BDDMockito.then
+import org.mockito.Mockito.lenient
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.springframework.data.redis.core.StringRedisTemplate
+import org.springframework.data.redis.core.ValueOperations
 import org.springframework.kafka.support.Acknowledgment
-import org.springframework.test.util.ReflectionTestUtils
 import tools.jackson.databind.ObjectMapper
+import java.time.Duration
 import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
@@ -26,11 +31,18 @@ class NotificationKafkaConsumerTest {
     @Mock
     private lateinit var ack: Acknowledgment
 
+    @Mock
+    private lateinit var stringRedisTemplate: StringRedisTemplate
+
+    @Mock
+    private lateinit var valueOperations: ValueOperations<String, String>
+
     private lateinit var userRepository: FakeUserRepository
     private lateinit var notificationRepository: FakeNotificationRepository
     private lateinit var redisMessagePublisher: FakeRedisMessagePublisher
     private lateinit var failedNotificationRepository: FakeFailedNotificationRepository
     private lateinit var notificationKafkaConsumer: NotificationKafkaConsumer
+    private lateinit var notificationProcessor: NotificationProcessor
     private lateinit var objectMapper: ObjectMapper
 
     private lateinit var receiverId: UUID
@@ -42,8 +54,11 @@ class NotificationKafkaConsumerTest {
         notificationRepository = FakeNotificationRepository()
         redisMessagePublisher = FakeRedisMessagePublisher()
         failedNotificationRepository = FakeFailedNotificationRepository()
+        notificationProcessor = NotificationProcessor(userRepository, notificationRepository, failedNotificationRepository)
+        lenient().`when`(stringRedisTemplate.opsForValue()).thenReturn(valueOperations)
+        lenient().`when`(valueOperations.setIfAbsent(any(String::class.java), any(String::class.java), any(Duration::class.java))).thenReturn(true)
         notificationKafkaConsumer = NotificationKafkaConsumer(
-            objectMapper, userRepository, notificationRepository, redisMessagePublisher, failedNotificationRepository
+            objectMapper, notificationProcessor, redisMessagePublisher, stringRedisTemplate
         )
         receiverId = UUID.randomUUID()
     }
@@ -66,8 +81,7 @@ class NotificationKafkaConsumerTest {
     fun `consume_정상처리`() {
         // given
         val event = NotificationEvent(receiverId, NotificationType.APPLY_APPROVED, "승인됐습니다", UUID.randomUUID(), 0)
-        val receiver = User.create("kakao1", "수신자", "receiver@test.com")
-        ReflectionTestUtils.setField(receiver, "id", receiverId)
+        val receiver = TestFixtures.createUser(id = receiverId, kakaoId = "kakao1", nickname = "수신자", email = "receiver@test.com")
         userRepository.save(receiver)
 
         // when
@@ -77,6 +91,20 @@ class NotificationKafkaConsumerTest {
         assertThat(notificationRepository.findAllByReceiverId(receiverId)).isNotEmpty()
         assertThat(failedNotificationRepository.getSaved()).isEmpty()
         assertThat(redisMessagePublisher.wasPublishedTo("notification")).isTrue()
+        then(ack).should().acknowledge()
+    }
+
+    @Test
+    fun `consume_중복메시지_skip`() {
+        // given
+        val event = NotificationEvent(receiverId, NotificationType.APPLY_APPROVED, "승인됐습니다", UUID.randomUUID(), 0, 1L)
+        given(valueOperations.setIfAbsent(any(String::class.java), any(String::class.java), any(Duration::class.java))).willReturn(false)
+
+        // when
+        notificationKafkaConsumer.consume(objectMapper.writeValueAsString(event), ack)
+
+        // then
+        assertThat(notificationRepository.findAllByReceiverId(receiverId)).isEmpty()
         then(ack).should().acknowledge()
     }
 }

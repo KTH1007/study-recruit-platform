@@ -22,10 +22,9 @@ class MentionHandler(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     override fun handle(event: MentionEvent) {
         val message = "${event.commenterNickname}님이 댓글에서 회원님을 멘션했습니다."
-        val payload = objectMapper.writeValueAsString(
-            NotificationEvent(event.mentionedUserId, NotificationType.MENTION, message, event.postId, 0)
-        )
-        val outboxEventId = outboxEventService.saveWithNewTx(KafkaConstants.NOTIFICATION_TOPIC, event.mentionedUserId.toString(), payload)
+        val outboxEventId = outboxEventService.saveWithIdEmbedded(KafkaConstants.NOTIFICATION_TOPIC, event.mentionedUserId.toString()) { id ->
+            objectMapper.writeValueAsString(NotificationEvent(event.mentionedUserId, NotificationType.MENTION, message, event.postId, 0, id))
+        }
         kafkaProducer.send(outboxEventId, event.mentionedUserId, NotificationType.MENTION, message, event.postId)
     }
 }

@@ -44,7 +44,8 @@ class IdempotencyAcceptanceTest : AbstractAcceptanceTest() {
             HttpEntity<Void>(authHeaders(author)),
             Map::class.java
         )
-        val applyList = applies.body!!["data"] as List<*>
+        val applyData = applies.body!!["data"] as Map<*, *>
+        val applyList = applyData["content"] as List<*>
         val applicantApplies = applyList.count { apply ->
             ((apply as Map<*, *>)["applicantNickname"]) == applicant.nickname
         }

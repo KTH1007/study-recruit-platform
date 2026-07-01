@@ -37,4 +37,20 @@ class OutboxEventService(
         outbox.incrementRetryCount()
         outboxEventRepository.save(outbox)
     }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun saveWithIdEmbedded(topic: String, key: String, buildPayload: (Long) -> String): Long {
+        val outbox = outboxEventRepository.save(OutboxEvent.pending(topic, key, "{}"))
+        val id = outbox.id!!
+        outbox.payload = buildPayload(id)
+        return id
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    fun saveWithIdEmbeddedInTx(topic: String, key: String, buildPayload: (Long) -> String): Long {
+        val outbox = outboxEventRepository.save(OutboxEvent.pending(topic, key, "{}"))
+        val id = outbox.id!!
+        outbox.payload = buildPayload(id)
+        return id
+    }
 }

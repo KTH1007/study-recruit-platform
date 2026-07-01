@@ -1,6 +1,5 @@
 package com.study.platform.domain.team.application
 
-import com.study.platform.domain.post.model.StudyPost
 import com.study.platform.domain.team.dto.request.TeamScheduleCreateRequest
 import com.study.platform.domain.team.dto.request.TeamScheduleUpdateRequest
 import com.study.platform.domain.team.dto.response.TeamScheduleResponse
@@ -11,6 +10,7 @@ import com.study.platform.domain.user.model.User
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
 import com.study.platform.global.outbox.application.OutboxEventService
+import com.study.platform.support.TestFixtures
 import com.study.platform.support.fake.FakeNotificationPublisher
 import com.study.platform.support.fake.FakeOutboxEventRepository
 import com.study.platform.support.fake.FakeStudyTeamRepository
@@ -21,7 +21,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.test.util.ReflectionTestUtils
 import tools.jackson.databind.ObjectMapper
 import java.time.LocalDateTime
 import java.util.UUID
@@ -65,20 +64,11 @@ class TeamScheduleServiceTest {
         teamId = UUID.randomUUID()
         scheduleId = UUID.randomUUID()
 
-        user = User.create("kakao-1", "팀원", "member@test.com")
-        ReflectionTestUtils.setField(user, "id", userId)
-
-        val post = StudyPost.create(user, "스터디", "열심히", "Java", 5, LocalDateTime.now().plusDays(7))
-        ReflectionTestUtils.setField(post, "id", UUID.randomUUID())
-
-        team = StudyTeam.create(post)
-        ReflectionTestUtils.setField(team, "id", teamId)
-
-        teamMember = TeamMember.createMember(team, user)
-        ReflectionTestUtils.setField(teamMember, "id", UUID.randomUUID())
-
-        schedule = TeamSchedule.create(team, "1회차 미팅", "미팅 내용", LocalDateTime.now().plusDays(3))
-        ReflectionTestUtils.setField(schedule, "id", scheduleId)
+        user = TestFixtures.createUser(id = userId, kakaoId = "kakao-1", nickname = "팀원", email = "member@test.com")
+        val post = TestFixtures.createStudyPost(author = user, techStack = "Java")
+        team = TestFixtures.createStudyTeam(id = teamId, post = post)
+        teamMember = TestFixtures.createNormalMember(team = team, user = user)
+        schedule = TestFixtures.createTeamSchedule(id = scheduleId, team = team, title = "1회차 미팅", description = "미팅 내용")
 
         studyTeamRepository.save(team)
         teamMemberRepository.save(teamMember)

@@ -51,10 +51,9 @@ class CreateTeamScheduleService(
 
         val pending = teamMemberRepository.findAllByTeamId(teamId).map { member ->
             val userId = member.user!!.id!!
-            val payload = objectMapper.writeValueAsString(
-                NotificationEvent(userId, NotificationType.SCHEDULE_CREATED, message, scheduledId, 0)
-            )
-            val outboxEventId = outboxEventService.save(KafkaConstants.NOTIFICATION_TOPIC, userId.toString(), payload)
+            val outboxEventId = outboxEventService.saveWithIdEmbeddedInTx(KafkaConstants.NOTIFICATION_TOPIC, userId.toString()) { id ->
+                objectMapper.writeValueAsString(NotificationEvent(userId, NotificationType.SCHEDULE_CREATED, message, scheduledId, 0, id))
+            }
             PendingNotification(outboxEventId, userId)
         }
 

@@ -103,7 +103,9 @@ class ApplyControllerTest {
 
     @Test
     fun `findApplies_성공`() {
-        given(findAppliesUseCase.execute(anyNonNull(), anyNonNull())).willReturn(listOf(applyResponse))
+        given(findAppliesUseCase.execute(anyNonNull(), anyNonNull(), anyNonNull())).willReturn(
+            org.springframework.data.domain.PageImpl(listOf(applyResponse))
+        )
 
         mockMvc.perform(
             get("/api/posts/{postId}/applies", postId)
@@ -111,7 +113,7 @@ class ApplyControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data[0].applicantNickname").value("지원자"))
+            .andExpect(jsonPath("$.data.content[0].applicantNickname").value("지원자"))
     }
 
     @Test

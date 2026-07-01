@@ -9,7 +9,8 @@ data class NotificationEvent @JsonCreator constructor(
     @param:JsonProperty("type") val type: NotificationType,
     @param:JsonProperty("message") val message: String,
     @param:JsonProperty("targetId") val targetId: UUID?,
-    @param:JsonProperty("retryCount") val retryCount: Int
+    @param:JsonProperty("retryCount") val retryCount: Int,
+    @param:JsonProperty("outboxEventId") val outboxEventId: Long = 0
 ) {
     fun withRetry(): NotificationEvent = copy(retryCount = retryCount + 1)
 }

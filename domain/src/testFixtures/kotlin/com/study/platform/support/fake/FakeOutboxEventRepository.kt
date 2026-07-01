@@ -3,6 +3,7 @@ package com.study.platform.support.fake
 import com.study.platform.global.outbox.model.OutboxEvent
 import com.study.platform.global.outbox.model.OutboxEventRepository
 import com.study.platform.global.outbox.model.OutboxEventStatus
+import org.springframework.data.domain.Pageable
 import org.springframework.test.util.ReflectionTestUtils
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicLong
@@ -20,8 +21,8 @@ class FakeOutboxEventRepository : OutboxEventRepository {
         return event
     }
 
-    override fun findAllByStatusAndCreatedAtBefore(status: OutboxEventStatus, createdAt: LocalDateTime): List<OutboxEvent> =
-        store.filter { e -> e.status == status }
+    override fun findAllByStatusAndCreatedAtBefore(status: OutboxEventStatus, createdAt: LocalDateTime, pageable: Pageable): List<OutboxEvent> =
+        store.filter { e -> e.status == status }.take(pageable.pageSize)
 
     override fun markSentById(id: Long): Int =
         store.filter { e -> e.id == id }
@@ -37,4 +38,5 @@ class FakeOutboxEventRepository : OutboxEventRepository {
         store.filter { e -> e.id == id }
             .forEach { e -> ReflectionTestUtils.setField(e, "status", OutboxEventStatus.FAILED_PERMANENTLY) }
     }
+
 }
