@@ -28,9 +28,6 @@ class StudyPostRepositoryAdapter(
     override fun findByIdWithAuthor(postId: UUID): StudyPost? =
         studyPostJpaRepository.findByIdWithAuthor(postId)
 
-    override fun findExpiredPosts(now: LocalDateTime, status: StudyPostStatus): List<StudyPost> =
-        studyPostJpaRepository.findExpiredPosts(now, status)
-
     override fun findDeadlineReminderPosts(start: LocalDateTime, end: LocalDateTime, status: StudyPostStatus): List<StudyPost> =
         studyPostJpaRepository.findDeadlineReminderPosts(start, end, status)
 

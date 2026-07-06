@@ -22,6 +22,7 @@ class DeleteTeamScheduleService(
         }
         val schedule = teamScheduleRepository.findById(scheduleId)
             ?: throw CustomException(ErrorCode.TEAM_SCHEDULE_NOT_FOUND)
+        schedule.validateBelongsToTeam(teamId)
         teamScheduleRepository.delete(schedule)
     }
 }

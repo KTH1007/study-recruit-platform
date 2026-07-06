@@ -2,6 +2,8 @@ package com.study.platform.domain.team.infrastructure
 
 import com.study.platform.domain.team.model.TeamSchedule
 import com.study.platform.domain.team.model.TeamScheduleRepository
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Slice
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 import java.util.UUID
@@ -21,6 +23,10 @@ class TeamScheduleRepositoryAdapter(
         teamScheduleJpaRepository.delete(schedule)
     }
 
-    override fun findAllByScheduledAtBetweenWithTeam(start: LocalDateTime, end: LocalDateTime): List<TeamSchedule> =
-        teamScheduleJpaRepository.findAllByScheduledAtBetweenWithTeam(start, end)
+    override fun deleteAllByTeamId(teamId: UUID) {
+        teamScheduleJpaRepository.deleteAllByTeamId(teamId)
+    }
+
+    override fun findAllByScheduledAtBetweenWithTeam(start: LocalDateTime, end: LocalDateTime, pageable: Pageable): Slice<TeamSchedule> =
+        teamScheduleJpaRepository.findAllByScheduledAtBetweenWithTeam(start, end, pageable)
 }

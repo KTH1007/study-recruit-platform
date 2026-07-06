@@ -16,7 +16,7 @@ interface StudyTeamControllerDoc {
     fun findTeam(teamId: UUID): ResponseEntity<ApiResponse<StudyTeamResponse>>
 
     @Operation(summary = "팀원 목록 조회", description = "팀원 목록을 조회합니다.")
-    fun findMembers(teamId: UUID): ResponseEntity<ApiResponse<List<TeamMemberResponse>>>
+    fun findMembers(@Parameter(hidden = true) userId: UUID, teamId: UUID): ResponseEntity<ApiResponse<List<TeamMemberResponse>>>
 
     @Operation(summary = "리더 위임", description = "팀장 권한을 다른 팀원에게 위임합니다.")
     fun delegateLeader(@Parameter(hidden = true) userId: UUID, teamId: UUID, targetUserId: UUID): ResponseEntity<ApiResponse<Void>>

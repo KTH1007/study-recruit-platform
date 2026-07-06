@@ -8,6 +8,8 @@ interface TeamMemberJpaRepository : JpaRepository<TeamMember, UUID> {
 
     fun findAllByTeamId(teamId: UUID): List<TeamMember>
 
+    fun findAllByTeamIdIn(teamIds: Collection<UUID>): List<TeamMember>
+
     fun findByTeamIdAndUserId(teamId: UUID, userId: UUID): TeamMember?
 
     fun existsByTeamIdAndUserId(teamId: UUID, userId: UUID): Boolean

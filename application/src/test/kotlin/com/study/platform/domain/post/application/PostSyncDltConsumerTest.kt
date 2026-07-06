@@ -4,24 +4,18 @@ import com.study.platform.domain.post.event.PostSyncEvent
 import com.study.platform.domain.post.event.PostSyncOperationType
 import com.study.platform.domain.post.model.FailedPostSync
 import com.study.platform.global.constant.KafkaConstants
+import com.study.platform.support.fake.FakeAcknowledgment
 import com.study.platform.support.fake.FakeFailedPostSyncRepository
 import com.study.platform.support.fake.FakeKafkaMessagePublisher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
-import org.mockito.BDDMockito.then
-import org.mockito.junit.jupiter.MockitoExtension
-import org.springframework.kafka.support.Acknowledgment
 import tools.jackson.databind.ObjectMapper
 import java.util.UUID
 
-@ExtendWith(MockitoExtension::class)
 class PostSyncDltConsumerTest {
 
-    @Mock
-    private lateinit var ack: Acknowledgment
+    private lateinit var ack: FakeAcknowledgment
 
     private lateinit var kafkaPublisher: FakeKafkaMessagePublisher
     private lateinit var failedPostSyncRepository: FakeFailedPostSyncRepository
@@ -32,6 +26,7 @@ class PostSyncDltConsumerTest {
 
     @BeforeEach
     fun setUp() {
+        ack = FakeAcknowledgment()
         objectMapper = ObjectMapper()
         kafkaPublisher = FakeKafkaMessagePublisher()
         failedPostSyncRepository = FakeFailedPostSyncRepository()
@@ -50,7 +45,7 @@ class PostSyncDltConsumerTest {
         // then
         assertThat(kafkaPublisher.wasPublishedTo(KafkaConstants.POST_SYNC_TOPIC)).isTrue()
         assertThat(failedPostSyncRepository.getSaved()).isEmpty()
-        then(ack).should().acknowledge()
+        assertThat(ack.isAcknowledged()).isTrue()
     }
 
     @Test
@@ -65,7 +60,7 @@ class PostSyncDltConsumerTest {
         assertThat(failedPostSyncRepository.getSaved()).hasSize(1)
         assertThat(failedPostSyncRepository.getSaved()[0]).isInstanceOf(FailedPostSync::class.java)
         assertThat(kafkaPublisher.getPublishedTopics()).isEmpty()
-        then(ack).should().acknowledge()
+        assertThat(ack.isAcknowledged()).isTrue()
     }
 
     @Test
@@ -79,6 +74,6 @@ class PostSyncDltConsumerTest {
         // then
         assertThat(kafkaPublisher.getPublishedTopics()).isEmpty()
         assertThat(failedPostSyncRepository.getSaved()).isEmpty()
-        then(ack).should().acknowledge()
+        assertThat(ack.isAcknowledged()).isTrue()
     }
 }

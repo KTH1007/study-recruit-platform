@@ -29,9 +29,12 @@ dependencies {
     runtimeOnly("com.mysql:mysql-connector-j")
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
     implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
+    implementation("net.javacrumbs.shedlock:shedlock-spring:6.0.2")
+    implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:6.0.2")
     jooqGenerator("com.mysql:mysql-connector-j")
 
     testImplementation(testFixtures(project(":domain")))
+    testImplementation("org.springframework.batch:spring-batch-test")
     testImplementation("org.testcontainers:testcontainers:1.21.4")
     testImplementation("org.testcontainers:mysql:1.21.4")
     testImplementation("org.testcontainers:junit-jupiter:1.21.4")

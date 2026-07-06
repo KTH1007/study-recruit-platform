@@ -17,6 +17,7 @@ class CancelApplyService(
     override fun execute(userId: UUID, postId: UUID) {
         val apply = applyRepository.findByPostIdAndApplicantId(postId, userId)
             ?: throw CustomException(ErrorCode.APPLICATION_NOT_FOUND)
+        apply.validatePending()
         applyRepository.delete(apply)
     }
 }

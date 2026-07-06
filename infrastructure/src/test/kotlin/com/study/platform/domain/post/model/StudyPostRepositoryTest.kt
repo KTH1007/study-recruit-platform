@@ -106,20 +106,6 @@ class StudyPostRepositoryTest : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `findExpiredPosts_마감기한지난게시글_조회`() {
-        studyPostRepository.save(
-            StudyPost.create(author, "기한 지난 스터디", "열심히 합니다", "Java", 3, LocalDateTime.now().minusDays(1))
-        )
-
-        val result: List<StudyPost> = studyPostRepository.findExpiredPosts(
-            LocalDateTime.now(), StudyPostStatus.OPEN
-        )
-
-        assertThat(result).hasSize(1)
-        assertThat(result[0].title).isEqualTo("기한 지난 스터디")
-    }
-
-    @Test
     fun `findDeadlineReminderPosts_마감임박게시글_조회`() {
         val tomorrow = LocalDateTime.now().plusDays(1)
         studyPostRepository.save(

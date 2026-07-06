@@ -194,6 +194,21 @@ class ApplyServiceTest {
     }
 
     @Test
+    fun `cancel_이미승인된_지원은_취소불가`() {
+        // given
+        val applyId = UUID.randomUUID()
+        val apply = TestFixtures.createApply(id = applyId, post = post, applicant = applicant)
+        apply.approve(eventPublisher)
+        applyRepository.save(apply)
+
+        // when & then
+        assertThatThrownBy { cancelApplyService.execute(applicantId, postId) }
+            .isInstanceOf(CustomException::class.java)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.APPLICATION_ALREADY_PROCESSED)
+        assertThat(applyRepository.findById(applyId)).isNotNull()
+    }
+
+    @Test
     fun `findApplies_성공`() {
         // given
         userRepository.save(author)

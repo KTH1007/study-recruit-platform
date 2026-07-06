@@ -20,14 +20,19 @@ class RedisNotificationSubscriber(
     }
 
     fun onMessage(message: String, channel: String) {
-        try {
-            val response = objectMapper.readValue(message, NotificationResponse::class.java)
-            val connection = sseEmitterPort.findByUserId(response.receiverId) ?: return
-            connection.send(SSE_EVENT_NAME, response)
-        } catch (e: IOException) {
-            log.warn("SSE 전송 실패 : {}", e.message)
+        val response = try {
+            objectMapper.readValue(message, NotificationResponse::class.java)
         } catch (e: JacksonException) {
-            log.warn("SSE 전송 실패 : {}", e.message)
+            log.warn("SSE 알림 파싱 실패 : {}", e.message)
+            return
+        }
+
+        sseEmitterPort.findAllByUserId(response.receiverId).forEach { connection ->
+            try {
+                connection.send(SSE_EVENT_NAME, response)
+            } catch (e: IOException) {
+                log.warn("SSE 전송 실패 : {}", e.message)
+            }
         }
     }
 }

@@ -23,18 +23,19 @@ class SseController(
     @GetMapping(value = ["/subscribe"], produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
     override fun subscribe(@AuthenticationPrincipal userId: UUID): SseEmitter {
         val emitter = SseEmitter(SSE_TIMEOUT)
+        val connectionId = UUID.randomUUID().toString()
         val connection = SseEmitterAdapter(emitter)
 
-        sseEmitterPort.save(userId, connection)
+        sseEmitterPort.save(userId, connectionId, connection)
 
-        emitter.onCompletion { sseEmitterPort.delete(userId) }
-        emitter.onTimeout { sseEmitterPort.delete(userId) }
-        emitter.onError { sseEmitterPort.delete(userId) }
+        emitter.onCompletion { sseEmitterPort.delete(userId, connectionId) }
+        emitter.onTimeout { sseEmitterPort.delete(userId, connectionId) }
+        emitter.onError { sseEmitterPort.delete(userId, connectionId) }
 
         try {
             emitter.send(SseEmitter.event().name("connect").data("connected"))
         } catch (e: java.io.IOException) {
-            sseEmitterPort.delete(userId)
+            sseEmitterPort.delete(userId, connectionId)
             throw e
         }
 

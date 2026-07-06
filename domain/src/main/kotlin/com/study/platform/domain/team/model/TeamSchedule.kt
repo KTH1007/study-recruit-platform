@@ -1,6 +1,8 @@
 package com.study.platform.domain.team.model
 
 import com.study.platform.global.entity.BaseTimeEntity
+import com.study.platform.global.exception.CustomException
+import com.study.platform.global.exception.ErrorCode
 import jakarta.persistence.*
 import java.time.LocalDateTime
 import java.util.UUID
@@ -31,6 +33,10 @@ class TeamSchedule : BaseTimeEntity() {
         this.title = title
         this.description = description
         this.scheduledAt = scheduledAt
+    }
+
+    fun validateBelongsToTeam(teamId: UUID) {
+        if (team?.id != teamId) throw CustomException(ErrorCode.TEAM_SCHEDULE_NOT_FOUND)
     }
 
     companion object {

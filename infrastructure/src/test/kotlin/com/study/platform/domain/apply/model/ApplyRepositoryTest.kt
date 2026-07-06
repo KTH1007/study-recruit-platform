@@ -16,7 +16,6 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.util.UUID
 
 @Transactional
 class ApplyRepositoryTest : AbstractIntegrationTest() {
@@ -60,22 +59,6 @@ class ApplyRepositoryTest : AbstractIntegrationTest() {
         val result: Page<ApplyResponse> = applyQueryPort.findAllByPostId(otherPost.id!!, PageRequest.of(0, 20))
 
         assertThat(result.content).isEmpty()
-    }
-
-    @Test
-    fun `findByIdWithPostAndApplicant_성공`() {
-        val result: Apply? = applyRepository.findByIdWithPostAndApplicant(apply.id!!)
-
-        assertThat(result).isNotNull()
-        assertThat(result!!.post.title).isEqualTo("스터디 모집")
-        assertThat(result.applicant.nickname).isEqualTo("지원자")
-    }
-
-    @Test
-    fun `findByIdWithPostAndApplicant_존재하지않음_빈Optional`() {
-        val result: Apply? = applyRepository.findByIdWithPostAndApplicant(UUID.randomUUID())
-
-        assertThat(result).isNull()
     }
 
     @Test
@@ -137,5 +120,6 @@ class ApplyRepositoryTest : AbstractIntegrationTest() {
 
         assertThat(result).isNotNull()
         assertThat(result!!.id).isEqualTo(apply.id)
+        assertThat(result.post.title).isEqualTo("스터디 모집")
     }
 }

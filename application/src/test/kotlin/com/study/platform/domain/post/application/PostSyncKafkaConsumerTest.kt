@@ -3,6 +3,7 @@ package com.study.platform.domain.post.application
 import com.study.platform.domain.post.event.PostSyncEvent
 import com.study.platform.domain.post.event.PostSyncOperationType
 import com.study.platform.global.constant.KafkaConstants
+import com.study.platform.support.fake.FakeAcknowledgment
 import com.study.platform.support.fake.FakeFailedPostSyncRepository
 import com.study.platform.support.fake.FakeStudyPostRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -13,7 +14,6 @@ import org.mockito.Mock
 import org.mockito.BDDMockito.then
 import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
-import org.springframework.kafka.support.Acknowledgment
 import tools.jackson.databind.ObjectMapper
 import java.util.UUID
 
@@ -23,8 +23,7 @@ class PostSyncKafkaConsumerTest {
     @Mock
     private lateinit var postSearchService: PostSearchService
 
-    @Mock
-    private lateinit var ack: Acknowledgment
+    private lateinit var ack: FakeAcknowledgment
 
     private lateinit var studyPostRepository: FakeStudyPostRepository
     private lateinit var failedPostSyncRepository: FakeFailedPostSyncRepository
@@ -35,6 +34,7 @@ class PostSyncKafkaConsumerTest {
 
     @BeforeEach
     fun setUp() {
+        ack = FakeAcknowledgment()
         objectMapper = ObjectMapper()
         studyPostRepository = FakeStudyPostRepository()
         failedPostSyncRepository = FakeFailedPostSyncRepository()
@@ -53,7 +53,7 @@ class PostSyncKafkaConsumerTest {
         // then
         assertThat(failedPostSyncRepository.getSaved()).hasSize(1)
         Mockito.verifyNoInteractions(postSearchService)
-        then(ack).should().acknowledge()
+        assertThat(ack.isAcknowledged()).isTrue()
     }
 
     @Test
@@ -67,7 +67,7 @@ class PostSyncKafkaConsumerTest {
         // then
         assertThat(failedPostSyncRepository.getSaved()).isEmpty()
         Mockito.verifyNoInteractions(postSearchService)
-        then(ack).should().acknowledge()
+        assertThat(ack.isAcknowledged()).isTrue()
     }
 
     @Test
@@ -81,6 +81,6 @@ class PostSyncKafkaConsumerTest {
         // then
         then(postSearchService).should().delete(postId.toString())
         assertThat(failedPostSyncRepository.getSaved()).isEmpty()
-        then(ack).should().acknowledge()
+        assertThat(ack.isAcknowledged()).isTrue()
     }
 }

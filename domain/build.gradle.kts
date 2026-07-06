@@ -12,8 +12,8 @@ dependencies {
     testFixturesImplementation(project(":common"))
     testFixturesImplementation("org.springframework.boot:spring-boot-starter-data-jpa")
     testFixturesImplementation("org.springframework.boot:spring-boot-starter-data-redis")
-    testFixturesCompileOnly("org.projectlombok:lombok")
-    testFixturesAnnotationProcessor("org.projectlombok:lombok")
     testFixturesImplementation("org.springframework.boot:spring-boot-starter-kafka")
     testFixturesImplementation("org.springframework.boot:spring-boot-starter-test")
+    testFixturesImplementation("org.testcontainers:testcontainers:1.21.4")
+    testFixturesImplementation("org.testcontainers:mysql:1.21.4")
 }

@@ -21,17 +21,22 @@ class ApproveApplyService(
 
     @Transactional
     override fun execute(userId: UUID, applyId: UUID): ApplyResponse {
-        val apply = applyRepository.findByIdWithPostAndApplicantForUpdate(applyId)
+        // post -> apply 순서로 락을 획득하여 REPEATABLE_READ 스냅샷 문제 방지
+        val postId = applyRepository.findPostIdByApplyId(applyId)
             ?: throw CustomException(ErrorCode.APPLICATION_NOT_FOUND)
 
-        val post = studyPostRepository.findByIdWithAuthorForUpdate(apply.post.id!!)
+        val post = studyPostRepository.findByIdWithAuthorForUpdate(postId)
             ?: throw CustomException(ErrorCode.POST_NOT_FOUND)
         post.validateAuthor(userId)
+        post.validateOpen()
+
+        val apply = applyRepository.findByIdWithPostAndApplicantForUpdate(applyId)
+            ?: throw CustomException(ErrorCode.APPLICATION_NOT_FOUND)
 
         apply.approve(eventPublisher)
         applyRepository.save(apply)
 
-        val approvedCount = applyRepository.countByPostIdAndStatus(post.id!!, ApplyStatus.APPROVED)
+        val approvedCount = applyRepository.countByPostIdAndStatus(postId, ApplyStatus.APPROVED)
         post.markFullIfNeeded(approvedCount)
 
         return ApplyResponse.from(apply)

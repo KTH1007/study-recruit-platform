@@ -11,10 +11,12 @@ import com.study.platform.domain.user.model.User
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
 import com.study.platform.support.TestFixtures
+import com.study.platform.support.fake.FakeChatMessageRepository
 import com.study.platform.support.fake.FakeStudyPostRepository
 import com.study.platform.support.fake.FakeStudyTeamRepository
 import com.study.platform.support.fake.FakeTeamMemberQueryPort
 import com.study.platform.support.fake.FakeTeamMemberRepository
+import com.study.platform.support.fake.FakeTeamScheduleRepository
 import com.study.platform.support.fake.FakeUserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -28,6 +30,8 @@ class StudyTeamServiceTest {
     private lateinit var teamMemberRepository: FakeTeamMemberRepository
     private lateinit var studyPostRepository: FakeStudyPostRepository
     private lateinit var userRepository: FakeUserRepository
+    private lateinit var teamScheduleRepository: FakeTeamScheduleRepository
+    private lateinit var chatMessageRepository: FakeChatMessageRepository
 
     private lateinit var createStudyTeamService: CreateStudyTeamService
     private lateinit var findStudyTeamService: FindStudyTeamService
@@ -53,13 +57,15 @@ class StudyTeamServiceTest {
         teamMemberRepository = FakeTeamMemberRepository()
         studyPostRepository = FakeStudyPostRepository()
         userRepository = FakeUserRepository()
+        teamScheduleRepository = FakeTeamScheduleRepository()
+        chatMessageRepository = FakeChatMessageRepository()
 
         createStudyTeamService = CreateStudyTeamService(studyTeamRepository, teamMemberRepository, studyPostRepository, userRepository)
         findStudyTeamService = FindStudyTeamService(studyTeamRepository)
-        findTeamMembersService = FindTeamMembersService(FakeTeamMemberQueryPort(teamMemberRepository))
+        findTeamMembersService = FindTeamMembersService(FakeTeamMemberQueryPort(teamMemberRepository), teamMemberRepository)
         delegateLeaderService = DelegateLeaderService(teamMemberRepository)
         removeTeamMemberService = RemoveTeamMemberService(teamMemberRepository)
-        leaveTeamService = LeaveTeamService(studyTeamRepository, teamMemberRepository)
+        leaveTeamService = LeaveTeamService(studyTeamRepository, teamMemberRepository, teamScheduleRepository, chatMessageRepository)
 
         leaderId = UUID.randomUUID()
         memberId = UUID.randomUUID()
@@ -156,10 +162,23 @@ class StudyTeamServiceTest {
         teamMemberRepository.save(normalMember)
 
         // when
-        val responses: List<TeamMemberResponse> = findTeamMembersService.execute(teamId)
+        val responses: List<TeamMemberResponse> = findTeamMembersService.execute(leaderId, teamId)
 
         // then
         assertThat(responses).hasSize(2)
+    }
+
+    @Test
+    fun `findMembers_팀원아님_예외발생`() {
+        // given
+        studyTeamRepository.save(team)
+        teamMemberRepository.save(leaderMember)
+        val outsiderId = UUID.randomUUID()
+
+        // when & then
+        assertThatThrownBy { findTeamMembersService.execute(outsiderId, teamId) }
+            .isInstanceOf(CustomException::class.java)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_TEAM_MEMBER)
     }
 
     @Test
@@ -236,6 +255,8 @@ class StudyTeamServiceTest {
         // given
         studyTeamRepository.save(team)
         teamMemberRepository.save(leaderMember)
+        teamScheduleRepository.save(TestFixtures.createTeamSchedule(team = team))
+        chatMessageRepository.save(TestFixtures.createChatMessage(team = team, sender = leader))
 
         // when
         leaveTeamService.execute(leaderId, teamId)
@@ -243,6 +264,8 @@ class StudyTeamServiceTest {
         // then
         assertThat(studyTeamRepository.findById(teamId)).isNull()
         assertThat(teamMemberRepository.findAllByTeamId(teamId)).isEmpty()
+        assertThat(teamScheduleRepository.findAllByTeamId(teamId)).isEmpty()
+        assertThat(chatMessageRepository.findAllByTeamId(teamId)).isEmpty()
     }
 
     @Test

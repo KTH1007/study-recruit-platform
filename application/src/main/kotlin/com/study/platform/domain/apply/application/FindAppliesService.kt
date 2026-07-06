@@ -20,7 +20,7 @@ class FindAppliesService(
 ) : FindAppliesUseCase {
 
     override fun execute(userId: UUID, postId: UUID, pageable: Pageable): Page<ApplyResponse> {
-        val post = studyPostRepository.findByIdWithAuthor(postId)
+        val post = studyPostRepository.findById(postId)
             ?: throw CustomException(ErrorCode.POST_NOT_FOUND)
         post.validateAuthor(userId)
         return applyQueryPort.findAllByPostId(postId, pageable)

@@ -15,7 +15,7 @@ class DeleteCommentService(
 
     @Transactional
     override fun execute(userId: UUID, commentId: UUID) {
-        val comment = commentRepository.findByIdWithAuthor(commentId)
+        val comment = commentRepository.findById(commentId)
             ?: throw CustomException(ErrorCode.COMMENT_NOT_FOUND)
         comment.validateAuthor(userId)
         commentRepository.delete(comment)

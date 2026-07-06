@@ -8,6 +8,8 @@ import java.util.UUID
 
 interface CommentJpaRepository : JpaRepository<Comment, UUID> {
 
+    fun deleteAllByPostId(postId: UUID)
+
     @Query("SELECT c FROM Comment c JOIN FETCH c.author WHERE c.id = :commentId")
     fun findByIdWithAuthor(@Param("commentId") commentId: UUID): Comment?
 }

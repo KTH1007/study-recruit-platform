@@ -117,12 +117,28 @@ class StudyTeamControllerTest {
             TeamMemberResponse(UUID.randomUUID(), userId, "팀장", TeamMemberRole.LEADER),
             TeamMemberResponse(UUID.randomUUID(), targetUserId, "팀원", TeamMemberRole.MEMBER)
         )
-        given(findTeamMembersUseCase.execute(anyNonNull())).willReturn(members)
+        given(findTeamMembersUseCase.execute(anyNonNull(), anyNonNull())).willReturn(members)
 
-        mockMvc.perform(get("/api/teams/{teamId}/members", teamId))
+        mockMvc.perform(
+            get("/api/teams/{teamId}/members", teamId)
+                .with(authentication(auth))
+        )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.length()").value(2))
+    }
+
+    @Test
+    fun `findMembers_팀원아님_403`() {
+        willThrow(CustomException(ErrorCode.NOT_TEAM_MEMBER))
+            .given(findTeamMembersUseCase).execute(anyNonNull(), anyNonNull())
+
+        mockMvc.perform(
+            get("/api/teams/{teamId}/members", teamId)
+                .with(authentication(auth))
+        )
+            .andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.success").value(false))
     }
 
     @Test

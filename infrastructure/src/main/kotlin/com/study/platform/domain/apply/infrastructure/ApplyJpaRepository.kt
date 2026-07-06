@@ -12,14 +12,16 @@ interface ApplyJpaRepository : JpaRepository<ApplyJpaEntity, UUID> {
 
     fun existsByPostIdAndApplicantId(postId: UUID, applicantId: UUID): Boolean
 
-    @Query("SELECT a FROM ApplyJpaEntity a JOIN FETCH a.post JOIN FETCH a.applicant WHERE a.id = :applyId")
-    fun findByIdWithPostAndApplicant(@Param("applyId") applyId: UUID): ApplyJpaEntity?
+    fun deleteAllByPostId(postId: UUID)
 
     fun findByPostIdAndApplicantId(postId: UUID, applicantId: UUID): ApplyJpaEntity?
 
     fun countByPostIdAndStatus(postId: UUID, status: ApplyStatus): Long
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT a FROM ApplyJpaEntity a JOIN FETCH a.post JOIN FETCH a.applicant WHERE a.id = :applyId")
+    @Query("SELECT a FROM ApplyJpaEntity a JOIN FETCH a.post WHERE a.id = :applyId")
     fun findByIdWithPostAndApplicantForUpdate(@Param("applyId") applyId: UUID): ApplyJpaEntity?
+
+    @Query("SELECT a.post.id FROM ApplyJpaEntity a WHERE a.id = :applyId")
+    fun findPostIdByApplyId(@Param("applyId") applyId: UUID): UUID?
 }

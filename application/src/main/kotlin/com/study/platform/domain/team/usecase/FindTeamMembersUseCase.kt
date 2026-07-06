@@ -4,5 +4,5 @@ import com.study.platform.domain.team.dto.response.TeamMemberResponse
 import java.util.UUID
 
 interface FindTeamMembersUseCase {
-    fun execute(teamId: UUID): List<TeamMemberResponse>
+    fun execute(userId: UUID, teamId: UUID): List<TeamMemberResponse>
 }

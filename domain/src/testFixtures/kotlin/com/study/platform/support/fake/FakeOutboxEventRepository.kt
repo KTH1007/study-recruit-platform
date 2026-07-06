@@ -17,12 +17,17 @@ class FakeOutboxEventRepository : OutboxEventRepository {
         if (event.id == null) {
             ReflectionTestUtils.setField(event, "id", sequence.getAndIncrement())
         }
+        if (event.createdAt == null) {
+            event.createdAt = LocalDateTime.now()
+        }
         store.add(event)
         return event
     }
 
     override fun findAllByStatusAndCreatedAtBefore(status: OutboxEventStatus, createdAt: LocalDateTime, pageable: Pageable): List<OutboxEvent> =
-        store.filter { e -> e.status == status }.take(pageable.pageSize)
+        store.filter { e -> e.status == status && e.createdAt?.isBefore(createdAt) == true }
+            .drop(pageable.offset.toInt())
+            .take(pageable.pageSize)
 
     override fun markSentById(id: Long): Int =
         store.filter { e -> e.id == id }
