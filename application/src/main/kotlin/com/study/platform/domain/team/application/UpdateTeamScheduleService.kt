@@ -24,6 +24,7 @@ class UpdateTeamScheduleService(
         }
         val schedule = teamScheduleRepository.findById(scheduleId)
             ?: throw CustomException(ErrorCode.TEAM_SCHEDULE_NOT_FOUND)
+        schedule.validateBelongsToTeam(teamId)
         schedule.update(request.title, request.description, request.scheduledAt!!)
         return TeamScheduleResponse.from(schedule)
     }

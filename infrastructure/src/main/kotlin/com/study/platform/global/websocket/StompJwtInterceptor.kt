@@ -4,8 +4,10 @@ import com.study.platform.global.constant.SecurityConstants
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
 import com.study.platform.global.jwt.JwtProvider
+import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
 import org.springframework.messaging.MessageChannel
+import org.springframework.messaging.MessagingException
 import org.springframework.messaging.simp.stomp.StompCommand
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor
 import org.springframework.messaging.support.ChannelInterceptor
@@ -19,6 +21,8 @@ class StompJwtInterceptor(
     private val jwtProvider: JwtProvider
 ) : ChannelInterceptor {
 
+    private val log = LoggerFactory.getLogger(StompJwtInterceptor::class.java)
+
     companion object {
         private const val USER_ID_HEADER = "userId"
     }
@@ -30,14 +34,19 @@ class StompJwtInterceptor(
             return message
         }
 
-        val token = extractToken(accessor)
-        val userId = jwtProvider.getUserIdFromToken(token)
+        try {
+            val token = extractToken(accessor)
+            val userId = jwtProvider.getUserIdFromToken(token)
 
-        val authentication = UsernamePasswordAuthenticationToken(
-            userId, null, listOf(SimpleGrantedAuthority(SecurityConstants.ROLE_USER))
-        )
-        accessor.user = authentication
-        accessor.setNativeHeader(USER_ID_HEADER, userId.toString())
+            val authentication = UsernamePasswordAuthenticationToken(
+                userId, null, listOf(SimpleGrantedAuthority(SecurityConstants.ROLE_USER))
+            )
+            accessor.user = authentication
+            accessor.setNativeHeader(USER_ID_HEADER, userId.toString())
+        } catch (e: CustomException) {
+            log.warn("STOMP CONNECT 인증 실패 - errorCode: {}", e.errorCode, e)
+            throw MessagingException(e.errorCode.message, e)
+        }
 
         return message
     }

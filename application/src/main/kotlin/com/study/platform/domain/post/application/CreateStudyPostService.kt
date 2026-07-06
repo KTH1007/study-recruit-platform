@@ -39,9 +39,8 @@ class CreateStudyPostService(
         return StudyPostResponse.from(post)
     }
 
-    private fun saveOutboxEvent(postId: UUID, operationType: PostSyncOperationType): Long {
-        val event = PostSyncEvent(postId, operationType, 0L, 0)
-        val payload = objectMapper.writeValueAsString(event)
-        return outboxEventService.save(KafkaConstants.POST_SYNC_TOPIC, postId.toString(), payload)
-    }
+    private fun saveOutboxEvent(postId: UUID, operationType: PostSyncOperationType): Long =
+        outboxEventService.saveWithIdEmbeddedInTx(KafkaConstants.POST_SYNC_TOPIC, postId.toString()) { id ->
+            objectMapper.writeValueAsString(PostSyncEvent(postId, operationType, id, 0))
+        }
 }

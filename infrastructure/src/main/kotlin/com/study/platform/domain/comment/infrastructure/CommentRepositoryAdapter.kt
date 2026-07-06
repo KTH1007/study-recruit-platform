@@ -17,6 +17,13 @@ class CommentRepositoryAdapter(
         commentJpaRepository.delete(comment)
     }
 
+    override fun deleteAllByPostId(postId: UUID) {
+        commentJpaRepository.deleteAllByPostId(postId)
+    }
+
+    override fun findById(commentId: UUID): Comment? =
+        commentJpaRepository.findById(commentId).orElse(null)
+
     override fun findByIdWithAuthor(commentId: UUID): Comment? =
         commentJpaRepository.findByIdWithAuthor(commentId)
 }

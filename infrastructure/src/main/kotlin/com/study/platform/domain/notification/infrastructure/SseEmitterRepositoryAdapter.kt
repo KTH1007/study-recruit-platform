@@ -9,16 +9,21 @@ import java.util.concurrent.ConcurrentHashMap
 @Repository
 class SseEmitterRepositoryAdapter : SseEmitterPort {
 
-    private val connections: MutableMap<UUID, SseConnection> = ConcurrentHashMap()
+    private val connections: MutableMap<UUID, MutableMap<String, SseConnection>> = ConcurrentHashMap()
 
-    override fun save(userId: UUID, connection: SseConnection) {
-        connections[userId] = connection
+    override fun save(userId: UUID, connectionId: String, connection: SseConnection) {
+        connections.computeIfAbsent(userId) { ConcurrentHashMap() }[connectionId] = connection
     }
 
-    override fun delete(userId: UUID) {
-        connections.remove(userId)
+    override fun delete(userId: UUID, connectionId: String) {
+        connections[userId]?.let { byConnectionId ->
+            byConnectionId.remove(connectionId)
+            if (byConnectionId.isEmpty()) {
+                connections.remove(userId)
+            }
+        }
     }
 
-    override fun findByUserId(userId: UUID): SseConnection? =
-        connections[userId]
+    override fun findAllByUserId(userId: UUID): List<SseConnection> =
+        connections[userId]?.values?.toList() ?: emptyList()
 }

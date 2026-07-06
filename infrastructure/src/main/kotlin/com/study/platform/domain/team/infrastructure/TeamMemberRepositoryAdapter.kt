@@ -20,6 +20,9 @@ class TeamMemberRepositoryAdapter(
     override fun findAllByTeamId(teamId: UUID): List<TeamMember> =
         teamMemberJpaRepository.findAllByTeamId(teamId)
 
+    override fun findAllByTeamIdIn(teamIds: Collection<UUID>): List<TeamMember> =
+        teamMemberJpaRepository.findAllByTeamIdIn(teamIds)
+
     override fun findByTeamIdAndUserId(teamId: UUID, userId: UUID): TeamMember? =
         teamMemberJpaRepository.findByTeamIdAndUserId(teamId, userId)
 

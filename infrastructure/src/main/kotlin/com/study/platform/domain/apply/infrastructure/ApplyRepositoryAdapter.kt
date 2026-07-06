@@ -27,14 +27,15 @@ class ApplyRepositoryAdapter(
         applyJpaRepository.deleteById(apply.id)
     }
 
+    override fun deleteAllByPostId(postId: UUID) {
+        applyJpaRepository.deleteAllByPostId(postId)
+    }
+
     override fun findById(id: UUID): Apply? =
         applyJpaRepository.findById(id).orElse(null)?.let(applyMapper::toDomain)
 
     override fun existsByPostIdAndApplicantId(postId: UUID, applicantId: UUID): Boolean =
         applyJpaRepository.existsByPostIdAndApplicantId(postId, applicantId)
-
-    override fun findByIdWithPostAndApplicant(applyId: UUID): Apply? =
-        applyJpaRepository.findByIdWithPostAndApplicant(applyId)?.let(applyMapper::toDomain)
 
     override fun findByPostIdAndApplicantId(postId: UUID, applicantId: UUID): Apply? =
         applyJpaRepository.findByPostIdAndApplicantId(postId, applicantId)?.let(applyMapper::toDomain)
@@ -44,4 +45,7 @@ class ApplyRepositoryAdapter(
 
     override fun findByIdWithPostAndApplicantForUpdate(applyId: UUID): Apply? =
         applyJpaRepository.findByIdWithPostAndApplicantForUpdate(applyId)?.let(applyMapper::toDomain)
+
+    override fun findPostIdByApplyId(applyId: UUID): UUID? =
+        applyJpaRepository.findPostIdByApplyId(applyId)
 }

@@ -11,10 +11,15 @@ import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
 import com.study.platform.global.outbox.application.OutboxEventService
 import com.study.platform.support.TestFixtures
+import com.study.platform.support.fake.FakeApplyRepository
+import com.study.platform.support.fake.FakeCommentRepository
 import com.study.platform.support.fake.FakeDomainEventPublisher
 import com.study.platform.support.fake.FakeOutboxEventRepository
 import com.study.platform.support.fake.FakeStudyPostQueryPort
 import com.study.platform.support.fake.FakeStudyPostRepository
+import com.study.platform.support.fake.FakeStudyTeamRepository
+import com.study.platform.support.fake.FakeTeamMemberRepository
+import com.study.platform.support.fake.FakeTeamScheduleRepository
 import com.study.platform.support.fake.FakeUserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -28,6 +33,11 @@ class StudyPostServiceTest {
 
     private lateinit var studyPostRepository: FakeStudyPostRepository
     private lateinit var userRepository: FakeUserRepository
+    private lateinit var studyTeamRepository: FakeStudyTeamRepository
+    private lateinit var teamMemberRepository: FakeTeamMemberRepository
+    private lateinit var teamScheduleRepository: FakeTeamScheduleRepository
+    private lateinit var commentRepository: FakeCommentRepository
+    private lateinit var applyRepository: FakeApplyRepository
     private lateinit var eventPublisher: FakeDomainEventPublisher
     private lateinit var outboxEventService: OutboxEventService
 
@@ -46,6 +56,11 @@ class StudyPostServiceTest {
     fun setUp() {
         studyPostRepository = FakeStudyPostRepository()
         userRepository = FakeUserRepository()
+        studyTeamRepository = FakeStudyTeamRepository()
+        teamMemberRepository = FakeTeamMemberRepository()
+        teamScheduleRepository = FakeTeamScheduleRepository()
+        commentRepository = FakeCommentRepository()
+        applyRepository = FakeApplyRepository()
         eventPublisher = FakeDomainEventPublisher()
         outboxEventService = OutboxEventService(FakeOutboxEventRepository())
         val objectMapper = ObjectMapper()
@@ -53,7 +68,10 @@ class StudyPostServiceTest {
         findStudyPostService = FindStudyPostService(studyPostRepository)
         createStudyPostService = CreateStudyPostService(studyPostRepository, userRepository, eventPublisher, outboxEventService, objectMapper)
         updateStudyPostService = UpdateStudyPostService(studyPostRepository, eventPublisher, outboxEventService, objectMapper)
-        deleteStudyPostService = DeleteStudyPostService(studyPostRepository, eventPublisher, outboxEventService, objectMapper)
+        deleteStudyPostService = DeleteStudyPostService(
+            studyPostRepository, studyTeamRepository, teamMemberRepository, teamScheduleRepository,
+            commentRepository, applyRepository, eventPublisher, outboxEventService, objectMapper
+        )
         closeStudyPostService = CloseStudyPostService(studyPostRepository, eventPublisher, outboxEventService, objectMapper)
 
         authorId = UUID.randomUUID()
@@ -157,6 +175,28 @@ class StudyPostServiceTest {
         // then
         assertThat(studyPostRepository.findById(postId)).isNull()
         assertThat(eventPublisher.hasEventOf(PostSyncEvent::class.java)).isTrue()
+    }
+
+    @Test
+    fun `deletePost_연관된_팀_댓글_지원서도_함께_삭제된다`() {
+        // given
+        val team = TestFixtures.createStudyTeam(post = post)
+        studyTeamRepository.save(team)
+        teamMemberRepository.save(TestFixtures.createLeaderMember(team = team, user = author))
+        teamScheduleRepository.save(TestFixtures.createTeamSchedule(team = team))
+        commentRepository.save(TestFixtures.createComment(post = post, author = author))
+        applyRepository.save(TestFixtures.createApply(post = post, applicant = author))
+
+        // when
+        deleteStudyPostService.execute(authorId, postId)
+
+        // then
+        assertThat(studyPostRepository.findById(postId)).isNull()
+        assertThat(studyTeamRepository.findByPostId(postId)).isNull()
+        assertThat(teamMemberRepository.findAllByTeamId(checkNotNull(team.id))).isEmpty()
+        assertThat(teamScheduleRepository.findAllByTeamId(checkNotNull(team.id))).isEmpty()
+        assertThat(commentRepository.findAllByPostId(postId)).isEmpty()
+        assertThat(applyRepository.findAllByPostId(postId)).isEmpty()
     }
 
     @Test

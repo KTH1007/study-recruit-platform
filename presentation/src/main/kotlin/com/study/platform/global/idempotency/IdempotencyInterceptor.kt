@@ -43,11 +43,12 @@ class IdempotencyInterceptor(
         val redisKey = buildRedisKey(idempotencyKey)
 
         val cached = idempotencyObjectStoragePort.get(redisKey)
-        if (cached is IdempotentResponse) {
+        val idempotentResponse = toIdempotentResponse(cached)
+        if (idempotentResponse != null) {
             log.debug("Idempotent response returned for key: {}", idempotencyKey)
-            response.status = cached.status()
-            response.contentType = cached.contentType()
-            response.writer.write(cached.body())
+            response.status = idempotentResponse.status
+            response.contentType = idempotentResponse.contentType
+            response.writer.write(idempotentResponse.body)
             return false
         }
 
@@ -97,6 +98,12 @@ class IdempotencyInterceptor(
             return IdempotencyConstants.IDEMPOTENCY_PREFIX + userId + ":" + idempotencyKey
         }
         return IdempotencyConstants.IDEMPOTENCY_PREFIX + idempotencyKey
+    }
+
+    private fun toIdempotentResponse(cached: Any?): IdempotentResponse? = when (cached) {
+        is IdempotentResponse -> cached
+        is Map<*, *> -> runCatching { objectMapper.convertValue(cached, IdempotentResponse::class.java) }.getOrNull()
+        else -> null
     }
 
     @Throws(Exception::class)

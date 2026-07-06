@@ -32,7 +32,7 @@ class Apply private constructor(
         publisher.publish(ApplyRejectedEvent(post.id!!, applicant.id!!, post.title))
     }
 
-    private fun validatePending() {
+    fun validatePending() {
         if (status != ApplyStatus.PENDING) {
             throw CustomException(ErrorCode.APPLICATION_ALREADY_PROCESSED)
         }

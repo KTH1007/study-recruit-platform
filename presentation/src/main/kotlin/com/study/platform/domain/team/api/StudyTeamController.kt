@@ -36,8 +36,11 @@ class StudyTeamController(
     }
 
     @GetMapping("/{teamId}/members")
-    override fun findMembers(@PathVariable teamId: UUID): ResponseEntity<ApiResponse<List<TeamMemberResponse>>> {
-        return ApiResponse.success(SuccessCode.TEAM_MEMBER_LIST, findTeamMembersUseCase.execute(teamId))
+    override fun findMembers(
+        @AuthenticationPrincipal userId: UUID,
+        @PathVariable teamId: UUID
+    ): ResponseEntity<ApiResponse<List<TeamMemberResponse>>> {
+        return ApiResponse.success(SuccessCode.TEAM_MEMBER_LIST, findTeamMembersUseCase.execute(userId, teamId))
     }
 
     @PatchMapping("/{teamId}/members/{targetUserId}/delegate")

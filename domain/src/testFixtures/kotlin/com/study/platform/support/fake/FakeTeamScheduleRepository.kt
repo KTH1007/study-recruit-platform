@@ -2,31 +2,23 @@ package com.study.platform.support.fake
 
 import com.study.platform.domain.team.model.TeamSchedule
 import com.study.platform.domain.team.model.TeamScheduleRepository
-import org.springframework.test.util.ReflectionTestUtils
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Slice
+import org.springframework.data.domain.SliceImpl
 import java.time.LocalDateTime
 import java.util.UUID
 
+class FakeTeamScheduleRepository : AbstractFakeUuidRepository<TeamSchedule>(), TeamScheduleRepository {
 
-class FakeTeamScheduleRepository : TeamScheduleRepository {
+    override fun idOf(entity: TeamSchedule): UUID? = entity.id
+    override fun hasTimestamps() = true
 
-    private val store: MutableMap<UUID, TeamSchedule> = HashMap()
+    override fun save(schedule: TeamSchedule): TeamSchedule = saveEntity(schedule)
 
-    override fun save(schedule: TeamSchedule): TeamSchedule {
-        if (schedule.id == null) {
-            ReflectionTestUtils.setField(schedule, "id", UUID.randomUUID())
-        }
-        if (schedule.createdAt == null) {
-            ReflectionTestUtils.setField(schedule, "createdAt", LocalDateTime.now())
-        }
-        ReflectionTestUtils.setField(schedule, "updatedAt", LocalDateTime.now())
-        store[schedule.id!!] = schedule
-        return schedule
-    }
+    override fun delete(schedule: TeamSchedule) = deleteEntity(schedule)
 
-    override fun findById(id: UUID): TeamSchedule? = store[id]
-
-    override fun delete(schedule: TeamSchedule) {
-        store.remove(schedule.id)
+    override fun deleteAllByTeamId(teamId: UUID) {
+        store.values.filter { it.team?.id == teamId }.mapNotNull { it.id }.forEach { store.remove(it) }
     }
 
     fun findAllByTeamId(teamId: UUID): List<TeamSchedule> =
@@ -34,6 +26,12 @@ class FakeTeamScheduleRepository : TeamScheduleRepository {
             .filter { s -> s.team?.id == teamId }
             .sortedBy { it.scheduledAt }
 
-    override fun findAllByScheduledAtBetweenWithTeam(start: LocalDateTime, end: LocalDateTime): List<TeamSchedule> =
-        store.values.filter { s -> s.scheduledAt?.let { !it.isBefore(start) && !it.isAfter(end) } == true }
+    override fun findAllByScheduledAtBetweenWithTeam(start: LocalDateTime, end: LocalDateTime, pageable: Pageable): Slice<TeamSchedule> {
+        val matched = store.values
+            .filter { s -> s.scheduledAt?.let { !it.isBefore(start) && !it.isAfter(end) } == true }
+            .sortedBy { it.id.toString() }
+        val content = matched.drop(pageable.offset.toInt()).take(pageable.pageSize)
+        val hasNext = pageable.offset + content.size < matched.size
+        return SliceImpl(content, pageable, hasNext)
+    }
 }
