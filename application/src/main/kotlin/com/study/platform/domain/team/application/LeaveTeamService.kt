@@ -1,5 +1,6 @@
 package com.study.platform.domain.team.application
 
+import com.study.platform.domain.chat.model.ChatMessageRepository
 import com.study.platform.domain.team.model.StudyTeamRepository
 import com.study.platform.domain.team.model.TeamMemberRepository
 import com.study.platform.domain.team.model.TeamScheduleRepository
@@ -14,7 +15,8 @@ import java.util.UUID
 class LeaveTeamService(
     private val studyTeamRepository: StudyTeamRepository,
     private val teamMemberRepository: TeamMemberRepository,
-    private val teamScheduleRepository: TeamScheduleRepository
+    private val teamScheduleRepository: TeamScheduleRepository,
+    private val chatMessageRepository: ChatMessageRepository
 ) : LeaveTeamUseCase {
 
     @Transactional
@@ -26,6 +28,7 @@ class LeaveTeamService(
             val isLastMember = teamMemberRepository.countByTeamId(teamId) == 1L
             if (isLastMember) {
                 teamScheduleRepository.deleteAllByTeamId(teamId)
+                chatMessageRepository.deleteAllByTeamId(teamId)
                 teamMemberRepository.deleteAllByTeamId(teamId)
                 studyTeamRepository.delete(member.team!!)
                 return

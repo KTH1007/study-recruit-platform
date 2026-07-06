@@ -12,6 +12,10 @@ import java.io.IOException
 @Component
 class IdempotencyResponseCachingFilter : OncePerRequestFilter() {
 
+    companion object {
+        private val IDEMPOTENT_METHODS = setOf("POST", "PUT", "PATCH")
+    }
+
     @Throws(ServletException::class, IOException::class)
     override fun doFilterInternal(
         request: HttpServletRequest,
@@ -19,7 +23,7 @@ class IdempotencyResponseCachingFilter : OncePerRequestFilter() {
         filterChain: FilterChain
     ) {
         val idempotencyKey = request.getHeader(IdempotencyConstants.IDEMPOTENCY_KEY_HEADER)
-        if (idempotencyKey.isNullOrBlank()) {
+        if (idempotencyKey.isNullOrBlank() || request.method !in IDEMPOTENT_METHODS) {
             filterChain.doFilter(request, response)
             return
         }

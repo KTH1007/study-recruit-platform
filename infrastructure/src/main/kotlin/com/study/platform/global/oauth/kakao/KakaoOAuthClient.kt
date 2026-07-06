@@ -84,9 +84,13 @@ class KakaoOAuthClient(
         val kid = header.keyId
             ?: throw IllegalArgumentException("id_token 헤더에 kid가 없습니다")
 
-        val jwkSet = cachedJwkSet ?: fetchAndCacheJwkSet()
-        val jwk = jwkSet.getKeys().find { it.id == kid }
-            ?: fetchAndCacheJwkSet().getKeys().find { it.id == kid }
+        val cached = cachedJwkSet
+        val cachedMatch = cached?.getKeys()?.find { it.id == kid }
+        if (cachedMatch != null) {
+            return cachedMatch.toKey()
+        }
+
+        val jwk = fetchAndCacheJwkSet().getKeys().find { it.id == kid }
             ?: throw IllegalArgumentException("일치하는 JWK를 찾을 수 없습니다. kid=$kid")
         return jwk.toKey()
     }

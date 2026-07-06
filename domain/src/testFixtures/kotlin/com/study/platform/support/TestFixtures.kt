@@ -1,6 +1,7 @@
 package com.study.platform.support
 
 import com.study.platform.domain.apply.model.Apply
+import com.study.platform.domain.chat.model.ChatMessage
 import com.study.platform.domain.comment.model.Comment
 import com.study.platform.domain.notification.model.Notification
 import com.study.platform.domain.notification.model.NotificationType
@@ -95,6 +96,15 @@ object TestFixtures {
         description: String? = null,
         scheduledAt: LocalDateTime = LocalDateTime.now().plusDays(1)
     ): TeamSchedule = TeamSchedule.create(team, title, description, scheduledAt).also {
+        ReflectionTestUtils.setField(it, "id", id)
+    }
+
+    fun createChatMessage(
+        id: UUID = UUID.randomUUID(),
+        team: StudyTeam = createStudyTeam(),
+        sender: User = createUser(),
+        content: String = "채팅 메시지입니다"
+    ): ChatMessage = ChatMessage.create(team, sender, content).also {
         ReflectionTestUtils.setField(it, "id", id)
     }
 }

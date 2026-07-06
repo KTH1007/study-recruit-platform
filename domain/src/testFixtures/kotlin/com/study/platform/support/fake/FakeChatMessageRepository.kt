@@ -11,6 +11,10 @@ class FakeChatMessageRepository : AbstractFakeUuidRepository<ChatMessage>(), Cha
 
     override fun save(message: ChatMessage): ChatMessage = saveEntity(message)
 
+    override fun deleteAllByTeamId(teamId: UUID) {
+        store.values.filter { m -> m.team?.id == teamId }.forEach { deleteEntity(it) }
+    }
+
     fun findAllByTeamId(teamId: UUID): List<ChatMessage> =
         store.values.filter { m -> m.team?.id == teamId }
 }

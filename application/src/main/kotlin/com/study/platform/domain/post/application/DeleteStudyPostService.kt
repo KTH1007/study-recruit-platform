@@ -1,6 +1,7 @@
 package com.study.platform.domain.post.application
 
 import com.study.platform.domain.apply.model.ApplyRepository
+import com.study.platform.domain.chat.model.ChatMessageRepository
 import com.study.platform.domain.comment.model.CommentRepository
 import com.study.platform.domain.post.event.PostSyncEvent
 import com.study.platform.domain.post.event.PostSyncOperationType
@@ -27,6 +28,7 @@ class DeleteStudyPostService(
     private val studyTeamRepository: StudyTeamRepository,
     private val teamMemberRepository: TeamMemberRepository,
     private val teamScheduleRepository: TeamScheduleRepository,
+    private val chatMessageRepository: ChatMessageRepository,
     private val commentRepository: CommentRepository,
     private val applyRepository: ApplyRepository,
     private val eventPublisher: DomainEventPublisher,
@@ -44,6 +46,7 @@ class DeleteStudyPostService(
         studyTeamRepository.findByPostId(postId)?.let { team ->
             val teamId = checkNotNull(team.id)
             teamScheduleRepository.deleteAllByTeamId(teamId)
+            chatMessageRepository.deleteAllByTeamId(teamId)
             teamMemberRepository.deleteAllByTeamId(teamId)
             studyTeamRepository.delete(team)
         }

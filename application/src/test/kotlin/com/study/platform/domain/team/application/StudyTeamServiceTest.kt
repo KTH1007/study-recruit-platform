@@ -11,6 +11,7 @@ import com.study.platform.domain.user.model.User
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
 import com.study.platform.support.TestFixtures
+import com.study.platform.support.fake.FakeChatMessageRepository
 import com.study.platform.support.fake.FakeStudyPostRepository
 import com.study.platform.support.fake.FakeStudyTeamRepository
 import com.study.platform.support.fake.FakeTeamMemberQueryPort
@@ -30,6 +31,7 @@ class StudyTeamServiceTest {
     private lateinit var studyPostRepository: FakeStudyPostRepository
     private lateinit var userRepository: FakeUserRepository
     private lateinit var teamScheduleRepository: FakeTeamScheduleRepository
+    private lateinit var chatMessageRepository: FakeChatMessageRepository
 
     private lateinit var createStudyTeamService: CreateStudyTeamService
     private lateinit var findStudyTeamService: FindStudyTeamService
@@ -56,13 +58,14 @@ class StudyTeamServiceTest {
         studyPostRepository = FakeStudyPostRepository()
         userRepository = FakeUserRepository()
         teamScheduleRepository = FakeTeamScheduleRepository()
+        chatMessageRepository = FakeChatMessageRepository()
 
         createStudyTeamService = CreateStudyTeamService(studyTeamRepository, teamMemberRepository, studyPostRepository, userRepository)
         findStudyTeamService = FindStudyTeamService(studyTeamRepository)
         findTeamMembersService = FindTeamMembersService(FakeTeamMemberQueryPort(teamMemberRepository), teamMemberRepository)
         delegateLeaderService = DelegateLeaderService(teamMemberRepository)
         removeTeamMemberService = RemoveTeamMemberService(teamMemberRepository)
-        leaveTeamService = LeaveTeamService(studyTeamRepository, teamMemberRepository, teamScheduleRepository)
+        leaveTeamService = LeaveTeamService(studyTeamRepository, teamMemberRepository, teamScheduleRepository, chatMessageRepository)
 
         leaderId = UUID.randomUUID()
         memberId = UUID.randomUUID()
@@ -253,6 +256,7 @@ class StudyTeamServiceTest {
         studyTeamRepository.save(team)
         teamMemberRepository.save(leaderMember)
         teamScheduleRepository.save(TestFixtures.createTeamSchedule(team = team))
+        chatMessageRepository.save(TestFixtures.createChatMessage(team = team, sender = leader))
 
         // when
         leaveTeamService.execute(leaderId, teamId)
@@ -261,6 +265,7 @@ class StudyTeamServiceTest {
         assertThat(studyTeamRepository.findById(teamId)).isNull()
         assertThat(teamMemberRepository.findAllByTeamId(teamId)).isEmpty()
         assertThat(teamScheduleRepository.findAllByTeamId(teamId)).isEmpty()
+        assertThat(chatMessageRepository.findAllByTeamId(teamId)).isEmpty()
     }
 
     @Test

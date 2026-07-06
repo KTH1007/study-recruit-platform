@@ -12,6 +12,7 @@ import com.study.platform.global.exception.ErrorCode
 import com.study.platform.global.outbox.application.OutboxEventService
 import com.study.platform.support.TestFixtures
 import com.study.platform.support.fake.FakeApplyRepository
+import com.study.platform.support.fake.FakeChatMessageRepository
 import com.study.platform.support.fake.FakeCommentRepository
 import com.study.platform.support.fake.FakeDomainEventPublisher
 import com.study.platform.support.fake.FakeOutboxEventRepository
@@ -36,6 +37,7 @@ class StudyPostServiceTest {
     private lateinit var studyTeamRepository: FakeStudyTeamRepository
     private lateinit var teamMemberRepository: FakeTeamMemberRepository
     private lateinit var teamScheduleRepository: FakeTeamScheduleRepository
+    private lateinit var chatMessageRepository: FakeChatMessageRepository
     private lateinit var commentRepository: FakeCommentRepository
     private lateinit var applyRepository: FakeApplyRepository
     private lateinit var eventPublisher: FakeDomainEventPublisher
@@ -59,6 +61,7 @@ class StudyPostServiceTest {
         studyTeamRepository = FakeStudyTeamRepository()
         teamMemberRepository = FakeTeamMemberRepository()
         teamScheduleRepository = FakeTeamScheduleRepository()
+        chatMessageRepository = FakeChatMessageRepository()
         commentRepository = FakeCommentRepository()
         applyRepository = FakeApplyRepository()
         eventPublisher = FakeDomainEventPublisher()
@@ -70,7 +73,7 @@ class StudyPostServiceTest {
         updateStudyPostService = UpdateStudyPostService(studyPostRepository, eventPublisher, outboxEventService, objectMapper)
         deleteStudyPostService = DeleteStudyPostService(
             studyPostRepository, studyTeamRepository, teamMemberRepository, teamScheduleRepository,
-            commentRepository, applyRepository, eventPublisher, outboxEventService, objectMapper
+            chatMessageRepository, commentRepository, applyRepository, eventPublisher, outboxEventService, objectMapper
         )
         closeStudyPostService = CloseStudyPostService(studyPostRepository, eventPublisher, outboxEventService, objectMapper)
 
@@ -184,6 +187,7 @@ class StudyPostServiceTest {
         studyTeamRepository.save(team)
         teamMemberRepository.save(TestFixtures.createLeaderMember(team = team, user = author))
         teamScheduleRepository.save(TestFixtures.createTeamSchedule(team = team))
+        chatMessageRepository.save(TestFixtures.createChatMessage(team = team, sender = author))
         commentRepository.save(TestFixtures.createComment(post = post, author = author))
         applyRepository.save(TestFixtures.createApply(post = post, applicant = author))
 
@@ -195,6 +199,7 @@ class StudyPostServiceTest {
         assertThat(studyTeamRepository.findByPostId(postId)).isNull()
         assertThat(teamMemberRepository.findAllByTeamId(checkNotNull(team.id))).isEmpty()
         assertThat(teamScheduleRepository.findAllByTeamId(checkNotNull(team.id))).isEmpty()
+        assertThat(chatMessageRepository.findAllByTeamId(checkNotNull(team.id))).isEmpty()
         assertThat(commentRepository.findAllByPostId(postId)).isEmpty()
         assertThat(applyRepository.findAllByPostId(postId)).isEmpty()
     }
