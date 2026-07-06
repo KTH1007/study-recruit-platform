@@ -12,7 +12,10 @@ class FakeApplyQueryPort(
 ) : ApplyQueryPort {
 
     override fun findAllByPostId(postId: UUID, pageable: Pageable): Page<ApplyResponse> {
-        val list = repository.findAllByPostId(postId).map { ApplyResponse.from(it) }
-        return PageImpl(list, pageable, list.size.toLong())
+        val all = repository.findAllByPostId(postId)
+            .sortedByDescending { it.createdAt }
+            .map { ApplyResponse.from(it) }
+        val content = all.drop(pageable.offset.toInt()).take(pageable.pageSize)
+        return PageImpl(content, pageable, all.size.toLong())
     }
 }

@@ -5,6 +5,7 @@ import com.study.platform.domain.post.model.StudyPostRepository
 import com.study.platform.domain.post.model.StudyPostStatus
 import com.study.platform.global.constant.TimeConstants
 import com.study.platform.global.event.DomainEventPublisher
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.batch.core.job.Job
 import org.springframework.batch.core.job.parameters.JobParametersBuilder
@@ -46,17 +47,16 @@ class PostScheduler(
     }
 
     @Scheduled(cron = "0 0 9 * * *", zone = TimeConstants.ASIA_SEOUL)
+    @SchedulerLock(name = "PostScheduler_sendDeadlineRemainder", lockAtMostFor = "10m")
     fun sendDeadlineRemainder() {
         val tomorrow = LocalDate.now(TimeConstants.SEOUL_ZONE).plusDays(1)
         val start = tomorrow.atStartOfDay()
         val end = tomorrow.atTime(LocalTime.MAX)
         val posts = studyPostRepository.findDeadlineReminderPosts(start, end, StudyPostStatus.OPEN)
         posts.forEach { post ->
-            eventPublisher.publish(PostDeadlineReminderEvent(
-                post.id!!,
-                post.author!!.id!!,
-                post.title
-            ))
+            val postId = checkNotNull(post.id)
+            val authorId = checkNotNull(post.author?.id) { "StudyPost.author.id must not be null" }
+            eventPublisher.publish(PostDeadlineReminderEvent(postId, authorId, post.title))
         }
         log.info("[Scheduler] D-1 리마인더 발행: {}건", posts.size)
     }

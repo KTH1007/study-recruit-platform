@@ -4,39 +4,23 @@ import com.study.platform.domain.notification.model.NotificationEvent
 import com.study.platform.domain.notification.model.NotificationType
 import com.study.platform.global.constant.KafkaConstants
 import com.study.platform.support.TestFixtures
+import com.study.platform.support.fake.FakeAcknowledgment
 import com.study.platform.support.fake.FakeFailedNotificationRepository
+import com.study.platform.support.fake.FakeIdempotencyStoragePort
 import com.study.platform.support.fake.FakeNotificationRepository
 import com.study.platform.support.fake.FakeRedisMessagePublisher
 import com.study.platform.support.fake.FakeUserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.ArgumentMatchers.any
-import org.mockito.BDDMockito.given
-import org.mockito.BDDMockito.then
-import org.mockito.Mockito.lenient
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.springframework.data.redis.core.StringRedisTemplate
-import org.springframework.data.redis.core.ValueOperations
-import org.springframework.kafka.support.Acknowledgment
 import tools.jackson.databind.ObjectMapper
-import java.time.Duration
 import java.util.UUID
 
-@ExtendWith(MockitoExtension::class)
 class NotificationKafkaConsumerTest {
 
-    @Mock
-    private lateinit var ack: Acknowledgment
+    private lateinit var ack: FakeAcknowledgment
 
-    @Mock
-    private lateinit var stringRedisTemplate: StringRedisTemplate
-
-    @Mock
-    private lateinit var valueOperations: ValueOperations<String, String>
-
+    private lateinit var idempotencyStoragePort: FakeIdempotencyStoragePort
     private lateinit var userRepository: FakeUserRepository
     private lateinit var notificationRepository: FakeNotificationRepository
     private lateinit var redisMessagePublisher: FakeRedisMessagePublisher
@@ -49,16 +33,16 @@ class NotificationKafkaConsumerTest {
 
     @BeforeEach
     fun setUp() {
+        ack = FakeAcknowledgment()
         objectMapper = ObjectMapper()
+        idempotencyStoragePort = FakeIdempotencyStoragePort()
         userRepository = FakeUserRepository()
         notificationRepository = FakeNotificationRepository()
         redisMessagePublisher = FakeRedisMessagePublisher()
         failedNotificationRepository = FakeFailedNotificationRepository()
         notificationProcessor = NotificationProcessor(userRepository, notificationRepository, failedNotificationRepository)
-        lenient().`when`(stringRedisTemplate.opsForValue()).thenReturn(valueOperations)
-        lenient().`when`(valueOperations.setIfAbsent(any(String::class.java), any(String::class.java), any(Duration::class.java))).thenReturn(true)
         notificationKafkaConsumer = NotificationKafkaConsumer(
-            objectMapper, notificationProcessor, redisMessagePublisher, stringRedisTemplate
+            objectMapper, notificationProcessor, redisMessagePublisher, idempotencyStoragePort
         )
         receiverId = UUID.randomUUID()
     }
@@ -74,7 +58,7 @@ class NotificationKafkaConsumerTest {
         // then
         assertThat(failedNotificationRepository.getSaved()).hasSize(1)
         assertThat(userRepository.findById(receiverId)).isNull()
-        then(ack).should().acknowledge()
+        assertThat(ack.isAcknowledged()).isTrue()
     }
 
     @Test
@@ -91,20 +75,20 @@ class NotificationKafkaConsumerTest {
         assertThat(notificationRepository.findAllByReceiverId(receiverId)).isNotEmpty()
         assertThat(failedNotificationRepository.getSaved()).isEmpty()
         assertThat(redisMessagePublisher.wasPublishedTo("notification")).isTrue()
-        then(ack).should().acknowledge()
+        assertThat(ack.isAcknowledged()).isTrue()
     }
 
     @Test
     fun `consume_중복메시지_skip`() {
         // given
         val event = NotificationEvent(receiverId, NotificationType.APPLY_APPROVED, "승인됐습니다", UUID.randomUUID(), 0, 1L)
-        given(valueOperations.setIfAbsent(any(String::class.java), any(String::class.java), any(Duration::class.java))).willReturn(false)
+        idempotencyStoragePort.set("notification:processed:1", "1", java.time.Duration.ofHours(24))
 
         // when
         notificationKafkaConsumer.consume(objectMapper.writeValueAsString(event), ack)
 
         // then
         assertThat(notificationRepository.findAllByReceiverId(receiverId)).isEmpty()
-        then(ack).should().acknowledge()
+        assertThat(ack.isAcknowledged()).isTrue()
     }
 }

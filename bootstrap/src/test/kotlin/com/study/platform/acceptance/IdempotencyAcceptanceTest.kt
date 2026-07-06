@@ -2,6 +2,8 @@ package com.study.platform.acceptance
 
 import com.study.platform.AbstractAcceptanceTest
 import com.study.platform.domain.apply.dto.request.ApplyCreateRequest
+import com.study.platform.support.TestApplyResponse
+import com.study.platform.support.TestPage
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpEntity
@@ -13,52 +15,50 @@ class IdempotencyAcceptanceTest : AbstractAcceptanceTest() {
 
     @Test
     fun `동일한 Idempotency-Key로 재요청 시 중복 생성되지 않는다`() {
+        // given
         val author = createUser()
         val applicant = createUser()
         val postId = createPost(author)
         val idempotencyKey = UUID.randomUUID().toString()
-
         val headers = authHeaders(applicant).apply {
             set("Idempotency-Key", idempotencyKey)
         }
 
-        // 첫 번째 요청
+        // when
         val first = restTemplate.exchange(
             url("/api/posts/$postId/applies"), HttpMethod.POST,
             HttpEntity(ApplyCreateRequest("지원합니다"), headers),
             Map::class.java
         )
-        assertThat(first.statusCode).isEqualTo(HttpStatus.CREATED)
-
-        // 동일 키로 재요청
         val second = restTemplate.exchange(
             url("/api/posts/$postId/applies"), HttpMethod.POST,
             HttpEntity(ApplyCreateRequest("지원합니다"), headers),
             Map::class.java
         )
+
+        // then
+        assertThat(first.statusCode).isEqualTo(HttpStatus.CREATED)
         assertThat(second.statusCode).isEqualTo(HttpStatus.CREATED)
 
-        // 지원 목록에 1건만 존재
-        val applies = restTemplate.exchange(
-            url("/api/posts/$postId/applies"), HttpMethod.GET,
-            HttpEntity<Void>(authHeaders(author)),
-            Map::class.java
+        val applies = apiExchange<TestPage<TestApplyResponse>>(
+            "/api/posts/$postId/applies", HttpMethod.GET,
+            HttpEntity<Void>(authHeaders(author))
         )
-        val applyData = applies.body!!["data"] as Map<*, *>
-        val applyList = applyData["content"] as List<*>
-        val applicantApplies = applyList.count { apply ->
-            ((apply as Map<*, *>)["applicantNickname"]) == applicant.nickname
+        val applicantApplies = applies.requireData().content.count { apply ->
+            apply.applicantNickname == applicant.nickname
         }
+        // 지원 목록에 1건만 존재
         assertThat(applicantApplies).isEqualTo(1)
     }
 
     @Test
     fun `다른 Idempotency-Key로 요청 시 별도 처리된다`() {
+        // given
         val author = createUser()
         val applicant = createUser()
         val postId = createPost(author)
 
-        // 첫 번째 요청 (key1)
+        // when
         val first = restTemplate.exchange(
             url("/api/posts/$postId/applies"), HttpMethod.POST,
             HttpEntity(ApplyCreateRequest("지원합니다"), authHeaders(applicant).apply {
@@ -66,9 +66,7 @@ class IdempotencyAcceptanceTest : AbstractAcceptanceTest() {
             }),
             Map::class.java
         )
-        assertThat(first.statusCode).isEqualTo(HttpStatus.CREATED)
-
-        // 두 번째 요청 (key2) - 이미 지원했으므로 409
+        // 이미 지원했으므로 409
         val second = restTemplate.exchange(
             url("/api/posts/$postId/applies"), HttpMethod.POST,
             HttpEntity(ApplyCreateRequest("지원합니다"), authHeaders(applicant).apply {
@@ -76,6 +74,9 @@ class IdempotencyAcceptanceTest : AbstractAcceptanceTest() {
             }),
             Map::class.java
         )
+
+        // then
+        assertThat(first.statusCode).isEqualTo(HttpStatus.CREATED)
         assertThat(second.statusCode).isEqualTo(HttpStatus.CONFLICT)
     }
 }

@@ -27,7 +27,7 @@ class CreateCommentService(
 
     @Transactional
     override fun execute(userId: UUID, postId: UUID, request: CommentCreateRequest): CommentResponse {
-        val post = studyPostRepository.findByIdWithAuthor(postId)
+        val post = studyPostRepository.findById(postId)
             ?: throw CustomException(ErrorCode.POST_NOT_FOUND)
         val commenter = userRepository.findById(userId)
             ?: throw CustomException(ErrorCode.USER_NOT_FOUND)

@@ -3,6 +3,7 @@ package com.study.platform.acceptance
 import com.study.platform.AbstractAcceptanceTest
 import com.study.platform.domain.post.dto.request.StudyPostCreateRequest
 import com.study.platform.domain.post.dto.request.StudyPostUpdateRequest
+import com.study.platform.support.TestPostResponse
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpEntity
@@ -14,6 +15,7 @@ class PostAcceptanceTest : AbstractAcceptanceTest() {
 
     @Test
     fun `게시글을 생성하면 201을 반환한다`() {
+        // given
         val user = createUser()
         val request = StudyPostCreateRequest(
             title = "Kotlin 스터디 모집",
@@ -23,19 +25,20 @@ class PostAcceptanceTest : AbstractAcceptanceTest() {
             deadline = LocalDateTime.now().plusDays(7)
         )
 
-        val response = restTemplate.exchange(
-            url("/api/posts"), HttpMethod.POST,
-            HttpEntity(request, authHeaders(user)),
-            Map::class.java
+        // when
+        val response = apiExchange<TestPostResponse>(
+            "/api/posts", HttpMethod.POST,
+            HttpEntity(request, authHeaders(user))
         )
 
+        // then
         assertThat(response.statusCode).isEqualTo(HttpStatus.CREATED)
-        val data = response.body!!["data"] as Map<*, *>
-        assertThat(data["title"]).isEqualTo("Kotlin 스터디 모집")
+        assertThat(response.requireData().title).isEqualTo("Kotlin 스터디 모집")
     }
 
     @Test
     fun `게시글을 수정하면 변경된 내용이 반환된다`() {
+        // given
         val user = createUser()
         val createRequest = StudyPostCreateRequest(
             title = "수정 전 제목",
@@ -44,12 +47,10 @@ class PostAcceptanceTest : AbstractAcceptanceTest() {
             maxMembers = 4,
             deadline = LocalDateTime.now().plusDays(7)
         )
-        val postId = (restTemplate.exchange(
-            url("/api/posts"), HttpMethod.POST,
-            HttpEntity(createRequest, authHeaders(user)),
-            Map::class.java
-        ).body!!["data"] as Map<*, *>)["id"]
-
+        val postId = apiExchange<TestPostResponse>(
+            "/api/posts", HttpMethod.POST,
+            HttpEntity(createRequest, authHeaders(user))
+        ).requireData().id
         val updateRequest = StudyPostUpdateRequest(
             title = "수정 후 제목",
             description = "수정된 내용",
@@ -58,70 +59,54 @@ class PostAcceptanceTest : AbstractAcceptanceTest() {
             deadline = LocalDateTime.now().plusDays(14)
         )
 
-        val response = restTemplate.exchange(
-            url("/api/posts/$postId"), HttpMethod.PATCH,
-            HttpEntity(updateRequest, authHeaders(user)),
-            Map::class.java
+        // when
+        val response = apiExchange<TestPostResponse>(
+            "/api/posts/$postId", HttpMethod.PATCH,
+            HttpEntity(updateRequest, authHeaders(user))
         )
 
+        // then
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        val data = response.body!!["data"] as Map<*, *>
-        assertThat(data["title"]).isEqualTo("수정 후 제목")
+        assertThat(response.requireData().title).isEqualTo("수정 후 제목")
     }
 
     @Test
     fun `게시글을 삭제하면 조회 시 404를 반환한다`() {
+        // given
         val user = createUser()
-        val createRequest = StudyPostCreateRequest(
-            title = "삭제할 게시글",
-            description = "내용",
-            techStack = null,
-            maxMembers = 3,
-            deadline = LocalDateTime.now().plusDays(7)
-        )
-        val postId = (restTemplate.exchange(
-            url("/api/posts"), HttpMethod.POST,
-            HttpEntity(createRequest, authHeaders(user)),
-            Map::class.java
-        ).body!!["data"] as Map<*, *>)["id"]
+        val postId = createPost(user, "삭제할 게시글")
 
+        // when
         restTemplate.exchange(
             url("/api/posts/$postId"), HttpMethod.DELETE,
             HttpEntity<Void>(authHeaders(user)),
             Map::class.java
         )
-
         val response = restTemplate.exchange(
             url("/api/posts/$postId"), HttpMethod.GET,
             HttpEntity<Void>(authHeaders(user)),
             Map::class.java
         )
+
+        // then
         assertThat(response.statusCode).isEqualTo(HttpStatus.NOT_FOUND)
     }
 
     @Test
     fun `다른 사람의 게시글을 삭제하면 403을 반환한다`() {
+        // given
         val owner = createUser()
         val other = createUser()
-        val createRequest = StudyPostCreateRequest(
-            title = "내 게시글",
-            description = "내용",
-            techStack = null,
-            maxMembers = 3,
-            deadline = LocalDateTime.now().plusDays(7)
-        )
-        val postId = (restTemplate.exchange(
-            url("/api/posts"), HttpMethod.POST,
-            HttpEntity(createRequest, authHeaders(owner)),
-            Map::class.java
-        ).body!!["data"] as Map<*, *>)["id"]
+        val postId = createPost(owner, "내 게시글")
 
+        // when
         val response = restTemplate.exchange(
             url("/api/posts/$postId"), HttpMethod.DELETE,
             HttpEntity<Void>(authHeaders(other)),
             Map::class.java
         )
 
+        // then
         assertThat(response.statusCode).isEqualTo(HttpStatus.FORBIDDEN)
     }
 }

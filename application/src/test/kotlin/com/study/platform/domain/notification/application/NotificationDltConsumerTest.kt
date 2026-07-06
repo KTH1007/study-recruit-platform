@@ -4,24 +4,18 @@ import com.study.platform.domain.notification.model.FailedNotification
 import com.study.platform.domain.notification.model.NotificationEvent
 import com.study.platform.domain.notification.model.NotificationType
 import com.study.platform.global.constant.KafkaConstants
+import com.study.platform.support.fake.FakeAcknowledgment
 import com.study.platform.support.fake.FakeFailedNotificationRepository
 import com.study.platform.support.fake.FakeKafkaMessagePublisher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
-import org.mockito.BDDMockito.then
-import org.mockito.junit.jupiter.MockitoExtension
-import org.springframework.kafka.support.Acknowledgment
 import tools.jackson.databind.ObjectMapper
 import java.util.UUID
 
-@ExtendWith(MockitoExtension::class)
 class NotificationDltConsumerTest {
 
-    @Mock
-    private lateinit var ack: Acknowledgment
+    private lateinit var ack: FakeAcknowledgment
 
     private lateinit var kafkaPublisher: FakeKafkaMessagePublisher
     private lateinit var failedNotificationRepository: FakeFailedNotificationRepository
@@ -33,6 +27,7 @@ class NotificationDltConsumerTest {
 
     @BeforeEach
     fun setUp() {
+        ack = FakeAcknowledgment()
         objectMapper = ObjectMapper()
         kafkaPublisher = FakeKafkaMessagePublisher()
         failedNotificationRepository = FakeFailedNotificationRepository()
@@ -52,7 +47,7 @@ class NotificationDltConsumerTest {
         // then
         assertThat(kafkaPublisher.wasPublishedTo(KafkaConstants.NOTIFICATION_TOPIC)).isTrue()
         assertThat(failedNotificationRepository.getSaved()).isEmpty()
-        then(ack).should().acknowledge()
+        assertThat(ack.isAcknowledged()).isTrue()
     }
 
     @Test
@@ -67,7 +62,7 @@ class NotificationDltConsumerTest {
         assertThat(failedNotificationRepository.getSaved()).hasSize(1)
         assertThat(failedNotificationRepository.getSaved()[0]).isInstanceOf(FailedNotification::class.java)
         assertThat(kafkaPublisher.getPublishedTopics()).isEmpty()
-        then(ack).should().acknowledge()
+        assertThat(ack.isAcknowledged()).isTrue()
     }
 
     @Test
@@ -81,7 +76,7 @@ class NotificationDltConsumerTest {
         // then
         assertThat(kafkaPublisher.getPublishedTopics()).isEmpty()
         assertThat(failedNotificationRepository.getSaved()).isEmpty()
-        then(ack).should().acknowledge()
+        assertThat(ack.isAcknowledged()).isTrue()
     }
 
     @Test

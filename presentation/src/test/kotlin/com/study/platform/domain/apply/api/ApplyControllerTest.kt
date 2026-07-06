@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.dao.PessimisticLockingFailureException
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -104,7 +105,7 @@ class ApplyControllerTest {
     @Test
     fun `findApplies_성공`() {
         given(findAppliesUseCase.execute(anyNonNull(), anyNonNull(), anyNonNull())).willReturn(
-            org.springframework.data.domain.PageImpl(listOf(applyResponse))
+            PageImpl(listOf(applyResponse))
         )
 
         mockMvc.perform(

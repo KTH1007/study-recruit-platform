@@ -10,7 +10,6 @@ interface StudyPostRepository {
     fun delete(post: StudyPost)
     fun findById(id: UUID): StudyPost?
     fun findByIdWithAuthor(postId: UUID): StudyPost?
-    fun findExpiredPosts(now: LocalDateTime, status: StudyPostStatus): List<StudyPost>
     fun findDeadlineReminderPosts(start: LocalDateTime, end: LocalDateTime, status: StudyPostStatus): List<StudyPost>
     fun findByIdWithAuthorForUpdate(postId: UUID): StudyPost?
 }
