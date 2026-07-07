@@ -38,5 +38,7 @@ class FakeApplyRepository : AbstractFakeUuidRepository<Apply>(), ApplyRepository
 
     override fun findByIdWithPostAndApplicantForUpdate(applyId: UUID): Apply? = store[applyId]
 
+    override fun findByIdForUpdate(applyId: UUID): Apply? = store[applyId]
+
     override fun findPostIdByApplyId(applyId: UUID): UUID? = store[applyId]?.post?.id
 }

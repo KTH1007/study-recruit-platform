@@ -14,5 +14,6 @@ interface ApplyRepository {
     fun countByPostIdAndStatus(postId: UUID, status: ApplyStatus): Long
     fun countByPostIdAndStatusForUpdate(postId: UUID, status: ApplyStatus): Long
     fun findByIdWithPostAndApplicantForUpdate(applyId: UUID): Apply?
+    fun findByIdForUpdate(applyId: UUID): Apply?
     fun findPostIdByApplyId(applyId: UUID): UUID?
 }

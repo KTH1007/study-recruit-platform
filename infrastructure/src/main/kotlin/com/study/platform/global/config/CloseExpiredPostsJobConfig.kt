@@ -73,7 +73,7 @@ class CloseExpiredPostsJobConfig(
             override fun onSkipInWrite(item: StudyPost, t: Throwable) {
                 val postId = item.id ?: return
                 log.error("마감 처리 배치 스킵 - postId={}", postId, t)
-                failedPostSyncRepository.save(
+                failedPostSyncRepository.saveIndependently(
                     FailedPostSync.from(
                         PostSyncEvent(postId, PostSyncOperationType.UPSERT, 0L, 0),
                         "마감 처리 배치 실패: ${t.message}"

@@ -49,6 +49,9 @@ class ApplyRepositoryAdapter(
     override fun findByIdWithPostAndApplicantForUpdate(applyId: UUID): Apply? =
         applyJpaRepository.findByIdWithPostAndApplicantForUpdate(applyId)?.let(applyMapper::toDomain)
 
+    override fun findByIdForUpdate(applyId: UUID): Apply? =
+        applyJpaRepository.findByIdForUpdate(applyId)?.let(applyMapper::toDomain)
+
     override fun findPostIdByApplyId(applyId: UUID): UUID? =
         applyJpaRepository.findPostIdByApplyId(applyId)
 }

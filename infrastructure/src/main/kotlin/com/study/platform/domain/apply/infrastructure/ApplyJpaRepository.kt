@@ -26,6 +26,10 @@ interface ApplyJpaRepository : JpaRepository<ApplyJpaEntity, UUID> {
     @Query("SELECT a FROM ApplyJpaEntity a JOIN FETCH a.post WHERE a.id = :applyId")
     fun findByIdWithPostAndApplicantForUpdate(@Param("applyId") applyId: UUID): ApplyJpaEntity?
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM ApplyJpaEntity a WHERE a.id = :applyId")
+    fun findByIdForUpdate(@Param("applyId") applyId: UUID): ApplyJpaEntity?
+
     @Query("SELECT a.post.id FROM ApplyJpaEntity a WHERE a.id = :applyId")
     fun findPostIdByApplyId(@Param("applyId") applyId: UUID): UUID?
 }
