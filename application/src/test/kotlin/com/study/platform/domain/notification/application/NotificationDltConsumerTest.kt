@@ -91,4 +91,18 @@ class NotificationDltConsumerTest {
         assertThat(kafkaPublisher.wasPublishedTo(KafkaConstants.NOTIFICATION_TOPIC)).isTrue()
         assertThat(kafkaPublisher.getPublished()[0].payload).contains("retryCount")
     }
+
+    @Test
+    fun `consume_재투입실패_DB_영구저장_후_ack`() {
+        // given
+        kafkaPublisher.willFail()
+        val event = NotificationEvent(receiverId, NotificationType.APPLY_APPROVED, "승인됐습니다", targetId, 0)
+
+        // when
+        notificationDltConsumer.consume(objectMapper.writeValueAsString(event), ack, "처리 실패")
+
+        // then
+        assertThat(failedNotificationRepository.getSaved()).hasSize(1)
+        assertThat(ack.isAcknowledged()).isTrue()
+    }
 }

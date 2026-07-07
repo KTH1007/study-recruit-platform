@@ -4,6 +4,7 @@ import com.study.platform.global.constant.SecurityConstants
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
 import com.study.platform.global.jwt.JwtProvider
+import com.study.platform.global.ratelimit.RateLimitStoragePort
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
 import org.springframework.messaging.MessageChannel
@@ -15,25 +16,37 @@ import org.springframework.messaging.support.MessageHeaderAccessor
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.stereotype.Component
+import java.util.UUID
 
 @Component
 class StompJwtInterceptor(
-    private val jwtProvider: JwtProvider
+    private val jwtProvider: JwtProvider,
+    private val rateLimitStoragePort: RateLimitStoragePort
 ) : ChannelInterceptor {
 
     private val log = LoggerFactory.getLogger(StompJwtInterceptor::class.java)
 
     companion object {
         private const val USER_ID_HEADER = "userId"
+        private const val CHAT_RATE_LIMIT_PREFIX = "rate:limit:stomp:"
+        private const val CHAT_RATE_LIMIT = 20L
+        private const val CHAT_RATE_LIMIT_WINDOW_SECONDS = 10L
     }
 
     override fun preSend(message: Message<*>, channel: MessageChannel): Message<*> {
         val accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor::class.java)
+            ?: return message
 
-        if (accessor == null || !StompCommand.CONNECT.equals(accessor.command)) {
-            return message
+        when (accessor.command) {
+            StompCommand.CONNECT -> handleConnect(accessor)
+            StompCommand.SEND -> handleSend(accessor)
+            else -> {}
         }
 
+        return message
+    }
+
+    private fun handleConnect(accessor: StompHeaderAccessor) {
         try {
             val token = extractToken(accessor)
             val userId = jwtProvider.getUserIdFromToken(token)
@@ -47,8 +60,17 @@ class StompJwtInterceptor(
             log.warn("STOMP CONNECT 인증 실패 - errorCode: {}", e.errorCode, e)
             throw MessagingException(e.errorCode.message, e)
         }
+    }
 
-        return message
+    private fun handleSend(accessor: StompHeaderAccessor) {
+        val userId = (accessor.user as? UsernamePasswordAuthenticationToken)?.principal as? UUID
+            ?: throw MessagingException(ErrorCode.INVALID_TOKEN.message)
+
+        val key = "$CHAT_RATE_LIMIT_PREFIX$userId:${accessor.destination}"
+        if (!rateLimitStoragePort.isAllowed(key, CHAT_RATE_LIMIT_WINDOW_SECONDS, CHAT_RATE_LIMIT)) {
+            log.warn("STOMP rate limit exceeded - userId={}, destination={}", userId, accessor.destination)
+            throw MessagingException(ErrorCode.TOO_MANY_REQUESTS.message)
+        }
     }
 
     private fun extractToken(accessor: StompHeaderAccessor): String {

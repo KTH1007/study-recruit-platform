@@ -5,6 +5,7 @@ import java.util.UUID
 interface UserRepository {
 
     fun save(user: User): User
+    fun saveNew(user: User): User
     fun findById(id: UUID): User?
     fun findByKakaoId(kakaoId: String): User?
     fun findByNickname(nickname: String): User?

@@ -76,4 +76,18 @@ class PostSyncDltConsumerTest {
         assertThat(failedPostSyncRepository.getSaved()).isEmpty()
         assertThat(ack.isAcknowledged()).isTrue()
     }
+
+    @Test
+    fun `consume_재투입실패_DB_영구저장_후_ack`() {
+        // given
+        kafkaPublisher.willFail()
+        val event = PostSyncEvent(postId, PostSyncOperationType.UPSERT, 0L, 0)
+
+        // when
+        postSyncDltConsumer.consume(objectMapper.writeValueAsString(event), ack, "ES 연결 실패")
+
+        // then
+        assertThat(failedPostSyncRepository.getSaved()).hasSize(1)
+        assertThat(ack.isAcknowledged()).isTrue()
+    }
 }

@@ -12,5 +12,7 @@ class FakeFailedPostSyncRepository : FailedPostSyncRepository {
         return failedPostSync
     }
 
+    override fun saveIndependently(failedPostSync: FailedPostSync): FailedPostSync = save(failedPostSync)
+
     fun getSaved(): List<FailedPostSync> = store
 }

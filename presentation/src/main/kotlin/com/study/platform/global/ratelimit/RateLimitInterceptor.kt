@@ -1,11 +1,13 @@
 package com.study.platform.global.ratelimit
 
+import com.study.platform.global.constant.MdcConstants
 import com.study.platform.global.constant.RateLimitConstants
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
@@ -28,14 +30,14 @@ class RateLimitInterceptor(
 
         val rateLimit = handler.getMethodAnnotation(RateLimit::class.java) ?: return true
 
-        val userId = resolveUserId() ?: return true
+        val identifier = resolveUserId() ?: resolveClientIp(request)
 
         val pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as? String
         val endpoint = "${request.method}:$pattern"
-        val key = RateLimitConstants.RATE_LIMIT_PREFIX + userId + ":" + endpoint
+        val key = RateLimitConstants.RATE_LIMIT_PREFIX + identifier + ":" + endpoint
 
         if (!rateLimitStoragePort.isAllowed(key, rateLimit.windowSeconds.toLong(), rateLimit.limit.toLong())) {
-            log.warn("Rate limit exceeded. userId={}, endpoint={}", userId, endpoint)
+            log.warn("Rate limit exceeded. identifier={}, endpoint={}", identifier, endpoint)
             throw CustomException(ErrorCode.TOO_MANY_REQUESTS)
         }
 
@@ -49,4 +51,7 @@ class RateLimitInterceptor(
         }
         return null
     }
+
+    private fun resolveClientIp(request: HttpServletRequest): String =
+        MDC.get(MdcConstants.CLIENT_IP) ?: request.remoteAddr
 }

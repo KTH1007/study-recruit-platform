@@ -4,10 +4,13 @@ import com.study.platform.global.response.ApiResponse
 import org.slf4j.LoggerFactory
 import org.springframework.dao.PessimisticLockingFailureException
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
@@ -28,9 +31,31 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(e: MethodArgumentNotValidException): ResponseEntity<ApiResponse<Void>> {
-        val fieldError: FieldError = e.bindingResult.fieldErrors[0]
-        val message = "${fieldError.field}: ${fieldError.defaultMessage}"
+        val fieldError: FieldError? = e.bindingResult.fieldErrors.firstOrNull()
+        val message = if (fieldError != null) {
+            "${fieldError.field}: ${fieldError.defaultMessage}"
+        } else {
+            e.bindingResult.allErrors.firstOrNull()?.defaultMessage ?: "유효성 검증에 실패했습니다."
+        }
         log.warn("ValidationException: {}", message)
+        return ApiResponse.fail(ErrorCode.INVALID_INPUT)
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleHttpMessageNotReadableException(e: HttpMessageNotReadableException): ResponseEntity<ApiResponse<Void>> {
+        log.warn("HttpMessageNotReadableException: {}", e.message)
+        return ApiResponse.fail(ErrorCode.INVALID_INPUT)
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException::class)
+    fun handleMethodArgumentTypeMismatchException(e: MethodArgumentTypeMismatchException): ResponseEntity<ApiResponse<Void>> {
+        log.warn("MethodArgumentTypeMismatchException: {}", e.message)
+        return ApiResponse.fail(ErrorCode.INVALID_INPUT)
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException::class)
+    fun handleMissingServletRequestParameterException(e: MissingServletRequestParameterException): ResponseEntity<ApiResponse<Void>> {
+        log.warn("MissingServletRequestParameterException: {}", e.message)
         return ApiResponse.fail(ErrorCode.INVALID_INPUT)
     }
 

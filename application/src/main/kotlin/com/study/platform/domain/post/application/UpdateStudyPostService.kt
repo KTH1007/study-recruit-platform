@@ -29,7 +29,7 @@ class UpdateStudyPostService(
     @Transactional
     @CacheEvict(cacheNames = [CacheConstants.POST_CACHE], key = "#postId")
     override fun execute(userId: UUID, postId: UUID, request: StudyPostUpdateRequest): StudyPostResponse {
-        val post = studyPostRepository.findByIdWithAuthor(postId)
+        val post = studyPostRepository.findByIdWithAuthorForUpdate(postId)
             ?: throw CustomException(ErrorCode.POST_NOT_FOUND)
         post.validateAuthor(userId)
         post.update(request.title, request.description, request.techStack, request.maxMembers, request.deadline)

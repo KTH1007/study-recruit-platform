@@ -37,8 +37,14 @@ class PostSyncDltConsumer(
             )
 
             if (event.retryCount < KafkaConstants.MAX_DLT_RETRY) {
-                kafkaMessagePublisher.publish(KafkaConstants.POST_SYNC_TOPIC, objectMapper.writeValueAsString(event.withRetry())).get(5, java.util.concurrent.TimeUnit.SECONDS)
-                log.info("post-sync 토픽 재투입 - retryCount={}", event.retryCount + 1)
+                try {
+                    kafkaMessagePublisher.publish(KafkaConstants.POST_SYNC_TOPIC, objectMapper.writeValueAsString(event.withRetry())).get(5, java.util.concurrent.TimeUnit.SECONDS)
+                    log.info("post-sync 토픽 재투입 - retryCount={}", event.retryCount + 1)
+                } catch (e: Exception) {
+                    // 재투입 자체가 실패하면 이벤트를 잃어버리지 않도록 영구 저장한다.
+                    log.error("post-sync 토픽 재투입 실패 - DB 영구 저장. postId={}", event.postId, e)
+                    failedPostSyncRepository.save(FailedPostSync.from(event, "재투입 실패: ${e.message}"))
+                }
             } else {
                 failedPostSyncRepository.save(FailedPostSync.from(event, exceptionMessage ?: "unknown"))
                 log.error("최대 재시도 초과 - DB 영구 저장. postId={}", event.postId)

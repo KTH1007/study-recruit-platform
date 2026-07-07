@@ -5,6 +5,7 @@ import com.study.platform.domain.user.application.AuthService
 import com.study.platform.domain.user.dto.request.LoginRequest
 import com.study.platform.domain.user.dto.request.TokenReissueRequest
 import com.study.platform.domain.user.dto.response.LoginResponse
+import com.study.platform.global.ratelimit.RateLimit
 import com.study.platform.global.response.ApiResponse
 import com.study.platform.global.response.SuccessCode
 import jakarta.validation.Valid
@@ -23,12 +24,14 @@ class AuthController(
     private val authService: AuthService
 ) : AuthControllerDoc {
 
+    @RateLimit(limit = 5, windowSeconds = 60)
     @PostMapping("/kakao")
     override fun kakaoLogin(@Valid @RequestBody request: LoginRequest): ResponseEntity<ApiResponse<LoginResponse>> {
         val response = authService.kakaoLogin(request.code)
         return ApiResponse.success(SuccessCode.USER_LOGIN, response)
     }
 
+    @RateLimit(limit = 5, windowSeconds = 60)
     @PostMapping("/reissue")
     override fun reissueToken(@Valid @RequestBody request: TokenReissueRequest): ResponseEntity<ApiResponse<LoginResponse>> {
         val response = authService.reissueToken(request)

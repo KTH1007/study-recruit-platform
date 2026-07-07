@@ -43,8 +43,14 @@ class ApplyRepositoryAdapter(
     override fun countByPostIdAndStatus(postId: UUID, status: ApplyStatus): Long =
         applyJpaRepository.countByPostIdAndStatus(postId, status)
 
+    override fun countByPostIdAndStatusForUpdate(postId: UUID, status: ApplyStatus): Long =
+        applyJpaRepository.countByPostIdAndStatusForUpdate(postId, status)
+
     override fun findByIdWithPostAndApplicantForUpdate(applyId: UUID): Apply? =
         applyJpaRepository.findByIdWithPostAndApplicantForUpdate(applyId)?.let(applyMapper::toDomain)
+
+    override fun findByIdForUpdate(applyId: UUID): Apply? =
+        applyJpaRepository.findByIdForUpdate(applyId)?.let(applyMapper::toDomain)
 
     override fun findPostIdByApplyId(applyId: UUID): UUID? =
         applyJpaRepository.findPostIdByApplyId(applyId)

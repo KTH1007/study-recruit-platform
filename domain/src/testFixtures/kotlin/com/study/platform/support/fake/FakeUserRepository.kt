@@ -10,6 +10,8 @@ class FakeUserRepository : AbstractFakeUuidRepository<User>(), UserRepository {
 
     override fun save(user: User): User = saveEntity(user)
 
+    override fun saveNew(user: User): User = saveEntity(user)
+
     override fun findByKakaoId(kakaoId: String): User? =
         store.values.firstOrNull { u -> u.kakaoId == kakaoId }
 

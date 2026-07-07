@@ -21,6 +21,9 @@ class LeaveTeamService(
 
     @Transactional
     override fun execute(userId: UUID, teamId: UUID) {
+        studyTeamRepository.findByIdForUpdate(teamId)
+            ?: throw CustomException(ErrorCode.TEAM_NOT_FOUND)
+
         val member = teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
             ?: throw CustomException(ErrorCode.TEAM_MEMBER_NOT_FOUND)
 

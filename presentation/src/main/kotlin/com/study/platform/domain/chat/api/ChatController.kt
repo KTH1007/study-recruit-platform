@@ -2,6 +2,7 @@ package com.study.platform.domain.chat.api
 
 import com.study.platform.domain.chat.dto.request.ChatMessageRequest
 import com.study.platform.domain.chat.usecase.SaveAndPublishChatMessageUseCase
+import jakarta.validation.Valid
 import org.springframework.messaging.handler.annotation.DestinationVariable
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -17,7 +18,7 @@ class ChatController(
     @MessageMapping("/chat/{teamId}")
     fun sendMessage(
         @DestinationVariable teamId: UUID,
-        request: ChatMessageRequest,
+        @Valid request: ChatMessageRequest,
         principal: Principal
     ) {
         val userId = (principal as UsernamePasswordAuthenticationToken).principal as UUID
