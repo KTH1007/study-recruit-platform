@@ -13,6 +13,7 @@ import com.study.platform.global.ratelimit.RateLimitStoragePort
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any as anyNonNull
+import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.BDDMockito.given
 import org.mockito.BDDMockito.willDoNothing
@@ -72,6 +73,7 @@ class AuthControllerTest {
         auth = UsernamePasswordAuthenticationToken(userId, null, listOf())
 
         given(jwtProvider.getUserIdFromToken(anyString())).willReturn(userId)
+        given(rateLimitStoragePort.isAllowed(anyString(), anyLong(), anyLong())).willReturn(true)
     }
 
     @Test

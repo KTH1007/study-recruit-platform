@@ -58,3 +58,9 @@ kakao:
 
 cors:
   allowed-origins: ${ALLOWED_ORIGINS}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

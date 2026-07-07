@@ -9,6 +9,7 @@ import com.study.platform.global.auth.port.TokenManager
 import com.study.platform.global.auth.port.TokenRepository
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
@@ -32,13 +33,7 @@ class AuthService(
         val userInfo = oAuthClient.getUserInfo(code)
 
         val user = userRepository.findByKakaoId(userInfo.oauthId)
-            ?: userRepository.save(
-                User.create(
-                    userInfo.oauthId,
-                    resolveUniqueNickname(userInfo.nickname),
-                    userInfo.email
-                )
-            )
+            ?: createUser(userInfo.oauthId, userInfo.nickname, userInfo.email)
 
         return generateTokens(user.id!!)
     }
@@ -57,6 +52,14 @@ class AuthService(
     fun logout(userId: UUID) {
         tokenRepository.delete("$REFRESH_TOKEN_PREFIX$userId")
     }
+
+    private fun createUser(kakaoId: String, nickname: String, email: String): User =
+        try {
+            userRepository.saveNew(User.create(kakaoId, resolveUniqueNickname(nickname), email))
+        } catch (e: DataIntegrityViolationException) {
+            userRepository.findByKakaoId(kakaoId)
+                ?: throw CustomException(ErrorCode.INTERNAL_SERVER_ERROR)
+        }
 
     private fun generateTokens(userId: UUID): LoginResponse {
         val accessToken = tokenManager.generateAccessToken(userId)
