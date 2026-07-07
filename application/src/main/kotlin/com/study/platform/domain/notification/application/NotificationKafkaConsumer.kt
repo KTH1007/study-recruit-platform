@@ -38,15 +38,22 @@ class NotificationKafkaConsumer(
             return
         }
 
-        try {
-            val notification = notificationProcessor.process(event)
-            ack.acknowledge()
-            if (notification != null) {
-                redisMessagePublisher.publish(NOTIFICATION_CHANNEL, objectMapper.writeValueAsString(NotificationResponse.from(notification)))
-            }
+        val notification = try {
+            notificationProcessor.process(event)
         } catch (e: Exception) {
+            // process() 실패 시점엔 아직 커밋된 것이 없으므로 idempotency key를 지워 재처리를 허용한다.
             idempotencyStoragePort.delete(idempotencyKey)
             throw e
         }
+
+        if (notification != null) {
+            try {
+                redisMessagePublisher.publish(NOTIFICATION_CHANNEL, objectMapper.writeValueAsString(NotificationResponse.from(notification)))
+            } catch (e: Exception) {
+                // Notification은 이미 커밋되었으므로 key를 지우면 재처리 시 중복 row가 생긴다. 발행 실패는 로그만 남긴다.
+                log.error("알림 Redis publish 실패 - notificationId={}", notification.id, e)
+            }
+        }
+        ack.acknowledge()
     }
 }

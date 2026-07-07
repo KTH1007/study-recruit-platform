@@ -33,6 +33,7 @@ class PostScheduler(
     }
 
     @Scheduled(cron = "0 0 0 * * *", zone = TimeConstants.ASIA_SEOUL)
+    @SchedulerLock(name = "PostScheduler_closeExpiredPosts", lockAtMostFor = "10m")
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     fun closeExpiredPosts() {
         try {
