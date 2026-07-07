@@ -33,8 +33,10 @@ class CacheConfig(
             .disableCachingNullValues()
             .entryTtl(Duration.ofMinutes(10))
 
+        // cacheDefaults를 postConfig로 두면, 이후 다른 타입의 캐시가 이름 등록 없이 추가될 때
+        // StudyPostResponse 전용 직렬화가 조용히 적용되어 역직렬화 오류로 이어질 수 있다.
+        // 이름이 명시적으로 등록된 캐시만 타입 직렬화를 적용하고, 나머지는 프레임워크 기본값을 쓰게 한다.
         return RedisCacheManager.builder(connectionFactory)
-            .cacheDefaults(postConfig)
             .withCacheConfiguration(CacheConstants.POST_CACHE, postConfig)
             .build()
     }
