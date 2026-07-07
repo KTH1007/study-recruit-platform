@@ -28,7 +28,7 @@ class CloseStudyPostService(
     @Transactional
     @CacheEvict(cacheNames = [CacheConstants.POST_CACHE], key = "#postId")
     override fun execute(userId: UUID, postId: UUID): StudyPostResponse {
-        val post = studyPostRepository.findByIdWithAuthor(postId)
+        val post = studyPostRepository.findByIdWithAuthorForUpdate(postId)
             ?: throw CustomException(ErrorCode.POST_NOT_FOUND)
         post.validateAuthor(userId)
         post.close()

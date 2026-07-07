@@ -18,6 +18,10 @@ interface ApplyJpaRepository : JpaRepository<ApplyJpaEntity, UUID> {
 
     fun countByPostIdAndStatus(postId: UUID, status: ApplyStatus): Long
 
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("SELECT COUNT(a) FROM ApplyJpaEntity a WHERE a.post.id = :postId AND a.status = :status")
+    fun countByPostIdAndStatusForUpdate(@Param("postId") postId: UUID, @Param("status") status: ApplyStatus): Long
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM ApplyJpaEntity a JOIN FETCH a.post WHERE a.id = :applyId")
     fun findByIdWithPostAndApplicantForUpdate(@Param("applyId") applyId: UUID): ApplyJpaEntity?

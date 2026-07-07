@@ -36,7 +36,7 @@ class ApproveApplyService(
         apply.approve(eventPublisher)
         applyRepository.save(apply)
 
-        val approvedCount = applyRepository.countByPostIdAndStatus(postId, ApplyStatus.APPROVED)
+        val approvedCount = applyRepository.countByPostIdAndStatusForUpdate(postId, ApplyStatus.APPROVED)
         post.markFullIfNeeded(approvedCount)
 
         return ApplyResponse.from(apply)

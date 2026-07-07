@@ -22,4 +22,7 @@ class StudyTeamRepositoryAdapter(
 
     override fun findByPostId(postId: UUID): StudyTeam? =
         studyTeamJpaRepository.findByPostId(postId)
+
+    override fun findByIdForUpdate(id: UUID): StudyTeam? =
+        studyTeamJpaRepository.findByIdForUpdate(id)
 }

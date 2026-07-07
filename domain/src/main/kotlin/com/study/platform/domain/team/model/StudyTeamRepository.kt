@@ -8,4 +8,5 @@ interface StudyTeamRepository {
     fun findById(id: UUID): StudyTeam?
     fun delete(team: StudyTeam)
     fun findByPostId(postId: UUID): StudyTeam?
+    fun findByIdForUpdate(id: UUID): StudyTeam?
 }

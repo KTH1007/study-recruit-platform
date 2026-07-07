@@ -15,7 +15,10 @@ class CancelApplyService(
 
     @Transactional
     override fun execute(userId: UUID, postId: UUID) {
-        val apply = applyRepository.findByPostIdAndApplicantId(postId, userId)
+        val applyId = applyRepository.findByPostIdAndApplicantId(postId, userId)?.id
+            ?: throw CustomException(ErrorCode.APPLICATION_NOT_FOUND)
+
+        val apply = applyRepository.findByIdWithPostAndApplicantForUpdate(applyId)
             ?: throw CustomException(ErrorCode.APPLICATION_NOT_FOUND)
         apply.validatePending()
         applyRepository.delete(apply)

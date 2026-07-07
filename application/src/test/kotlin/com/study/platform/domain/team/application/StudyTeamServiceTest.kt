@@ -63,8 +63,8 @@ class StudyTeamServiceTest {
         createStudyTeamService = CreateStudyTeamService(studyTeamRepository, teamMemberRepository, studyPostRepository, userRepository)
         findStudyTeamService = FindStudyTeamService(studyTeamRepository)
         findTeamMembersService = FindTeamMembersService(FakeTeamMemberQueryPort(teamMemberRepository), teamMemberRepository)
-        delegateLeaderService = DelegateLeaderService(teamMemberRepository)
-        removeTeamMemberService = RemoveTeamMemberService(teamMemberRepository)
+        delegateLeaderService = DelegateLeaderService(teamMemberRepository, studyTeamRepository)
+        removeTeamMemberService = RemoveTeamMemberService(teamMemberRepository, studyTeamRepository)
         leaveTeamService = LeaveTeamService(studyTeamRepository, teamMemberRepository, teamScheduleRepository, chatMessageRepository)
 
         leaderId = UUID.randomUUID()

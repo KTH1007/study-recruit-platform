@@ -33,6 +33,9 @@ class FakeApplyRepository : AbstractFakeUuidRepository<Apply>(), ApplyRepository
             a.post.id == postId && a.status == status
         }.toLong()
 
+    override fun countByPostIdAndStatusForUpdate(postId: UUID, status: ApplyStatus): Long =
+        countByPostIdAndStatus(postId, status)
+
     override fun findByIdWithPostAndApplicantForUpdate(applyId: UUID): Apply? = store[applyId]
 
     override fun findPostIdByApplyId(applyId: UUID): UUID? = store[applyId]?.post?.id

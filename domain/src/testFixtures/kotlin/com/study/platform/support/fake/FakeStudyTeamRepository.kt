@@ -14,4 +14,6 @@ class FakeStudyTeamRepository : AbstractFakeUuidRepository<StudyTeam>(), StudyTe
 
     override fun findByPostId(postId: UUID): StudyTeam? =
         store.values.firstOrNull { t -> t.post?.id == postId }
+
+    override fun findByIdForUpdate(id: UUID): StudyTeam? = findById(id)
 }
