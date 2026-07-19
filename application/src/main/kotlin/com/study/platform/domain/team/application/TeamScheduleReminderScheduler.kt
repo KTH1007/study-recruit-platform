@@ -1,7 +1,7 @@
 package com.study.platform.domain.team.application
 
 import com.study.platform.domain.notification.application.NotificationKafkaProducer
-import com.study.platform.domain.notification.model.NotificationEvent
+import com.study.platform.domain.notification.event.NotificationEvent
 import com.study.platform.domain.notification.model.NotificationType
 import com.study.platform.domain.team.model.TeamMemberRepository
 import com.study.platform.domain.team.model.TeamSchedule

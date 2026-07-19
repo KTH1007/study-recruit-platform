@@ -1,7 +1,6 @@
 package com.study.platform.global.ratelimit
 
 import com.study.platform.global.constant.MdcConstants
-import com.study.platform.global.constant.RateLimitConstants
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
 import jakarta.servlet.http.HttpServletRequest
@@ -34,7 +33,7 @@ class RateLimitInterceptor(
 
         val pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as? String
         val endpoint = "${request.method}:$pattern"
-        val key = RateLimitConstants.RATE_LIMIT_PREFIX + identifier + ":" + endpoint
+        val key = RateLimitKeyBuilder.build("http", identifier, endpoint)
 
         if (!rateLimitStoragePort.isAllowed(key, rateLimit.windowSeconds.toLong(), rateLimit.limit.toLong())) {
             log.warn("Rate limit exceeded. identifier={}, endpoint={}", identifier, endpoint)

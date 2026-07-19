@@ -1,7 +1,8 @@
-package com.study.platform.domain.notification.model
+package com.study.platform.domain.notification.event
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.study.platform.domain.notification.model.NotificationType
 import java.util.UUID
 
 data class NotificationEvent @JsonCreator constructor(

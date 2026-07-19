@@ -34,6 +34,7 @@ class Comment : BaseTimeEntity() {
     var content: String = ""
 
     fun update(content: String) {
+        validateContent(content)
         this.content = content
     }
 
@@ -44,7 +45,10 @@ class Comment : BaseTimeEntity() {
     }
 
     companion object {
+        private const val MAX_CONTENT_LENGTH = 500
+
         fun create(post: StudyPost, author: User, content: String, publisher: DomainEventPublisher): Comment {
+            validateContent(content)
             val comment = Comment().also {
                 it.post = post
                 it.author = author
@@ -54,6 +58,11 @@ class Comment : BaseTimeEntity() {
                 publisher.publish(CommentCreatedEvent(post.id!!, post.author!!.id!!, author.id!!, post.title))
             }
             return comment
+        }
+
+        private fun validateContent(content: String) {
+            if (content.isBlank()) throw CustomException(ErrorCode.INVALID_INPUT)
+            if (content.length > MAX_CONTENT_LENGTH) throw CustomException(ErrorCode.INVALID_INPUT)
         }
     }
 }

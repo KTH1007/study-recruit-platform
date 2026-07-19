@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.Future
+import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
@@ -28,6 +29,7 @@ data class StudyPostUpdateRequest @JsonCreator constructor(
     @JsonProperty("maxMembers")
     @field:Schema(description = "최대 인원", example = "6")
     @field:Min(value = 2, message = "최대 인원은 2명 이상이어야 합니다.")
+    @field:Max(value = 100, message = "최대 인원은 100명 이하여야 합니다.")
     val maxMembers: Int,
 
     @JsonProperty("deadline")

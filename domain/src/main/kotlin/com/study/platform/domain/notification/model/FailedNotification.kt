@@ -1,5 +1,6 @@
 package com.study.platform.domain.notification.model
 
+import com.study.platform.domain.notification.event.NotificationEvent
 import com.study.platform.global.entity.BaseTimeEntity
 import jakarta.persistence.*
 import java.util.UUID

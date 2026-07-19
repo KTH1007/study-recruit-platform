@@ -4,6 +4,7 @@ import com.study.platform.global.constant.SecurityConstants
 import com.study.platform.global.exception.CustomException
 import com.study.platform.global.exception.ErrorCode
 import com.study.platform.global.jwt.JwtProvider
+import com.study.platform.global.ratelimit.RateLimitKeyBuilder
 import com.study.platform.global.ratelimit.RateLimitStoragePort
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
@@ -28,7 +29,6 @@ class StompJwtInterceptor(
 
     companion object {
         private const val USER_ID_HEADER = "userId"
-        private const val CHAT_RATE_LIMIT_PREFIX = "rate:limit:stomp:"
         private const val CHAT_RATE_LIMIT = 20L
         private const val CHAT_RATE_LIMIT_WINDOW_SECONDS = 10L
     }
@@ -66,7 +66,7 @@ class StompJwtInterceptor(
         val userId = (accessor.user as? UsernamePasswordAuthenticationToken)?.principal as? UUID
             ?: throw MessagingException(ErrorCode.INVALID_TOKEN.message)
 
-        val key = "$CHAT_RATE_LIMIT_PREFIX$userId:${accessor.destination}"
+        val key = RateLimitKeyBuilder.build("stomp", userId.toString(), accessor.destination ?: "")
         if (!rateLimitStoragePort.isAllowed(key, CHAT_RATE_LIMIT_WINDOW_SECONDS, CHAT_RATE_LIMIT)) {
             log.warn("STOMP rate limit exceeded - userId={}, destination={}", userId, accessor.destination)
             throw MessagingException(ErrorCode.TOO_MANY_REQUESTS.message)

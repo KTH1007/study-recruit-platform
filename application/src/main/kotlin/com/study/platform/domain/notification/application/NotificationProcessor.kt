@@ -3,7 +3,7 @@ package com.study.platform.domain.notification.application
 import com.study.platform.domain.notification.model.FailedNotification
 import com.study.platform.domain.notification.model.FailedNotificationRepository
 import com.study.platform.domain.notification.model.Notification
-import com.study.platform.domain.notification.model.NotificationEvent
+import com.study.platform.domain.notification.event.NotificationEvent
 import com.study.platform.domain.notification.model.NotificationRepository
 import com.study.platform.domain.user.model.UserRepository
 import com.study.platform.global.constant.KafkaConstants

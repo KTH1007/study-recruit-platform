@@ -46,6 +46,11 @@ class MdcFilter : OncePerRequestFilter() {
     }
 
     private fun extractClientIp(request: HttpServletRequest): String {
+        // 우리 인프라의 리버스 프록시(사설망 대역)를 거친 요청만 프록시 헤더를 신뢰한다.
+        // 그렇지 않으면 외부에서 X-Forwarded-For를 조작해 실제 발신 IP를 위장할 수 있다.
+        if (!isTrustedProxy(request.remoteAddr)) {
+            return request.remoteAddr
+        }
         for (header in IP_HEADERS) {
             val ip = request.getHeader(header)
             if (!ip.isNullOrBlank() && !ip.equals("unknown", ignoreCase = true)) {
@@ -53,5 +58,15 @@ class MdcFilter : OncePerRequestFilter() {
             }
         }
         return request.remoteAddr
+    }
+
+    private fun isTrustedProxy(remoteAddr: String): Boolean {
+        val addr = remoteAddr.removePrefix("::ffff:")
+        if (addr == "127.0.0.1" || addr == "::1" || addr == "0:0:0:0:0:0:0:1") return true
+        val octets = addr.split(".").mapNotNull { it.toIntOrNull() }
+        if (octets.size != 4) return false
+        return octets[0] == 10 ||
+            (octets[0] == 192 && octets[1] == 168) ||
+            (octets[0] == 172 && octets[1] in 16..31)
     }
 }

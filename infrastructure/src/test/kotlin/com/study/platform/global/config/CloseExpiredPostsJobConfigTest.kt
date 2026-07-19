@@ -61,7 +61,9 @@ class CloseExpiredPostsJobConfigTest : AbstractIntegrationTest() {
     fun `마감기한이_지난_OPEN_게시글은_CLOSED로_변경된다`() {
         // given
         val expiredPost = studyPostRepository.save(
-            StudyPost.create(author, "마감된 스터디", "설명", "Java", 5, LocalDateTime.now().minusDays(1))
+            StudyPost.create(author, "마감된 스터디", "설명", "Java", 5, LocalDateTime.now().plusDays(7)).also {
+                it.deadline = LocalDateTime.now().minusDays(1)
+            }
         )
         val activePost = studyPostRepository.save(
             StudyPost.create(author, "진행중 스터디", "설명", "Java", 5, LocalDateTime.now().plusDays(7))

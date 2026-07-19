@@ -8,6 +8,7 @@ import com.study.platform.domain.team.usecase.FindStudyTeamUseCase
 import com.study.platform.domain.team.usecase.FindTeamMembersUseCase
 import com.study.platform.domain.team.usecase.LeaveTeamUseCase
 import com.study.platform.domain.team.usecase.RemoveTeamMemberUseCase
+import com.study.platform.global.ratelimit.RateLimit
 import com.study.platform.global.response.ApiResponse
 import com.study.platform.global.response.SuccessCode
 import org.springframework.http.ResponseEntity
@@ -44,6 +45,7 @@ class StudyTeamController(
     }
 
     @PatchMapping("/{teamId}/members/{targetUserId}/delegate")
+    @RateLimit(limit = 5, windowSeconds = 60)
     override fun delegateLeader(
         @AuthenticationPrincipal userId: UUID,
         @PathVariable teamId: UUID,
@@ -54,6 +56,7 @@ class StudyTeamController(
     }
 
     @DeleteMapping("/{teamId}/members/{targetUserId}")
+    @RateLimit(limit = 5, windowSeconds = 60)
     override fun removeMember(
         @AuthenticationPrincipal userId: UUID,
         @PathVariable teamId: UUID,

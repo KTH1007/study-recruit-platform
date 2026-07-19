@@ -1,6 +1,6 @@
 package com.study.platform.domain.notification.application
 
-import com.study.platform.domain.notification.model.NotificationEvent
+import com.study.platform.domain.notification.event.NotificationEvent
 import com.study.platform.domain.notification.model.NotificationType
 import com.study.platform.domain.post.event.PostDeadlineReminderEvent
 import com.study.platform.global.constant.KafkaConstants

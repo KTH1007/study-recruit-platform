@@ -1,5 +1,8 @@
 package com.study.platform.global.outbox.application
 
+import com.study.platform.domain.notification.model.FailedNotification
+import com.study.platform.domain.notification.model.FailedNotificationRepository
+import com.study.platform.domain.notification.event.NotificationEvent
 import com.study.platform.domain.post.event.PostSyncEvent
 import com.study.platform.domain.post.model.FailedPostSync
 import com.study.platform.domain.post.model.FailedPostSyncRepository
@@ -24,6 +27,7 @@ class OutboxRetryScheduler(
     private val outboxEventService: OutboxEventService,
     private val kafkaMessagePublisher: KafkaMessagePublisher,
     private val failedPostSyncRepository: FailedPostSyncRepository,
+    private val failedNotificationRepository: FailedNotificationRepository,
     private val objectMapper: ObjectMapper
 ) {
     private val log = LoggerFactory.getLogger(OutboxRetryScheduler::class.java)!!
@@ -59,9 +63,15 @@ class OutboxRetryScheduler(
     fun handleRetryFailure(outboxId: Long, topic: String, payload: String, retryCount: Int, e: Exception) {
         if (retryCount >= MAX_OUTBOX_RETRY) {
             log.error("Outbox 최대 재시도 초과 - id: {}, topic: {}", outboxId, topic)
-            if (topic == KafkaConstants.POST_SYNC_TOPIC) {
-                val event = objectMapper.readValue(payload, PostSyncEvent::class.java)
-                failedPostSyncRepository.save(FailedPostSync.from(event, e.message ?: "unknown"))
+            when (topic) {
+                KafkaConstants.POST_SYNC_TOPIC -> {
+                    val event = objectMapper.readValue(payload, PostSyncEvent::class.java)
+                    failedPostSyncRepository.save(FailedPostSync.from(event, e.message ?: "unknown"))
+                }
+                KafkaConstants.NOTIFICATION_TOPIC -> {
+                    val event = objectMapper.readValue(payload, NotificationEvent::class.java)
+                    failedNotificationRepository.save(FailedNotification.from(event, e.message ?: "unknown"))
+                }
             }
             outboxEventService.markFailedPermanently(outboxId)
         } else {

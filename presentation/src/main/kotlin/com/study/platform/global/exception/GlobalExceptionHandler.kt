@@ -41,21 +41,13 @@ class GlobalExceptionHandler {
         return ApiResponse.fail(ErrorCode.INVALID_INPUT)
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException::class)
-    fun handleHttpMessageNotReadableException(e: HttpMessageNotReadableException): ResponseEntity<ApiResponse<Void>> {
-        log.warn("HttpMessageNotReadableException: {}", e.message)
-        return ApiResponse.fail(ErrorCode.INVALID_INPUT)
-    }
-
-    @ExceptionHandler(MethodArgumentTypeMismatchException::class)
-    fun handleMethodArgumentTypeMismatchException(e: MethodArgumentTypeMismatchException): ResponseEntity<ApiResponse<Void>> {
-        log.warn("MethodArgumentTypeMismatchException: {}", e.message)
-        return ApiResponse.fail(ErrorCode.INVALID_INPUT)
-    }
-
-    @ExceptionHandler(MissingServletRequestParameterException::class)
-    fun handleMissingServletRequestParameterException(e: MissingServletRequestParameterException): ResponseEntity<ApiResponse<Void>> {
-        log.warn("MissingServletRequestParameterException: {}", e.message)
+    @ExceptionHandler(
+        HttpMessageNotReadableException::class,
+        MethodArgumentTypeMismatchException::class,
+        MissingServletRequestParameterException::class
+    )
+    fun handleBadRequestException(e: Exception): ResponseEntity<ApiResponse<Void>> {
+        log.warn("{}: {}", e.javaClass.simpleName, e.message)
         return ApiResponse.fail(ErrorCode.INVALID_INPUT)
     }
 

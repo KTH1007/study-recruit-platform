@@ -46,15 +46,15 @@ spring:
       enabled: false  # 애플리케이션 시작 시 Job 자동 실행 방지
 
 jwt:
-  secret: c3R1ZHlyZWN1cml0c3R1ZHlyZWN1cml0c3R1ZHlyZWN1cml0c3R1ZHlyZWN1cml0c3R1ZHlyZWN1cml0
+  secret: ${JWT_SECRET}
   expiration:
     access: 1800000
     refresh: 604800000
 
 kakao:
-  client-id: f4110e4c2732215d1345a23b07d9b1cc
-  client-secret: NL3Cc1Tu14xzigYl56ksmw473mxOpXJa
-  redirect-uri: http://localhost:3000/oauth/kakao/callback
+  client-id: ${KAKAO_CLIENT_ID}
+  client-secret: ${KAKAO_CLIENT_SECRET}
+  redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:3000/oauth/kakao/callback}
 
 cors:
-  allowed-origins: "*"
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}

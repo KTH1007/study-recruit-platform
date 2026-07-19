@@ -67,16 +67,19 @@ class CloseExpiredPostsJobConfig(
             .transactionManager(transactionManager)
             .build()
 
-    // ES 색인 실패 등으로 스킵된 항목은 재처리를 위해 감사 테이블에 남긴다.
+    // DB 저장 실패와 ES 색인 실패는 복구 방법이 다르므로(전자는 마감 자체가 반영 안 된 것,
+    // 후자는 마감은 반영됐고 검색 색인만 밀린 것) 감사 기록에 어느 단계가 실패했는지 남긴다.
     private fun closePostSkipListener(): SkipListener<StudyPost, StudyPost> =
         object : SkipListener<StudyPost, StudyPost> {
             override fun onSkipInWrite(item: StudyPost, t: Throwable) {
                 val postId = item.id ?: return
-                log.error("마감 처리 배치 스킵 - postId={}", postId, t)
+                val stage = if (t is PostCloseDbWriteException) "DB 저장" else "ES 색인"
+                val cause = t.cause?.message ?: t.message
+                log.error("마감 처리 배치 스킵 - postId={}, 실패 단계={}", postId, stage, t)
                 failedPostSyncRepository.saveIndependently(
                     FailedPostSync.from(
                         PostSyncEvent(postId, PostSyncOperationType.UPSERT, 0L, 0),
-                        "마감 처리 배치 실패: ${t.message}"
+                        "마감 처리 배치 실패($stage): $cause"
                     )
                 )
             }
@@ -109,7 +112,13 @@ class CloseExpiredPostsJobConfig(
     fun closePostWriter(): ItemWriter<StudyPost> = ItemWriter { chunk ->
         @Suppress("UNCHECKED_CAST")
         val posts = chunk.items as List<StudyPost>
-        studyPostRepository.saveAll(posts)
+        try {
+            studyPostRepository.saveAll(posts)
+        } catch (e: Exception) {
+            throw PostCloseDbWriteException(e)
+        }
         postSearchService.indexAll(posts)
     }
+
+    private class PostCloseDbWriteException(cause: Throwable) : RuntimeException(cause)
 }

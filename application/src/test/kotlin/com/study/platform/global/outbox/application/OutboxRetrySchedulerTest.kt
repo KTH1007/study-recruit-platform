@@ -1,10 +1,13 @@
 package com.study.platform.global.outbox.application
 
+import com.study.platform.domain.notification.event.NotificationEvent
+import com.study.platform.domain.notification.model.NotificationType
 import com.study.platform.domain.post.event.PostSyncEvent
 import com.study.platform.domain.post.event.PostSyncOperationType
 import com.study.platform.global.constant.KafkaConstants
 import com.study.platform.global.outbox.model.OutboxEvent
 import com.study.platform.global.outbox.model.OutboxEventStatus
+import com.study.platform.support.fake.FakeFailedNotificationRepository
 import com.study.platform.support.fake.FakeFailedPostSyncRepository
 import com.study.platform.support.fake.FakeKafkaMessagePublisher
 import com.study.platform.support.fake.FakeOutboxEventRepository
@@ -22,6 +25,7 @@ class OutboxRetrySchedulerTest {
     private lateinit var outboxEventService: OutboxEventService
     private lateinit var kafkaPublisher: FakeKafkaMessagePublisher
     private lateinit var failedPostSyncRepository: FakeFailedPostSyncRepository
+    private lateinit var failedNotificationRepository: FakeFailedNotificationRepository
     private lateinit var outboxRetryScheduler: OutboxRetryScheduler
     private lateinit var objectMapper: ObjectMapper
 
@@ -31,9 +35,11 @@ class OutboxRetrySchedulerTest {
         outboxEventRepository = FakeOutboxEventRepository()
         kafkaPublisher = FakeKafkaMessagePublisher()
         failedPostSyncRepository = FakeFailedPostSyncRepository()
+        failedNotificationRepository = FakeFailedNotificationRepository()
         outboxEventService = OutboxEventService(outboxEventRepository)
         outboxRetryScheduler = OutboxRetryScheduler(
-            outboxEventRepository, outboxEventService, kafkaPublisher, failedPostSyncRepository, objectMapper
+            outboxEventRepository, outboxEventService, kafkaPublisher,
+            failedPostSyncRepository, failedNotificationRepository, objectMapper
         )
     }
 
@@ -93,15 +99,22 @@ class OutboxRetrySchedulerTest {
     }
 
     @Test
-    fun `retryPendingEvents_최대재시도_초과_Notification_FailedPostSync_미저장`() {
+    fun `retryPendingEvents_최대재시도_초과_Notification_FailedNotification_저장_FailedPostSync_미저장`() {
         // given
-        val outbox = pendingOutbox(KafkaConstants.NOTIFICATION_TOPIC, 3)
+        val notificationEvent = NotificationEvent(UUID.randomUUID(), NotificationType.APPLY_APPROVED, "승인됐습니다", UUID.randomUUID(), 3)
+        val payload = objectMapper.writeValueAsString(notificationEvent)
+        val outbox = OutboxEvent.pending(KafkaConstants.NOTIFICATION_TOPIC, UUID.randomUUID().toString(), payload)
+        ReflectionTestUtils.setField(outbox, "id", 1L)
+        ReflectionTestUtils.setField(outbox, "retryCount", 3)
+        outbox.createdAt = LocalDateTime.now().minusSeconds(60)
+        outboxEventRepository.save(outbox)
         kafkaPublisher.willFail()
 
         // when
         outboxRetryScheduler.retryPendingEvents()
 
         // then
+        assertThat(failedNotificationRepository.getSaved()).hasSize(1)
         assertThat(failedPostSyncRepository.getSaved()).isEmpty()
         assertThat(outbox.status).isEqualTo(OutboxEventStatus.FAILED_PERMANENTLY)
     }

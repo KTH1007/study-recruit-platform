@@ -20,6 +20,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.cache.support.NoOpCacheManager
 import org.springframework.data.domain.PageRequest
 import java.util.UUID
 
@@ -53,7 +54,7 @@ class ApplyServiceTest {
         findAppliesService = FindAppliesService(FakeApplyQueryPort(applyRepository), studyPostRepository)
         applyStudyPostService = ApplyStudyPostService(applyRepository, studyPostRepository, userRepository, eventPublisher)
         cancelApplyService = CancelApplyService(applyRepository)
-        approveApplyService = ApproveApplyService(applyRepository, studyPostRepository, eventPublisher)
+        approveApplyService = ApproveApplyService(applyRepository, studyPostRepository, eventPublisher, NoOpCacheManager())
         rejectApplyService = RejectApplyService(applyRepository, eventPublisher)
 
         authorId = UUID.randomUUID()

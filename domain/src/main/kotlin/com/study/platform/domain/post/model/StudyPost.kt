@@ -54,6 +54,7 @@ class StudyPost : BaseTimeEntity() {
     val maxMembers: Int get() = maxMembersVo!!.value
 
     fun update(title: String, description: String, techStack: String?, maxMembers: Int, deadline: LocalDateTime?) {
+        validateDeadline(deadline)
         this.titleVo = PostTitle(title)
         this.description = description
         this.techStackVo = TechStack.of(techStack)
@@ -65,7 +66,7 @@ class StudyPost : BaseTimeEntity() {
     fun markFull() { status = StudyPostStatus.FULL }
 
     fun markFullIfNeeded(approvedCount: Long) {
-        if (approvedCount >= maxMembersVo!!.value) status = StudyPostStatus.FULL
+        if (isFull(approvedCount)) status = StudyPostStatus.FULL
     }
 
     fun isAuthor(userId: UUID): Boolean = author?.id == userId
@@ -89,8 +90,9 @@ class StudyPost : BaseTimeEntity() {
     }
 
     companion object {
-        fun create(author: User, title: String, description: String, techStack: String?, maxMembers: Int, deadline: LocalDateTime?): StudyPost =
-            StudyPost().also {
+        fun create(author: User, title: String, description: String, techStack: String?, maxMembers: Int, deadline: LocalDateTime?): StudyPost {
+            validateDeadline(deadline)
+            return StudyPost().also {
                 it.author = author
                 it.titleVo = PostTitle(title)
                 it.description = description
@@ -98,5 +100,12 @@ class StudyPost : BaseTimeEntity() {
                 it.maxMembersVo = MaxMembers(maxMembers)
                 it.deadline = deadline
             }
+        }
+
+        private fun validateDeadline(deadline: LocalDateTime?) {
+            if (deadline != null && !deadline.isAfter(LocalDateTime.now())) {
+                throw CustomException(ErrorCode.INVALID_INPUT)
+            }
+        }
     }
 }

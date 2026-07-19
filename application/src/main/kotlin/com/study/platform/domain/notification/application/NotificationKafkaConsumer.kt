@@ -1,7 +1,7 @@
 package com.study.platform.domain.notification.application
 
 import com.study.platform.domain.notification.dto.response.NotificationResponse
-import com.study.platform.domain.notification.model.NotificationEvent
+import com.study.platform.domain.notification.event.NotificationEvent
 import com.study.platform.global.constant.KafkaConstants
 import com.study.platform.global.idempotency.IdempotencyStoragePort
 import com.study.platform.global.redis.RedisMessagePublisher

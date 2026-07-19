@@ -30,6 +30,8 @@ class TeamSchedule : BaseTimeEntity() {
     var scheduledAt: LocalDateTime? = null
 
     fun update(title: String, description: String?, scheduledAt: LocalDateTime) {
+        validateTitle(title)
+        validateDescription(description)
         this.title = title
         this.description = description
         this.scheduledAt = scheduledAt
@@ -40,12 +42,27 @@ class TeamSchedule : BaseTimeEntity() {
     }
 
     companion object {
-        fun create(team: StudyTeam, title: String, description: String?, scheduledAt: LocalDateTime): TeamSchedule =
-            TeamSchedule().also {
+        private const val MAX_TITLE_LENGTH = 100
+        private const val MAX_DESCRIPTION_LENGTH = 1000
+
+        fun create(team: StudyTeam, title: String, description: String?, scheduledAt: LocalDateTime): TeamSchedule {
+            validateTitle(title)
+            validateDescription(description)
+            return TeamSchedule().also {
                 it.team = team
                 it.title = title
                 it.description = description
                 it.scheduledAt = scheduledAt
             }
+        }
+
+        private fun validateTitle(title: String) {
+            if (title.isBlank()) throw CustomException(ErrorCode.INVALID_INPUT)
+            if (title.length > MAX_TITLE_LENGTH) throw CustomException(ErrorCode.INVALID_INPUT)
+        }
+
+        private fun validateDescription(description: String?) {
+            if (description != null && description.length > MAX_DESCRIPTION_LENGTH) throw CustomException(ErrorCode.INVALID_INPUT)
+        }
     }
 }

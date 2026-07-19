@@ -98,4 +98,42 @@ class StudyPostTest {
                 assertThat(e.errorCode).isEqualTo(ErrorCode.CANNOT_APPLY_OWN_POST)
             }
     }
+
+    @Test
+    fun `markFullIfNeeded_승인인원이_정원_이상이면_FULL로_전환된다`() {
+        // when
+        post.markFullIfNeeded(5L)
+
+        // then
+        assertThat(post.isOpen()).isFalse()
+    }
+
+    @Test
+    fun `markFullIfNeeded_승인인원이_정원_미만이면_OPEN을_유지한다`() {
+        // when
+        post.markFullIfNeeded(4L)
+
+        // then
+        assertThat(post.isOpen()).isTrue()
+    }
+
+    @Test
+    fun `create_마감일이_과거면_예외발생`() {
+        // when & then
+        assertThatThrownBy {
+            StudyPost.create(author, "스터디 모집", "열심히 합니다", "Java", 5, LocalDateTime.now().minusDays(1))
+        }.isInstanceOfSatisfying(CustomException::class.java) { e ->
+            assertThat(e.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+        }
+    }
+
+    @Test
+    fun `update_마감일이_과거면_예외발생`() {
+        // when & then
+        assertThatThrownBy {
+            post.update("수정된 제목", "수정된 내용", "Java", 5, LocalDateTime.now().minusDays(1))
+        }.isInstanceOfSatisfying(CustomException::class.java) { e ->
+            assertThat(e.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+        }
+    }
 }

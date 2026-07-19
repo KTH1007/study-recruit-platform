@@ -6,7 +6,12 @@ import jakarta.persistence.Embeddable
 
 @Embeddable
 class MaxMembers(val value: Int) {
+
+    companion object {
+        private const val MAX_VALUE = 100
+    }
+
     init {
-        if (value < 1) throw CustomException(ErrorCode.INVALID_INPUT)
+        if (value < 1 || value > MAX_VALUE) throw CustomException(ErrorCode.INVALID_INPUT)
     }
 }

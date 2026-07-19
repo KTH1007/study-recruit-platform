@@ -51,4 +51,30 @@ class CommentTest {
                 assertThat(e.errorCode).isEqualTo(ErrorCode.NOT_COMMENT_AUTHOR)
             }
     }
+
+    @Test
+    fun `create_내용이_빈문자열이면_예외발생`() {
+        assertThatThrownBy { Comment.create(post, author, "   ", FakeDomainEventPublisher()) }
+            .isInstanceOfSatisfying(CustomException::class.java) { e ->
+                assertThat(e.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+            }
+    }
+
+    @Test
+    fun `create_내용이_500자_초과면_예외발생`() {
+        val tooLong = "a".repeat(501)
+
+        assertThatThrownBy { Comment.create(post, author, tooLong, FakeDomainEventPublisher()) }
+            .isInstanceOfSatisfying(CustomException::class.java) { e ->
+                assertThat(e.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+            }
+    }
+
+    @Test
+    fun `update_내용이_빈문자열이면_예외발생`() {
+        assertThatThrownBy { comment.update("") }
+            .isInstanceOfSatisfying(CustomException::class.java) { e ->
+                assertThat(e.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+            }
+    }
 }
